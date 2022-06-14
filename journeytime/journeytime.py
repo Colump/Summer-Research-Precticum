@@ -68,7 +68,7 @@ journeyTime = Flask(__name__, static_url_path='')
 # This first line loads config from a Python object:
 #journeyTime.config.from_object('config')
 # This next one loads up our good old json object!!!
-journeyTime.config.from_file(os.path.join(jtParentDir, 'journeyTime.json'), json.load)
+journeyTime.config.from_file(os.path.join(jtParentDir, 'journeytime.json'), json.load)
 # Following line disables some older stuff we don't use that is deprecated (and
 # suppresses a warning about using it). Please just leave it hard-coded here.
 journeyTime.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
