@@ -1,0 +1,20 @@
+{
+    "title": "JourneyTime JSON Credentials Store",
+	"FLASK_HOST": "127.0.0.1",
+    "FLASK_PORT": "80",
+    "DB_USER": "????",
+    "DB_PASS": "???????",
+    "DB_SRVR": "127.0.0.1",
+    "DB_PORT": "3306",
+    "DB_NAME": "journeytime",
+    "MAPS_API_KEY": "AIzaSyCHrX0Xl5WfOznFH1esYeEUEGFNr0VnL1w",
+    "open-weather": {
+        "api-key": "33e7b7d28f7906ae1780c1b2ea064bf7",
+        "lat": 53.3497645,
+        "lon": -6.2602732
+    },
+	"cronitor": {
+        "TelemetryURL": "https://cronitor.link/p/3eea919bd2ad44a894543d89047db24c/dE7IP1",
+        "TelemetryURLSampler": "https://cronitor.link/p/3eea919bd2ad44a894543d89047db24c/imoGIH"
+    }
+}
