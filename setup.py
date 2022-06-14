@@ -18,7 +18,7 @@
 #   python -m pip install git+https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/@dev
 #
 
-************** THIS IS A WORK IN PROGRESS!!! I HAVE TESTED NOTHING FROM GITLAB YET!!!!  *****************************
+#************** THIS IS A WORK IN PROGRESS!!! I HAVE TESTED NOTHING FROM GITLAB YET!!!!  *****************************
 
 from setuptools import setup
 from setuptools import find_packages
@@ -72,7 +72,7 @@ setup(
       python_requires='>=3.9',
 
       license='MIT',
-      packages=['jt_scheduled_tasks'],
+      packages=['journeytime'],
       zip_safe=False,
 
       # Additional classifiers that give some characteristics about the package.

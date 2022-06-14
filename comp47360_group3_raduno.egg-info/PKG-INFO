@@ -1,0 +1,20 @@
+Metadata-Version: 2.1
+Name: comp47360-group3-raduno
+Version: 0.0.1
+Summary: Estimate the Journey Time required for a journey on Dublin Bus
+Home-page: https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/
+Author: Tomas Kelly, Yunpeng Cheng, Boshen Fan, Colum Prendiville
+Author-email: tomas.kelly1@ucdconnect.ie, yunpeng.cheng@ucdconnect.ie, boshen.fan@ucdconnect.ie, colum.prendiville@ucdconnect.ie
+License: MIT
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Operating System :: OS Independent
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Topic :: Education
+Requires-Python: >=3.9
+
+UNKNOWN
+
