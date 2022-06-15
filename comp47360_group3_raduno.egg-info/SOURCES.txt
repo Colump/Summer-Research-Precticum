@@ -7,4 +7,4 @@ comp47360_group3_raduno.egg-info/not-zip-safe
 comp47360_group3_raduno.egg-info/requires.txt
 comp47360_group3_raduno.egg-info/top_level.txt
 journeytime/__init__.py
-journeytime/journeytime.py
+journeytime/jtFlaskModule.py
