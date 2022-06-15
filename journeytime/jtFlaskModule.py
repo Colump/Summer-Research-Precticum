@@ -39,7 +39,7 @@ def loadCredentials():
 # Application Startup...
 jtParentDir = os.path.dirname(os.path.dirname(__file__))
 print("===================================================================")
-print("JourneyTime: Application Start-up.")
+print("jtFlaskApp: Application Start-up.")
 print("             Parent Dir. is ->")
 print("             " + str(jtParentDir) + "\n")
 
@@ -49,7 +49,7 @@ credentials = loadCredentials()
 
 # Create our flask app.
 # Static files are server from the 'static' directory
-journeyTime = Flask(__name__, static_url_path='')
+jtFlaskApp = Flask(__name__, static_url_path='')
 
 # In Flask, regardless of how you load your config, there is a 'config' object
 # available which holds the loaded configuration values: The 'config' attribute
@@ -57,7 +57,7 @@ journeyTime = Flask(__name__, static_url_path='')
 # The config is actually a subclass of a dictionary and can be modified just like
 # any dictionary.  E.g. to update multiple keys at once you can use the dict.update()
 # method:
-#     journeyTime.config.update(
+#     jtFlaskApp.config.update(
 #         TESTING=True,
 #         SECRET_KEY='192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf'
 #     )
@@ -66,12 +66,12 @@ journeyTime = Flask(__name__, static_url_path='')
 #       (Ask me how I know...)
 #
 # This first line loads config from a Python object:
-#journeyTime.config.from_object('config')
+#jtFlaskApp.config.from_object('config')
 # This next one loads up our good old json object!!!
-journeyTime.config.from_file(os.path.join(jtParentDir, 'journeytime.json'), json.load)
+jtFlaskApp.config.from_file(os.path.join(jtParentDir, 'journeytime.json'), json.load)
 # Following line disables some older stuff we don't use that is deprecated (and
 # suppresses a warning about using it). Please just leave it hard-coded here.
-journeyTime.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+jtFlaskApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # As recommended here:
 #     https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#installation
@@ -93,12 +93,12 @@ journeyTime.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # query attribute attached that can be used to query the model. (Model and BaseQuery)
 # We have to commit the session, but we don’t have to remove it at the end of the
 # request, Flask-SQLAlchemy does that for us.
-journeyTime.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
-            + journeyTime.config['DB_USER'] + ":" + journeyTime.config['DB_PASS'] \
+jtFlaskApp.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
+            + jtFlaskApp.config['DB_USER'] + ":" + jtFlaskApp.config['DB_PASS'] \
             + "@" \
-            + journeyTime.config['DB_SRVR'] + ":" + journeyTime.config['DB_PORT']\
-            + "/" + journeyTime.config['DB_NAME'] + "?charset=utf8mb4"
-#db.init_app(journeyTime)
+            + jtFlaskApp.config['DB_SRVR'] + ":" + jtFlaskApp.config['DB_PORT']\
+            + "/" + jtFlaskApp.config['DB_NAME'] + "?charset=utf8mb4"
+#db.init_app(jtFlaskApp)
 
 # @app.route('/user/<id>')
 # def get_user(id):
@@ -111,15 +111,15 @@ journeyTime.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
 # def index():
 #     return '<h1>Bad Request</h1>', 400
 
-@journeyTime.route('/')
-@journeyTime.route('/index.html')
+@jtFlaskApp.route('/')
+@jtFlaskApp.route('/index.html')
 def root():
-    print(journeyTime.config)
+    print(jtFlaskApp.config)
 
     # This route simply serves 'static/index.html'
-    return journeyTime.send_static_file('index.html')
+    return jtFlaskApp.send_static_file('index.html')
     # This route renders a template from the template folder
-    #return render_template('index.html', MAPS_API_KEY=journeyTime.config["MAPS_API_KEY"])
+    #return render_template('index.html', MAPS_API_KEY=jtFlaskApp.config["MAPS_API_KEY"])
 
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
@@ -163,7 +163,7 @@ def root():
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
-@journeyTime.teardown_appcontext
+@jtFlaskApp.teardown_appcontext
 def shutdown_session(exception=None):
     #db.session.remove()
     # sys.stdout.close()  # Close the file handle we have open
@@ -176,4 +176,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    journeyTime.run(debug=False, host=journeyTime.config["FLASK_HOST"], port=journeyTime.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

@@ -8,9 +8,9 @@ import sys
 import logging
 
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0,"/var/www/html/journeytime/journeytime/")
+sys.path.insert(0,"/var/www/html/comp47360-group3-raduno/journeytime/")
 
-from journeytime import journeytime as application
+from jtFlaskModule import jtFlaskApp as application
 
 # If a factory function is used in a __init__.py file, then the function should be imported:
 # from yourapplication import create_app
