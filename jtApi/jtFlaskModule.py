@@ -40,8 +40,8 @@ def loadCredentials():
 jtParentDir = os.path.dirname(os.path.dirname(__file__))
 print("===================================================================")
 print("jtFlaskApp: Application Start-up.")
-print("             Parent Dir. is ->")
-print("             " + str(jtParentDir) + "\n")
+print("            Parent Dir. is ->")
+print("            " + str(jtParentDir) + "\n")
 
 
 # Load our private credentials from a JSON file.  Nothing runs without these...
