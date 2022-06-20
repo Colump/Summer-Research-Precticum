@@ -8,7 +8,7 @@ import sys
 import logging
 
 logging.basicConfig(stream=sys.stderr)
-sys.path.insert(0,"/var/www/html/comp47360-group3-raduno/journeytime/")
+sys.path.insert(0,"/var/www/html/comp47360-group3-raduno/jtApi/")
 
 from jtFlaskModule import jtFlaskApp as application
 

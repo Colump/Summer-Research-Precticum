@@ -72,7 +72,7 @@ setup(
       python_requires='>=3.9',
 
       license='MIT',
-      packages=['journeytime'],
+      packages=['jtApi'],
       zip_safe=False,
 
       # Additional classifiers that give some characteristics about the package.
