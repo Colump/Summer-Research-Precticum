@@ -18,8 +18,8 @@ from haversine import haversine, Unit
 from jtFlaskModule import loadCredentials
 
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import Session
-from models import db, stop
+from sqlalchemy.orm import sessionmaker, Session
+from models import db, Stop
 
 def loopOverAllStopsAndCalcDistFromCC():
     """
@@ -38,19 +38,43 @@ def loopOverAllStopsAndCalcDistFromCC():
 
     # The start of any SQLAlchemy application is an object called the Engine.
     # This object acts as a central source of connections...
-    engine = create_engine(dbConnStr, echo=True, future=True)
+    # In the following:
+    #   -> The echo flag is a shortcut to setting up SQLAlchemy logging, which is accomplished
+    #      via Python’s standard logging module. With it enabled, we’ll see all the generated
+    #      SQL produced. If you want less output generated, set it to False
+    engine = create_engine(dbConnStr, echo=False, future=True)
+    # The first time a method like Engine.execute() or Engine.connect() is called, the Engine
+    # establishes a real DBAPI connection to the database, which is then used to emit the SQL.
+    # When using the ORM, we typically don’t use the Engine directly once created; instead, it’s
+    # used behind the scenes by the ORM.
 
+    # The ORM’s “handle” to the database is the Session. When we first set up the application,
+    # at the same level as our create_engine() statement, we define a Session class which will
+    # serve as a factory for new Session objects:
+    #Session = sessionmaker(bind=engine)
+
+    # Whenever you need to have a conversation with the database, you instantiate a Session:
+    #session = Session()
+    # The above Session is associated with our MySQL-enabled Engine, but it hasn’t opened any
+    # connections yet. When it’s first used, it retrieves a connection from a pool of connections
+    # maintained by the Engine, and holds onto it until we commit all changes and/or close the
+    # session object.
+
+    # Using the 'with Session(engine) as session' syntax we do all the 'session' work above in
+    # a single line!
+   
     with Session(engine) as session:
-        stmt = text("SELECT * FROM stops")
-        query = session.execute(stmt)
-        for stop in query:
+        #stmt = text("SELECT * FROM stops")
+        #query = session.execute(stmt)
+        all_stops = session.query(Stop)
+        for stop in all_stops:
             currentStopCoordinates = (stop.stop_lat, stop.stop_lon)
-
+            print(currentStopCoordinates)
             # Calculate distance to city center using haversine (in km) and then
             # update the value stored on stop...
             stop.distanceToCc = haversine(dublinCc, currentStopCoordinates)
 
-            stop.update()
+            # stop.update()
 
 def main():
     """

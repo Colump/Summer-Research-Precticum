@@ -7,7 +7,7 @@ from sqlalchemy.dialects.mysql import TINYINT
 # it there...
 db = SQLAlchemy()
 
-class stop(db.Model):
+class Stop(db.Model):
     __tablename__ = 'stops'
     # Note how we never define an __init__ method on the stops class? That’s
     # because SQLAlchemy adds an implicit constructor to all model classes which
@@ -23,7 +23,7 @@ class stop(db.Model):
 
     # Notes on SQLAlchemy relationship definitions here:
     # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html
-    stopTimes = db.relationship("stop_time")
+    fred = db.relationship("StopTime")
 
     def to_json(self):
         json_stop = {
@@ -37,15 +37,14 @@ class stop(db.Model):
         return json_stop
 
     def __repr__(self):
-        return '<stop %r>' % self.stop_name
+        return '<Stop %r>' % self.stop_name
 
-class stop_time(db.Model):
+class StopTime(db.Model):
     __tablename__ = 'stop_times'
     trip_id = db.Column(db.String(32), primary_key=True, nullable=False)
     arrival_time = db.Column(db.DateTime, primary_key=True, nullable=False)
     departure_time = db.Column(db.DateTime, primary_key=True, nullable=False)
-    # stop_id = db.Column(db.String(12), db.ForeignKey('stop.stop_id'), primary_key=True, nullable=False)
-    stop_id = db.Column(db.String(12), primary_key=True, nullable=False)
+    stop_id = db.Column(db.String(12), db.ForeignKey('Stop.stop_id'), primary_key=True, nullable=False)
     stop_sequence = db.Column(db.SmallInteger, primary_key=True, nullable=False)
     stop_headsign = db.Column(db.String(64), nullable=False)
     pickup_type = db.Column(db.SmallInteger, nullable=False)
@@ -53,7 +52,7 @@ class stop_time(db.Model):
     shape_dist_travelled = db.Column(db.Float, nullable=False)
 
     def __repr__(self):
-        return '<stop_time %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
+        return '<StopTime %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
 
 # class weatherHistory(db.Model):
 #     __tablename__ = 'weatherHistory'
