@@ -2,33 +2,20 @@
 import functools
 from datetime import date, datetime, timedelta
 from sqlite3 import Date
+# jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
+# in a Response object with the application/json mimetype.
 from flask import Flask, g, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import json
 from jinja2 import Template
-#from models import db, Station, StationState, StationStateResampled, weatherHistory
+from models import Stop
 # Imports for Model/Pickle Libs
-import pickle
-import pandas as pd
+#import pickle
+#import pandas as pd
 import os, sys
 
 import requests
-
-def loadCredentials():
-    """Load the credentials required for accessing the Weather API, Google Maps, etc.
-
-    Returns a JSON object with the required credentials.
-    Implemented in a method as Credential storage will be subject to change.
-    """
-    # Our credentials are just stored in a JSON file (for now)
-    # This file is not saved to GitHub and is placed on each EC2 instance
-    # by a team member.
-    # Load the JSON file
-    file = open(os.path.join(jtParentDir, 'journeytime.json'), 'r')
-    credentials = json.load(file)
-    file.close  # Can close the file now we have the data loaded...
-    return credentials
 
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
@@ -37,15 +24,11 @@ def loadCredentials():
 # module is located in using os.path.dirname(__file__). A full path name can then
 # be constructed by using os.path.join()...
 # Application Startup...
-jtParentDir = os.path.dirname(os.path.dirname(__file__))
+jtFlaskModParentDir = os.path.dirname(os.path.dirname(__file__))
 print("===================================================================")
 print("jtFlaskApp: Application Start-up.")
 print("            Parent Dir. is ->")
-print("            " + str(jtParentDir) + "\n")
-
-
-# Load our private credentials from a JSON file.  Nothing runs without these...
-credentials = loadCredentials()
+print("            " + str(jtFlaskModParentDir) + "\n")
 
 # Create our flask app.
 # Static files are server from the 'static' directory
@@ -68,7 +51,7 @@ jtFlaskApp = Flask(__name__, static_url_path='')
 # This first line loads config from a Python object:
 #jtFlaskApp.config.from_object('config')
 # This next one loads up our good old json object!!!
-jtFlaskApp.config.from_file(os.path.join(jtParentDir, 'journeytime.json'), json.load)
+jtFlaskApp.config.from_file(os.path.join(jtFlaskModParentDir, 'journeytime.json'), json.load)
 # Following line disables some older stuff we don't use that is deprecated (and
 # suppresses a warning about using it). Please just leave it hard-coded here.
 jtFlaskApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -77,14 +60,14 @@ jtFlaskApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 #     https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#installation
 # ... we used the "flask_sqlachemy" extension for Flask that adds support for
 # SQLAlchemy to our application. It simplifies using SQLAlchemy with Flask by
-#  providing useful defaults and extra helpers that make it easier to accomplish
+# providing useful defaults and extra helpers that make it easier to accomplish
 # common tasks.
 #
 # Road to Enlightenment:
 # Some of the things you need to know for Flask-SQLAlchemy compared to plain SQLAlchemy are:
 # SQLAlchemy gives you access to the following things:
 #   -> all the functions and classes from sqlalchemy and sqlalchemy.orm
-#   -> a preconfigured scoped session called session
+#   -> *** a preconfigured scoped session called session ***
 #   -> the metadata
 #   -> the engine
 #   -> a SQLAlchemy.create_all() and SQLAlchemy.drop_all() methods to create and drop tables according to the models.
@@ -98,7 +81,8 @@ jtFlaskApp.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
             + "@" \
             + jtFlaskApp.config['DB_SRVR'] + ":" + jtFlaskApp.config['DB_PORT']\
             + "/" + jtFlaskApp.config['DB_NAME'] + "?charset=utf8mb4"
-#db.init_app(jtFlaskApp)
+
+db = SQLAlchemy(jtFlaskApp)
 
 # @app.route('/user/<id>')
 # def get_user(id):
@@ -157,6 +141,39 @@ def root():
     ########################################################################
     #      ^^^^^ SqlAlchemy ORM DB Access reference notes ABOVE ^^^^^
     ########################################################################
+
+##########################################################################################
+##########################################################################################
+
+@jtFlaskApp.route("/stops", defaults={'stop_id': None})
+@jtFlaskApp.route("/stops/<stop_id>")
+def get_stops(stop_id):
+
+    # .filter() and .filter_by:
+    # Both are used differently;
+    # .filters can write > < and other conditions like where conditions for sql,
+    # but when referring to column names, you need to use class names and attribute
+    # names.
+    # .filter_by can pass conditions using python’s normal parameter passing method,
+    # and no additional class names need to be specified when specifying column names.
+    # The parameter name corresponds to the attribute name in the name class, but does
+    # not seem to be able to use conditions such as > < etc..
+    # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
+
+    stopQuery = db.session.query(Stop)
+    if stop_id != None:
+        stopQuery = stopQuery.filter(Stop.stop_id == stop_id)
+    stopQuery = stopQuery.order_by(text('stop_id asc'))
+
+    # Use list comprehension (on the query results)... to build a new list.
+    if stop_id != None:
+        # Single stop selected, include stop_times detail
+        json_list=[i.serialize() for i in stopQuery.all()]
+    else:
+        # All stops selected, omit stop_times detail
+        json_list=[i.serialize_norels() for i in stopQuery.all()]
+
+    return jsonify(json_list)
 
 ##########################################################################################
 ##########################################################################################
