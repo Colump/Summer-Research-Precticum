@@ -1,28 +1,102 @@
 <template>
   <div id="app">
-    <div>
-      <el-button type="primary" @click.native="hello">button</el-button>
-    </div>
+    <!-- <MainNav></MainNav>
+    <Header></Header> -->
+    <StopsData></StopsData>
+    <el-container>
+      <el-aside width="250px">
+        <div class="iconOfWeb">111</div>
+        <UserForms></UserForms>
+        <ShowRouteButtom></ShowRouteButtom>
+        <!-- <StopsData></StopsData> -->
+        
+      </el-aside>
+      <el-container>
+        <el-header>
+          <MainNav></MainNav>
+        </el-header>
+        <el-main>
+          <MyGoogleMap></MyGoogleMap>
+        </el-main>
+        <el-footer>Footer</el-footer>
+      </el-container>
+    </el-container>
+   
   </div>
 </template>
 
 <script>
+// import Header from './components/header'
+// import Header from './components/header.vue'
+import MainNav from './components/MainNav'
+import AsideShowRoute from './components/AsideShowRoute'
+import ShowRouteButtom from './components/ShowRouteButtom.vue'
+import MyGoogleMap from './components/MyGoogleMap.vue'
 
+// 测试axios获取数据组件：test axios compoent
+import StopsData from './components/StopsData.vue'
+// 测试地址匹配框
+import UserForms from './components/UserForms.vue'
 
 export default {
   name: 'App',
   components: {
-    
+    MainNav,
+    AsideShowRoute,
+    ShowRouteButtom,
+    MyGoogleMap,
+    UserForms,
+    StopsData
   },
   methods:{
-    hello(){
-      console.log("hehehe")
-    }
+    
   }
 
 }
 </script>
 
 <style>
-
+.el-header, .el-footer {
+    /* background-color: #B3C0D1; */
+    color: #333;
+    text-align: center;
+    line-height: 60px;
+  }
+  
+  .el-aside {
+    /* background-color: #D3DCE6; */
+    color: #333;
+    text-align: center;
+    line-height: 200px;
+  }
+  
+  .el-main {
+    /* background-color: #E9EEF3; */
+    color: #333;
+    text-align: center;
+    line-height: 20px;
+  }
+  
+  body > .el-container {
+    margin-bottom: 40px;
+  }
+  
+  .el-container:nth-child(5) .el-aside,
+  .el-container:nth-child(6) .el-aside {
+    line-height: 260px;
+  }
+  
+  .el-container:nth-child(7) .el-aside {
+    line-height: 320px;
+  }
+  
+  element.style {
+    width: 200px;
+    padding-top: 50px;
+  }
+  .iconOfWeb{
+    /* width: 100px; */
+    height: 100px;
+    line-height: 100px;
+  }
 </style>
