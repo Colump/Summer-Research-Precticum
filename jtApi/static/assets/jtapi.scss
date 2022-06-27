@@ -1,0 +1,56 @@
+// static/assets/jtapi.scss
+// Source: https://getbootstrap.com/docs/5.1/customize/sass/#importing
+
+// 1. Include functions first (so you can manipulate colors, SVGs, calc, etc)
+@import "node_modules/bootstrap/scss/_functions";
+
+// 2. Include any default variable overrides here
+// *** MUST be defined above the import of the bootstrap scss files.  The bootstrap
+//     files use the 'default' scss feature, which only defines values if they have
+//     not already been defined!
+// $primary: ;
+// $body-bg: black;    // body background is black
+// $body-color: white; // body text is white
+
+// 3. Include remainder of required Bootstrap stylesheets
+@import "node_modules/bootstrap/scss/variables";
+@import "node_modules/bootstrap/scss/mixins";
+@import "node_modules/bootstrap/scss/root";
+
+// 3.5 New map of custom theme colours
+$jtApi-theme-colours: (
+    "altlight": #efefef,
+    "altdark" : #172f50
+);
+
+// Merge custom theme colours map into original theme map...
+$theme-colors: map-merge($jtApi-theme-colours, $theme-colors);
+// Additional steps required for bootstrap 5.1 - this appears to be a change "in progress"...
+$theme-colors-rgb: map-loop($theme-colors, to-rgb, "$value");
+$utilities-colors: map-merge(
+  $theme-colors-rgb,
+  (
+    "black": to-rgb($black),
+    "white": to-rgb($white),
+    "body":  to-rgb($body-color)
+  )
+);
+$utilities-text-colors: map-loop($utilities-colors, rgba-css-var, "$key", "text");
+$utilities-bg-colors: map-loop($utilities-colors, rgba-css-var, "$key", "bg");
+
+// // 4. Include any optional Bootstrap CSS as needed
+// @import "node_modules/bootstrap/scss/utilities";
+// @import "node_modules/bootstrap/scss/reboot";
+// @import "node_modules/bootstrap/scss/type";
+// @import "node_modules/bootstrap/scss/images";
+// @import "node_modules/bootstrap/scss/containers";
+// @import "node_modules/bootstrap/scss/grid";
+// @import "node_modules/bootstrap/scss/helpers";
+
+// // 5. Optionally include utilities API last to generate classes based on the Sass map in `_utilities.scss`
+// @import "node_modules/bootstrap/scss/utilities/api";
+
+// 6. Add additional custom code here
+
+// Include all of Bootstrap
+@import "node_modules/bootstrap/scss/bootstrap";

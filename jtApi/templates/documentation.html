@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+    <!-- We only display the sidebar on XL screens (d-none by default...)-->
+    <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 100vh;">
+        <div class="sticky-xl-top" style="top:175px">
+            <!-- In-page Navigation -->
+            <nav class="nav navbar-light flex-column">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="#top">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="feather feather-home">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Home
+                    </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Link1</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#bottom">Link2</a>
+                    </li>
+                    <!-- <li class="nav-item">
+                        <a class="nav-link disabled" href="#">Disabled</a>
+                    </li> -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+      
+    <div class="col p-5">
+        <!-- Page content -->
+        <div id="top" class="section-anchor"></div>
+    
+        <h1>Journeyti.me API Reference</h1>
+        <p>
+            The journeyti.me prediction engine is free and available for anyone to use.  Predicting journey times on public transport
+            is a complex task.  An app consuming the output of this API will need to ask well-formed questions, using appropriate data
+            to support the provision of accurate journey times.
+        </p>
+        <p>
+            This API provides both static transit-system related information AND access to the prediction engine.  The static information
+            is composed of a number of json data sets that can be queried individually.  Each set describes a particular aspect of transit
+            information (stops, routes, etc.) required for accessing the prediction engine. For more information about each dataset,
+            consult the reference material below.
+        </p>
+        <h2>Using the API</h2>
+        <p>
+            Do we give links to each individual json extract here? Or below ? Or both
+            How much instruction is required for a JSON interface? Document...
+        </p>
+        <h2>Specifications</h2>
+        <h3>Stops</h3>
+        <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+        <table class="table table-hover">
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>Stop_Id</td>
+                <td>varchar(12)</td>
+                <td>n/a</td>
+                <td>A unique identifier for this stop, as defined by the respective transit authority</td>
+              </tr>
+              <tr>
+                <td>Stop_Name</td>
+                <td>varchar(64)</td>
+                <td>n/a</td>
+                <td>The stop name, as defined by the respective transit authority</td>
+              </tr>
+              <tr>
+                <td>Stop_Lat</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The latitude of this stop</td>
+              </tr>
+              <tr>
+                <td>Stop_Lon</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The longitude of this stop</td>
+              </tr>
+              <tr>
+                <td>Dist_From_CC</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The distance of this stop from the Dublin City Center, where the City Center is defined as the center of O'Connell
+                    street bridge (53.347269, -6.259107) and the distance is calculated using the haversine formula.
+                </td>
+              </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

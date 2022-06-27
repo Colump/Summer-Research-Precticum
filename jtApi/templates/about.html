@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+    <!-- We only display the sidebar on XL screens (d-none by default...)-->
+    <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 100vh;">
+        <div class="sticky-xl-top" style="top:175px">
+            <!-- In-page Navigation -->
+            <nav class="nav navbar-light flex-column">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="#about">Top</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Link1</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#bottom">Link2</a>
+                    </li>
+                    <!-- <li class="nav-item">
+                        <a class="nav-link disabled" href="#">Disabled</a>
+                    </li> -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <div class="col p-5">
+        <!-- Page content -->
+        <div id="about"></div>
+        <h1>About Us</h1>
+        <p>Journeyti.me is the result of a collaborative push by a group of Master Computer Science
+            students in UCD
+        </p>
+    </div>
+{% endblock %}

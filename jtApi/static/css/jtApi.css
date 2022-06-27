@@ -1,0 +1,27 @@
+/* The jtApi uses two .css file sets:
+     -> jtApi.min.css is the custom themed version of bootstrap we use for layouts
+     -> jtApi.css (this file) is a place to store "any other required styles"
+*/
+
+/* Small custom class to push body content down to allow for fixed-top banner */
+body {
+     padding-top: 70px;
+}
+
+/* Because we have a fixed navbar, it occupies a chunk of space at the top of the
+   page.  When you click an in-page link, by default browsers posistion the the
+   requested link at the top of the page... behind our fixed nav bar! Which is...
+   not ideal.  We include a small utility class to shift content down a chunk when
+   section (in-page) #links are called.
+   Technique copied from:
+   -> https://github.com/twbs/bootstrap/issues/4153
+*/
+.section-anchor {
+     position: relative;
+     top: -175px;
+}
+
+/* Following (class selector) style is for development purposes only.  I can
+quickly add a dashed border around any html elements if I get lost while
+building a page... */
+.debug{border-style:dotted;}

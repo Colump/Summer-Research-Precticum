@@ -98,12 +98,24 @@ db = SQLAlchemy(jtFlaskApp)
 @jtFlaskApp.route('/')
 @jtFlaskApp.route('/index.html')
 def root():
-    print(jtFlaskApp.config)
+#    print(jtFlaskApp.config)
 
     # This route simply serves 'static/index.html'
-    return jtFlaskApp.send_static_file('index.html')
+    #return jtFlaskApp.send_static_file('index.html')
+    # This route renders a template from the template folder
+    return render_template('index.html')
     # This route renders a template from the template folder
     #return render_template('index.html', MAPS_API_KEY=jtFlaskApp.config["MAPS_API_KEY"])
+
+@jtFlaskApp.route('/documentation.html')
+def documentation():
+    # This route renders a template from the template folder
+    return render_template('documentation.html')
+
+@jtFlaskApp.route('/about.html')
+def about():
+    # This route renders a template from the template folder
+    return render_template('about.html')
 
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
@@ -193,4 +205,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

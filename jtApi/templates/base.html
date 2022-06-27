@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<!-- The general 'look and feel of this page is an homage to the "proper" GTFS
+    API located at:
+      https://gtfs.org/resources/data/
+    The styles etc. used are poor imitations... but will suffice for this project
+    and are implemented using Bootstrap 5.
+-->
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <!--
+        width=device-width - sets the width of the page to follow the screen-width of the device (which will vary depending on the device).
+        initial-scale=1 - sets the initial zoom level when the page is first loaded by the browser. -->
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="shortcut icon" href="{{ url_for('static', filename='img/jticon.ico') }}">
+
+        <title>Journeyti.me GTFS Based Prediction Engine - Public API</title>
+      
+        <!--
+          Replace default bootstrap styles with local ones (custom theme...)
+          <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
+        -->
+        <link rel="stylesheet" href="css/jtApi.min.css">
+        <!-- Bootstrap Font Icon CSS -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
+        
+        <!-- Style overrides (minimal!) -->
+        <link rel="stylesheet" href="css/jtApi.css">
+
+        <!-- Bootstrap 5 takes the same mobile-first design philosophy as our Design Guide -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+
+<body>
+    <!--
+    Bootstrap 5 requires a containing element to wrap site contents.
+      -> The .container class provides a responsive, fixed width (width changes in fixed increments) container
+      -> The .container-fluid class provides a full width container, spanning the entire width of the viewport
+    
+    Containers have left and right padding, with no top or bottom padding. Therefore, we often use spacing utilities,
+    such as extra padding and margins to make them look even better. For example, .pt-5 means "add a large top padding"
+    Other utilities, such as borders and colors, are also often used together with containers
+    (@see https://getbootstrap.com/docs/4.0/utilities/spacing/)
+    You can also use the .container-sm|md|lg|xl|xxl classes to determine when the container should be responsive.
+
+    The Bootstrap 5 grid system has six classes:
+      -> .col- (lt 576px)|.col-sm- (>= 576px)|.col-md- (>= 768px)|.col-lg- (>=992px)|.col-xl- (>= 1200px)|.col-xxl- (>= 1400px)
+
+    Looking for icons? BS5 has loads: https://icons.getbootstrap.com/
+    -->
+
+    <header class="p-2 bg-altdark text-white">
+        <!-- We want a 100% wide fixed banner,  to fill the screen (cotainer-fluid)-->
+        <div class="container-fluid fixed-top bg-altdark text-white">
+            <div class="container-sm text-left">
+                <!-- <h3><i class="bi bi-stars"></i> Journeyti.me API</h3> -->
+                <h3><img src="{{ url_for('static', filename='img/jticon.png') }}" alt="Journeyti.me Logo" style="height: 1em;"> Journeyti.me API</h3>
+                <p>Want to predict Journey Time for Dublin Bus trips? Use our free, public API!</p> 
+            </div>
+        </div>
+        <!-- Navbar -->
+        <div class="container">
+            <nav class="navbar navbar-expand-sm navbar-dark bg-altdark text-left">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="index.html">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="documentation.html">Documentation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="about.html">About</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <!-- Navbar -->
+    </header>
+    <main>
+        <!-- The main layout is the full width (container-fluid) of the page with:
+          -> a 1-twelfth-width page navigation menu on the left
+          -> the remaining 11-twelfths dedicated to content
+        -->
+        <div class="container-fluid">
+            <title>Journey Ti.me API</title>
+            {% block main %}
+            {% endblock %}
+        </div>
+    </main>
+ 
+    </body>
+    </html>

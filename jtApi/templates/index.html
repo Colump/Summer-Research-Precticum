@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+    <!-- We only display the sidebar on XL screens (d-none by default...)-->
+    <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 100vh;">
+        <div class="sticky-xl-top" style="top:175px">
+            <!-- In-page Navigation -->
+            <nav class="nav navbar-light flex-column">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" aria-current="page" href="#top">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                            class="feather feather-home">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        Home
+                    </a>
+                    </li>
+                    <!-- <li class="nav-item">
+                        <a class="nav-link disabled" href="#">Disabled</a>
+                    </li> -->
+                </ul>
+            </nav>
+        </div>
+    </div>
+      
+    <div class="col p-5">
+        <!-- Page content -->
+        <div id="top" class="section-anchor"></div>
+
+        <h1>Journeyti.me - A Free Public Dublin Bus Journeytime Prediction API</h1>
+    
+        <p>
+            The General Transit Feed Specification (GTFS) is a data specification that allows public transit agencies to publish
+            their transit data in a format that can be consumed by a wide variety of software applications. See some of the incredible
+            work done bringing this specification to life at <a href="https://gtfs.org/">gtfs.org</a>.  Today, the GTFS data format
+            is used by thousands of public transport providers.
+        </p>
+        <p>
+            If you search for Journey Time Prediction applications for public transport systems in any large metro area and you
+            are sure to find several solutions, many using advanced machine learning techniques tailored for best prediction accuracy
+            in that area. At Journeyti.me, we wondered what might be possible if all the work done producing these disparate applications
+            and their prediction models could be brought together, unified through something as simple as implementing a single API?
+        </p>
+        <p>
+            This idea gave birth to the Journeyti.me project.  An early attempt at providing a documented, free, public API and service
+            to provide Journey Time predictions.  Initially, this API will only support journey predictions on Dublin Bus, in Dublin,
+            Ireland.  But the goal of the project is to provide a platform for standardised documentation and service provision. We
+            hope to grow the specification to support more and more prediction models, providing a framework that would allow the
+            excellent work done by localised teams to be leveraged using a standard implemenation scheme.
+        </p>
+    </div>
+{% endblock %}
