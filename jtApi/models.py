@@ -1,5 +1,7 @@
 #from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, ForeignKey, Integer, Table
+from re import T
+from tokenize import Double
+from sqlalchemy import Column, ForeignKey, Integer, Table, null
 from sqlalchemy.schema import Index
 from sqlalchemy import Column, ForeignKey, Table
 from sqlalchemy import String, DateTime, Float, Integer, SmallInteger
@@ -93,6 +95,70 @@ class StopTime(Base):
 
     def __repr__(self):
         return '<StopTime %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
+
+class Agency(Base):
+    __tablename__ = 'agency'
+    agency_id = Column(String(3), primary_key=True, nullable=False)
+    agency_name = Column(String(32), nullable=False)
+    agency_url = Column(String(45), nullable=False)
+    agency_timezone = Column(String(32), nullable=False)
+    agency_lang = Column(String(32), nullable=False)
+    agency_phone = Column(String(32), nullable=False) 
+    agencycol = Column(String(45), nullable=True)
+
+class Calendar(Base):
+    __tablename__ = 'calendar'
+    service_id = Column(String(10), primary_key=True, nullable=False)
+    monday = Column(Integer, nullable=False)
+    tuesday = Column(Integer,nullable=False)
+    wednesday = Column(Integer,nullable=False)
+    thursday = Column(Integer,nullable=False)
+    friday = Column(Integer,nullable=False)
+    saturday = Column(Integer,nullable=False)
+    sunday = Column(Integer,nullable=False)
+    start_date = Column(DateTime, primary_key=True, nullable=False) 
+    end_date = Column(DateTime, primary_key=True, nullable=False)
+
+class CalendarDates(Base):
+    __tablename__ = 'calendar_dates'
+    service_id = Column(Integer, primary_key=True, nullable=False)
+    date = Column(DateTime, primary_key=True, nullable=False)
+    exception_type = Column(Integer, nullable=True)
+
+class Routes(Base):
+    __tablename__ = 'routes'
+    route_id = Column(String(32), ForeignKey("trips.route_id"), primary_key=True, nullable=False)
+    agency_id = Column(String(3),ForeignKey("agency.agency_id"), nullable=False)
+    route_short_name = Column(Integer, nullable=False)
+    route_long_name = Column(String(72), nullable=False)
+    route_type = Column(Integer, nullable=False)
+class Shapes(Base):
+    __tablename__ = 'shapes'
+    shape_id = Column(String(32), primary_key=True, nullable=False)
+    shape_pt_lat = Column(Integer, nullable=False)
+    shape_pt_lon = Column(Integer, nullable=False)
+    shape_pt_sequence = Column(Integer, nullable=False)
+    shape_dist_traveled = Column(Double, primary_key=True, nullable=False)
+
+class Transfers(Base):
+   __tablename__ = 'transfers'
+   from_stop_id = Column(String(12), primary_key=True, nullable=False)
+   to_stop_id = Column(String(12), primary_key=True, nullable=False)
+   transfer_type = Column(SmallInteger, nullable=False)
+   min_transfer_time = Column(Integer, nullable=False)
+
+class Trips(Base):
+    __tablename__ = 'trips'
+    route_id = Column(String(32), primary_key=True, nullable=False)
+    service_id = Column(String(10), nullable=False)
+    trip_id = Column(String(32), primary_key=True, nullable=False)
+    shape_id = Column(String(32), primary_key=True, nullable=False)
+    trip_headsign = Column(String(73), nullable=False)
+    direction_id = Column(SmallInteger, nullable=False)
+
+
+
+
 
 # class weatherHistory(db.Model):
 #     __tablename__ = 'weatherHistory'
