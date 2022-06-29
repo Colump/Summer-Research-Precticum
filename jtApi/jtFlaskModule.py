@@ -12,6 +12,8 @@ from sqlalchemy import DDL, text, func
 import json
 from jinja2 import Template
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+from jtApi.models import Routes
+from models import Stop
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
@@ -382,6 +384,23 @@ def get_trips(route_id):
 
 # endpoint for Transfers
 #@jtFlaskApp.route("")
+
+# attempting to write flask endpoint for routes table, simialr to stops above
+
+@jtFlaskApp.route("/routes", defaults={'route_id': None})
+@jtFlaskApp.route("/routes/<route_id>")
+def get_routes(route_id):
+    routeQuery = db.session.query(Routes)
+    if route_id != None:
+        routeQuery = routeQuery.filter(Stop.route_id == route_id)
+    routeQuery = routeQuery.order_by(text('route_id asc'))
+# haven't done the serialization for routes in models.py so this won't work yet
+    if route_id != None:
+        json_list=[i.serialize() for i in routeQuery.all()]
+    else:
+        json_list=[i.serializenorels() for i in routeQuery.all()]
+    return jsonify(json_list)
+
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
