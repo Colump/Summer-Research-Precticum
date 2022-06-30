@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from email.policy import default
 import functools
 from datetime import date, datetime, timedelta
 from sqlite3 import Date
@@ -9,6 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import json
 from jinja2 import Template
+from jtApi.models import Routes, StopTime
 from models import Stop
 # Imports for Model/Pickle Libs
 #import pickle
@@ -189,6 +191,40 @@ def get_stops(stop_id):
 
 ##########################################################################################
 ##########################################################################################
+# attempting to write flask endpoint for routes table, similar to get_stops above
+
+@jtFlaskApp.route("/routes", defaults={'route_id': None})
+@jtFlaskApp.route("/routes/<route_id>")
+def get_routes(route_id):
+    routeQuery = db.session.query(Routes)
+    if route_id != None:
+        routeQuery = routeQuery.filter(Stop.route_id == route_id)
+    routeQuery = routeQuery.order_by(text('route_id asc'))
+
+# haven't done the serialization for routes in models.py so this won't work yet
+# just copying the structure of the code above for get_stops function
+    if route_id != None:
+        json_list=[i.serialize() for i in routeQuery.all()]
+    else:
+        json_list=[i.serializenorels() for i in routeQuery.all()]
+    return jsonify(json_list)
+
+# endpoint for StopTime model, should work because TK has written serialize function
+# within StopTime
+@jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
+@jtFlaskApp.route("/stoptimes/<trip_id>")
+def get_stop_times(trip_id):
+    stoptimeQuery = db.session.query(StopTime)
+    if trip_id != None:
+        stoptimeQuery = stoptimeQuery.filter(StopTime.trip_id == trip_id)
+    stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
+
+    # Use list comprehension (on the query results)... to build a new list.
+    if trip_id != None:
+        # serialize is the only function within StopTime so just return new serialized list
+        json_list=[i.serialize() for i in stoptimeQuery.all()]
+    return jsonify(json_list)
+    
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
