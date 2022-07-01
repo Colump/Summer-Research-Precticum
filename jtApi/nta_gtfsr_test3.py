@@ -19,20 +19,22 @@ def gtfsr():
 
     feed = gtfs_realtime_pb2.FeedMessage()
     abort_counter = 0
+    max_abort_counter = 1000000
     with requests.get(nta_gtfsr_api_url, headers=nta_gtfsr_reqd_hdrs) as response:
         feed.ParseFromString(response.content)
         for entity in feed.entity:
             abort_counter += 1
             if entity.HasField('trip_update'):
-                print("TRIP UPDATE!!!!!!!!!!!!!!!!!!")
-                print(entity.trip_update)
+                #print("TRIP UPDATE!!!!!!!!!!!!!!!!!!")
+                #print(entity.trip_update)
+                pass
             else:
                 print("... SOMETHING ELSE.... !!!!!!!!!!!!!!!!!!")
                 print(entity)
 
-            if (abort_counter == 200):
+            if (abort_counter >= max_abort_counter):
                 print("=======================================================")
-                print("200 entities read - that's enough for now!! Aborting...")
+                print(str(max_abort_counter) + " entities read - that's enough for now!! Aborting...")
                 break
 
     return
