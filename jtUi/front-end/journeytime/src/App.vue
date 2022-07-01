@@ -2,10 +2,10 @@
   <div id="app">
     <!-- <MainNav></MainNav>
     <Header></Header> -->
-    <StopsData></StopsData>
+    <!-- <StopsData></StopsData> -->
     <el-container>
       <el-aside width="250px">
-        <div class="iconOfWeb">111</div>
+        <div class="iconOfWeb">icon here</div>
         <UserForms></UserForms>
         <ShowRouteButtom></ShowRouteButtom>
         <!-- <StopsData></StopsData> -->
@@ -16,7 +16,9 @@
           <MainNav></MainNav>
         </el-header>
         <el-main>
-          <MyGoogleMap></MyGoogleMap>
+          <!-- <MyGoogleMap></MyGoogleMap> -->
+          <!-- 在这里展示我们的四个页面 -->
+          <router-view></router-view>
         </el-main>
         <el-footer>Footer</el-footer>
       </el-container>
