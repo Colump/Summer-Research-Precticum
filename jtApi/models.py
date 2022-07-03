@@ -106,6 +106,22 @@ class Agency(Base):
     agency_phone = Column(String(32), nullable=False) 
     agencycol = Column(String(45), nullable=True)
 
+    def serialize(self):
+       """Return object data in easily serializeable format"""
+       return{
+           'agency_id': self.agency_id,
+           'agency_name': self.agency_name,
+           'agency_url': self.agency_url,
+           'agency_timezone': self.agency_timezone,
+           'agency_lang': self.agency_lang,
+           'agency_phone': self.agency_phone,
+           'agencycol': self.agencycol,
+       }
+
+    def __repr__(self):
+        return '<Agency %r>' % (self.agency_id, self.agency_name)
+
+
 class Calendar(Base):
     __tablename__ = 'calendar'
     service_id = Column(String(10), primary_key=True, nullable=False)
@@ -119,11 +135,39 @@ class Calendar(Base):
     start_date = Column(DateTime, primary_key=True, nullable=False) 
     end_date = Column(DateTime, primary_key=True, nullable=False)
 
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return{
+            'service_id': self.service_id,
+            'monday': self.monday,
+            'tuesday': self.tuesday,
+            'wednesday': self.wednesday,
+            'thursday': self.thursday,
+            'friday': self.friday,
+            'saturday': self.saturday,
+            'sunday': self.sunday,
+            'start_date': self.start_date,
+            'end_date': self.end_date,
+        }
+    def __repr__(self):
+        return '<Calendar %r>' % (self.service_id, self.start_date, self.end_date)
+
 class CalendarDates(Base):
     __tablename__ = 'calendar_dates'
     service_id = Column(Integer, primary_key=True, nullable=False)
     date = Column(DateTime, primary_key=True, nullable=False)
     exception_type = Column(Integer, nullable=True)
+
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return{
+            'service_id': self.service_id,
+            'date': str(self.date),
+            'exception_type': self.exception_type,
+        }
+    def __repr__(self):
+        return '<CalendarDates %r>' % (self.service_id, self.date)
+
 
 class Routes(Base):
     __tablename__ = 'routes'
@@ -132,6 +176,20 @@ class Routes(Base):
     route_short_name = Column(Integer, nullable=False)
     route_long_name = Column(String(72), nullable=False)
     route_type = Column(Integer, nullable=False)
+
+    def serialize(self):
+        """Return object data in easily serializeable format"""
+        return{
+            'route_id': self.route_id,
+            'agency_id': self.agency_id,
+            'route_short_name': self.route_short_name,
+            'route_long_name': self.route_long_name,
+            'route_type': self.route_type,
+        }
+
+    def __repr__(self):
+        return '<Routes %r>' % (self.route_id, self.route_short_name, self.route_long_name, self.route_type)    
+
 class Shapes(Base):
     __tablename__ = 'shapes'
     shape_id = Column(String(32), primary_key=True, nullable=False)
@@ -140,13 +198,20 @@ class Shapes(Base):
     shape_pt_sequence = Column(Integer, nullable=False)
     shape_dist_traveled = Column(Double, primary_key=True, nullable=False)
 
-class Transfers(Base):
-   __tablename__ = 'transfers'
-   from_stop_id = Column(String(12), primary_key=True, nullable=False)
-   to_stop_id = Column(String(12), primary_key=True, nullable=False)
-   transfer_type = Column(SmallInteger, nullable=False)
-   min_transfer_time = Column(Integer, nullable=False)
+    def serialize(self):
+        return{
+            'shape_id': self.shape_id,
+            'shape_pt_lat': self.shape_pt_lat,
+            'shape_pt_lon': self.shape_pt_lon,
+            'shape_pt_sequence': self.shape_pt_sequence,
+            'shape_dist_traveled': self.shape_dist_traveled,
+        }
 
+    def __repr__(self):
+        return '<Routes %r>' % (self.shape_id, self.shape_pt_lat, self.shape_pt_lon)    
+
+
+            
 class Trips(Base):
     __tablename__ = 'trips'
     route_id = Column(String(32), primary_key=True, nullable=False)
@@ -156,10 +221,37 @@ class Trips(Base):
     trip_headsign = Column(String(73), nullable=False)
     direction_id = Column(SmallInteger, nullable=False)
 
+    def serialize(self):
+        return{
+            'route_id': self.route_id,
+            'service_id': self.service_id,
+            'trip_id': self.trip_id,
+            'shape_id': self.shape_id,
+            'trip_headsign': self.trip_headsign,
+            'direction_id': self.direction_id,
+        }
+
+    def __repr__(self):
+        return '<Trips %r>' % (self.route_id, self.service_id, self.trip_id, self.shape_id, self.trip_headsign)
 
 
+class Transfers(Base):
+    __tablename__ = 'transfers'
+    from_stop_id = Column(String(12), primary_key=True, nullable=False)
+    to_stop_id = Column(String(12), primary_key=True, nullable=False)
+    transfer_type = Column(SmallInteger, nullable=False)
+    min_transfer_time = Column(Integer, nullable=False)
 
-
+    def serialize(self):
+       return{
+           'from_stop_id': self.from_stop_id,
+           'to_stop_id': self.to_stop_id,
+           'transfer_type': self.transfer_type,
+           'min_transfer_time': self.min_transfer_time
+       }
+    def __repr__(self):
+        return '<Transfers %r>' % (self.from_stop_id, self.to_stop_id, self.transfer_type, self.min_transfer_time)
+        
 # class weatherHistory(db.Model):
 #     __tablename__ = 'weatherHistory'
 #     weatherTime = db.Column(db.DateTime, primary_key=True)
