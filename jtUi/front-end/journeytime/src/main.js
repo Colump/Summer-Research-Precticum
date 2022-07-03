@@ -7,6 +7,9 @@ import * as VueGoogleMaps from 'vue2-google-maps'
 // import Router
 import VueRouter from 'vue-router'
 import myrouter from './router'
+import axios from 'axios'
+import VueAxios from 'vue-axios'
+Vue.use(VueAxios, axios)
 
 Vue.use(ElementUI);
 
@@ -24,5 +27,8 @@ Vue.config.productionTip = false
 new Vue({
     render: h => h(App),
     // Registered routing:注册路由
-    router: myrouter
+    router: myrouter,
+    beforeCreate() {
+        Vue.prototype.$bus = this
+    }
 }).$mount('#app')
