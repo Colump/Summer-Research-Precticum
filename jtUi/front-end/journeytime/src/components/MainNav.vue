@@ -5,6 +5,7 @@
           <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect">
             <el-menu-item index="1" >Map</el-menu-item>
             <el-menu-item index="2" >Register</el-menu-item>
+            <el-menu-item index="5" >LogIn</el-menu-item>
             <el-menu-item index="3" >AboutUs</el-menu-item>
             <el-menu-item index="4" >API provide</el-menu-item>
           </el-menu>
@@ -13,7 +14,7 @@
       <el-col :span="4">
         <div class="grid-content bg-purple">
            <el-button circle @click="SignUp">
-              <el-avatar> user </el-avatar>
+              <el-avatar> {{userName}} </el-avatar>
            </el-button>
         </div>
       </el-col>
@@ -29,8 +30,24 @@ export default {
     data() {
       return {
         activeIndex: '1',
-        activeIndex2: '1'
+        activeIndex2: '1',
+        userName:'user'
       };
+    },
+    mounted(){
+      this.$bus.$on('ToOtherPage',(data)=>{
+        this.activeIndex=data+''
+        // console.log(data)
+      })
+      this.$bus.$on('UserName',(data)=>{
+        if(data==''){
+          this.userName = 'user'
+        }
+        this.userName = data.substr(0, 4)
+        // console.log(data)
+      })
+      
+      
     },
     methods: {
       handleSelect(key, keyPath) {
@@ -51,9 +68,9 @@ export default {
           this.$router.push({
             name:'MyAPI',
           })
-        }else{
+        }else if(key=='5'){
           this.$router.push({
-            name:'MyMap',
+            name:'LogIn',
           })
         }
       },
