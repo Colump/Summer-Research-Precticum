@@ -10,8 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import json
 from jinja2 import Template
-from jtApi.models import Routes, StopTime
-from models import Stop
+from models import Stop, Routes, StopTime
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
@@ -220,9 +219,9 @@ def get_stop_times(trip_id):
     stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
 
     # Use list comprehension (on the query results)... to build a new list.
-    if trip_id != None:
+    #if trip_id != None:
         # serialize is the only function within StopTime so just return new serialized list
-        json_list=[i.serialize() for i in stoptimeQuery.all()]
+    json_list=[i.serialize() for i in stoptimeQuery.all()]
     return jsonify(json_list)
     
 
