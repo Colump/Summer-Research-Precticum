@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import json
 from jinja2 import Template
-from models import Stop, Routes, StopTime
+from models import Stop, Routes, StopTime, Agency, Calendar
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
@@ -202,10 +202,7 @@ def get_routes(route_id):
 
 # haven't done the serialization for routes in models.py so this won't work yet
 # just copying the structure of the code above for get_stops function
-    if route_id != None:
-        json_list=[i.serialize() for i in routeQuery.all()]
-    else:
-        json_list=[i.serializenorels() for i in routeQuery.all()]
+    json_list=[i.serialize() for i in routeQuery.all()]
     return jsonify(json_list)
 
 # endpoint for StopTime model, should work because TK has written serialize function
@@ -219,11 +216,39 @@ def get_stop_times(trip_id):
     stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
 
     # Use list comprehension (on the query results)... to build a new list.
-    #if trip_id != None:
-        # serialize is the only function within StopTime so just return new serialized list
+    # serialize is the only function within Routes so just return new serialized list
     json_list=[i.serialize() for i in stoptimeQuery.all()]
     return jsonify(json_list)
     
+
+# endpoint for Agency model
+@jtFlaskApp.route("/agency", defaults={'agency_name':None})
+@jtFlaskApp.route("/agency/<agency_name>")
+def get_agency(agency_name):
+    agencyQuery = db.session.query(Agency)
+    if agency_name != None:
+        agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
+    agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+
+    # use serialize function to make a new list from the results
+    # just one serialize function so no if statement
+    json_list=[i.serialize() for i in agencyQuery.all()]
+    return jsonify(json_list)
+
+# endpoint for Calendar model
+jtFlaskApp.route("/calendar", defaults={'service_id':None})
+jtFlaskApp.route("/calendar/<service_id")
+def get_calendar(service_id):
+    calendarQuery = db.session.query(Calendar)
+    if service_id != None:
+        calendarQuery = calendarQuery.filter(Calendar.service_id == service_id)
+    calendarQuery = calendarQuery.order_by(text('service_id asc'))
+
+    # use serialize to make a new list from the results
+    # just one serialize functiomn so no if statement
+    json_list=[i.serialize() for i in calendarQuery.all()]
+    return jsonify(json_list)
+
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
