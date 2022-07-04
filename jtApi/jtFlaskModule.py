@@ -10,7 +10,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import json
 from jinja2 import Template
-from models import Stop, Routes, StopTime, Agency, Calendar
+from models import Stop, Routes, StopTime, Agency, Calendar, CalendarDates, Trips
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
@@ -236,8 +236,8 @@ def get_agency(agency_name):
     return jsonify(json_list)
 
 # endpoint for Calendar model
-jtFlaskApp.route("/calendar", defaults={'service_id':None})
-jtFlaskApp.route("/calendar/<service_id")
+@jtFlaskApp.route("/calendar", defaults={'service_id':None})
+@jtFlaskApp.route("/calendar/<service_id>")
 def get_calendar(service_id):
     calendarQuery = db.session.query(Calendar)
     if service_id != None:
@@ -249,6 +249,36 @@ def get_calendar(service_id):
     json_list=[i.serialize() for i in calendarQuery.all()]
     return jsonify(json_list)
 
+# endpoint for CalendarDates
+@jtFlaskApp.route("/calendardates", defaults={'date':None})
+@jtFlaskApp.route("/calendardates/<date>")
+def get_calendar_dates(date):
+    calendardatesQuery = db.session.query(CalendarDates)
+    if date != None:
+        calendardatesQuery = calendardatesQuery.filter(CalendarDates.date == date)
+    calendardatesQuery = calendardatesQuery.order_by(text('date asc'))
+
+    # use serialize to make a new list from the results
+    # just one serialize functiomn so no if statement
+    json_list=[i.serialize() for i in calendardatesQuery.all()]
+    return jsonify(json_list)
+ 
+ # endpoint for Trips
+@jtFlaskApp.route("/trips", defaults={'route_id':None})
+@jtFlaskApp.route("/trips/<route_id>")
+def get_trips(route_id):
+    tripsQuery = db.session.query(Trips)
+    if route_id != None:
+        tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
+    tripsQuery = tripsQuery.order_by(text('route_id asc'))
+
+    # use serialize to make a new list from the results
+    # just one serialize functiomn so no if statement
+    json_list=[i.serialize() for i in tripsQuery.all()]
+    return jsonify(json_list)
+
+# endpoint for Transfers
+#@jtFlaskApp.route("")
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
