@@ -211,7 +211,7 @@ class Trips(Base):
     direction_id = Column(SmallInteger, nullable=False)
 
     def serialize(self):
-        return{
+        return {
             'route_id': self.route_id,
             'service_id': self.service_id,
             'trip_id': self.trip_id,
