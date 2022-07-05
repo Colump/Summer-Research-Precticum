@@ -1,0 +1,16 @@
+
+Remove ALL foreign keys - we don't 100% need them and they're a pain when loading downloaded data...
+
+distance from cc should be nullable (it's null initially)
+
+route short name is set to 'int' - it needs to be a varchar as some of the shortnames have string values (e.g. 15B)
+
+shape primary key causing trouble....  change it
+shapes - all lats/longs should be doubles!!!!!!!! (or floats in sqlalchemy)
+
+calendar_dates.service_id must be varchar(32)
+=> Trips.service_id to match...
+=> Calendar.service_id to match...
+
+
+Transfers.min_transfer_time should be nullable...
