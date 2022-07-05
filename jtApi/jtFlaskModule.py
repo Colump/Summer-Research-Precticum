@@ -12,8 +12,6 @@ from sqlalchemy import DDL, text, func
 import json
 from jinja2 import Template
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
-from jtApi.models import Routes
-from models import Stop
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
