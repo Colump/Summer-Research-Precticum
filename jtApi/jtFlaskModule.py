@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-from email.policy import default
-import functools
 from datetime import date, datetime, timedelta
 from pickle import NONE
 from sqlite3 import Date
@@ -8,10 +6,11 @@ from sqlite3 import Date
 # in a Response object with the application/json mimetype.
 from flask import Flask, g, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import text
+from sqlalchemy import text, func
 import json
 from jinja2 import Template
-from models import Stop, Routes, StopTime, Agency, Calendar, CalendarDates, Trips, Transfers, Shapes
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
@@ -86,6 +85,10 @@ jtFlaskApp.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
 
 db = SQLAlchemy(jtFlaskApp)
 
+##########################################################################################
+#  GROUP 1: BASIC HTML PAGES
+##########################################################################################
+
 # @app.route('/user/<id>')
 # def get_user(id):
 #     user = load_user(id) if not user:
@@ -157,70 +160,8 @@ def about():
     ########################################################################
 
 ##########################################################################################
+#  GROUP 3: STRAIGHTFORWARD JSON EXTRACTS
 ##########################################################################################
-
-@jtFlaskApp.route("/stops", defaults={'stop_id': None})
-@jtFlaskApp.route("/stops/<stop_id>")
-def get_stops(stop_id):
-
-    # .filter() and .filter_by:
-    # Both are used differently;
-    # .filters can write > < and other conditions like where conditions for sql,
-    # but when referring to column names, you need to use class names and attribute
-    # names.
-    # .filter_by can pass conditions using python’s normal parameter passing method,
-    # and no additional class names need to be specified when specifying column names.
-    # The parameter name corresponds to the attribute name in the name class, but does
-    # not seem to be able to use conditions such as > < etc..
-    # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
-
-    stopQuery = db.session.query(Stop)
-    if stop_id != None:
-        stopQuery = stopQuery.filter(Stop.stop_id == stop_id)
-    stopQuery = stopQuery.order_by(text('stop_id asc'))
-
-    # Use list comprehension (on the query results)... to build a new list.
-    if stop_id != None:
-        # Single stop selected, include stop_times detail
-        json_list=[i.serialize() for i in stopQuery.all()]
-    else:
-        # All stops selected, omit stop_times detail
-        json_list=[i.serialize_norels() for i in stopQuery.all()]
-
-    return jsonify(json_list)
-
-##########################################################################################
-##########################################################################################
-# attempting to write flask endpoint for routes table, similar to get_stops above
-
-@jtFlaskApp.route("/routes", defaults={'route_id': None})
-@jtFlaskApp.route("/routes/<route_id>")
-def get_routes(route_id):
-    routeQuery = db.session.query(Routes)
-    if route_id != None:
-        routeQuery = routeQuery.filter(Stop.route_id == route_id)
-    routeQuery = routeQuery.order_by(text('route_id asc'))
-
-# haven't done the serialization for routes in models.py so this won't work yet
-# just copying the structure of the code above for get_stops function
-    json_list=[i.serialize() for i in routeQuery.all()]
-    return jsonify(json_list)
-
-# endpoint for StopTime model, should work because TK has written serialize function
-# within StopTime
-@jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
-@jtFlaskApp.route("/stoptimes/<trip_id>")
-def get_stop_times(trip_id):
-    stoptimeQuery = db.session.query(StopTime)
-    if trip_id != None:
-        stoptimeQuery = stoptimeQuery.filter(StopTime.trip_id == trip_id)
-    stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
-
-    # Use list comprehension (on the query results)... to build a new list.
-    # serialize is the only function within Routes so just return new serialized list
-    json_list=[i.serialize() for i in stoptimeQuery.all()]
-    return jsonify(json_list)
-    
 
 # endpoint for Agency model
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
@@ -264,33 +205,91 @@ def get_calendar_dates(date):
     json_list=[i.serialize() for i in calendardatesQuery.all()]
     return jsonify(json_list)
 
-# endpoint for Shapes
-@jtFlaskApp.route("/shapes", defaults={'shape_id':None})
-@jtFlaskApp.route("/shapes/<shape_id>")
-def get_shape(shape_id):
-    shapeQuery = db.session.query(Shapes)
-    if shape_id != None:
-        shapeQuery = shapeQuery.filter(Shapes.shape_id == shape_id)
-    shapeQuery = shape_id.order_by(text('shape_id asc'))
-
-    # use serialize to make a new list from the results
-    # just one serialize functiomn so no if statement
-    json_list=[i.serialize() for i in shapeQuery.all()]
-    return jsonify(json_list)
- 
- # endpoint for Trips
-@jtFlaskApp.route("/trips", defaults={'route_id':None})
-@jtFlaskApp.route("/trips/<route_id>")
-def get_trips(route_id):
-    tripsQuery = db.session.query(Trips)
+@jtFlaskApp.route("/routes", defaults={'route_id': None})
+@jtFlaskApp.route("/routes/<route_id>")
+def get_routes(route_id):
+    routeQuery = db.session.query(Routes)
     if route_id != None:
-        tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
-    tripsQuery = tripsQuery.order_by(text('route_id asc'))
+        routeQuery = routeQuery.filter(Routes.route_id == route_id)
+    routeQuery = routeQuery.order_by(text('route_id asc'))
 
-    # use serialize to make a new list from the results
-    # just one serialize functiomn so no if statement
-    json_list=[i.serialize() for i in tripsQuery.all()]
+    # haven't done the serialization for routes in models.py so this won't work yet
+    # just copying the structure of the code above for get_stops function
+    json_list=[i.serialize() for i in routeQuery.all()]
     return jsonify(json_list)
+
+# # endpoint for Shapes
+# @jtFlaskApp.route("/shapes", defaults={'shape_id':None})
+# @jtFlaskApp.route("/shapes/<shape_id>")
+# def get_shape(shape_id):
+#     shapeQuery = db.session.query(Shapes)
+#     if shape_id != None:
+#         shapeQuery = shapeQuery.filter(Shapes.shape_id == shape_id)
+#     shapeQuery = shape_id.order_by(text('shape_id asc'))
+
+#     # use serialize to make a new list from the results
+#     # just one serialize functiomn so no if statement
+#     json_list=[i.serialize() for i in shapeQuery.all()]
+#     return jsonify(json_list)
+
+@jtFlaskApp.route("/stops", defaults={'stop_id': None})
+@jtFlaskApp.route("/stops/<stop_id>")
+def get_stops(stop_id):
+
+    # .filter() and .filter_by:
+    # Both are used differently;
+    # .filters can write > < and other conditions like where conditions for sql,
+    # but when referring to column names, you need to use class names and attribute
+    # names.
+    # .filter_by can pass conditions using python’s normal parameter passing method,
+    # and no additional class names need to be specified when specifying column names.
+    # The parameter name corresponds to the attribute name in the name class, but does
+    # not seem to be able to use conditions such as > < etc..
+    # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
+
+    stopQuery = db.session.query(Stop)
+    if stop_id != None:
+        stopQuery = stopQuery.filter(Stop.stop_id == stop_id)
+    stopQuery = stopQuery.order_by(text('stop_id asc'))
+
+    # Use list comprehension (on the query results)... to build a new list.
+    if stop_id != None:
+        # Single stop selected, include stop_times detail
+        json_list=[i.serialize() for i in stopQuery.all()]
+    else:
+        # All stops selected, omit stop_times detail
+        json_list=[i.serialize_norels() for i in stopQuery.all()]
+
+    return jsonify(json_list)
+
+# # endpoint for StopTime model, should work because TK has written serialize function
+# # within StopTime
+# @jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
+# @jtFlaskApp.route("/stoptimes/<trip_id>")
+# def get_stop_times(trip_id):
+#     stoptimeQuery = db.session.query(StopTime)
+#     if trip_id != None:
+#         stoptimeQuery = stoptimeQuery.filter(StopTime.trip_id == trip_id)
+#     stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
+
+#     # Use list comprehension (on the query results)... to build a new list.
+#     # serialize is the only function within Routes so just return new serialized list
+#     json_list=[i.serialize() for i in stoptimeQuery.all()]
+#     return jsonify(json_list)
+    
+# # endpoint for Trips
+# @jtFlaskApp.route("/trips", defaults={'route_id':None})
+# @jtFlaskApp.route("/trips/<route_id>")
+# def get_trips(route_id):
+#     tripsQuery = db.session.query(Trips)
+#     if route_id != None:
+#         tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
+#     tripsQuery = tripsQuery.order_by(text('route_id asc'))
+
+#     # use serialize to make a new list from the results
+#     # just one serialize functiomn so no if statement
+#     json_list=[i.serialize() for i in tripsQuery.all()]
+#     return jsonify(json_list)
 
 # endpoint for Transfers
 @jtFlaskApp.route("/transfers", defaults={'from_stop_id':None})
@@ -306,7 +305,115 @@ def get_transfers(from_stop_id):
     json_list=[i.serialize() for i in transferQuery.all()]
     return jsonify(json_list)
 
-    
+##########################################################################################
+#  GROUP 3: COMPLEX QUERIES
+##########################################################################################
+
+@jtFlaskApp.route("/getStopsByRoute", methods=['GET'])
+def get_stops_by_route():
+    # /getStopsByRoute?rsn=<route_short_name>&jrny_dt=<yyyymmddhhmmss>&depstoplat=<departure_stop_lat>&depstoplont=<departure_stop_lon>
+    # e.g.: https://journeyti.me/getStopsByRoute?rsn=17&jrny_dt=20220703165400&depstoplat=53.3351498&depstoplon=-6.2943145
+    # Returns a list of stops on a particular route with lat/lon coordinates
+
+    # We have three pieces of information from Google Directions:
+    #   -> the date of the desired trip
+    #   -> the route shortname
+    #   -> the departure stop id
+
+    # There are many routes with the same short name
+    # There are many trips for each route
+    # Trips only run on certain days, based on the service id
+
+    # In 'traditional' SQL the query to find the trip id (which will then give
+    # us our sequence of stops) is as follows:
+
+    # SELECT stop_times.trip_id
+    # FROM stop_times
+    # INNER JOIN stops ON stop_times.stop_id=stops.stop_id
+    # WHERE stop_times.trip_id IN (
+    #     SELECT trips.trip_id FROM trips WHERE trips.route_id IN (
+    #         SELECT routes.route_id FROM routes WHERE routes.route_short_name = '17'
+    #     )
+    # )
+    # AND ABS(stops.stop_lat - 53.3351498) < 0.0000005
+    # AND ABS(stops.stop_lon - -6.2943145) < 0.0000005
+    # AND arrival_time < CAST('16:54:00' AS TIME)
+    # ORDER BY arrival_time DESC
+    # LIMIT 1;
+
+    # We ASSUME google directions is hot enough to only suggest routes that are
+    # running on the requested travel date (i.e. we don't cross check the calendar
+    # or calendar_dates tables)
+
+    args = request.args
+    route_short_name = args.get('rsn')
+    jrny_dt = args.get('jrny_dt')
+    departure_stop_lat = args.get('depstoplat')
+    departure_stop_lon = args.get('depstoplon')
+
+    #jrny_date = datetime.strptime(jrny_dt[0:8], "%Y%m%d").date()
+    jrny_time = datetime.strptime(jrny_dt[8:], "%H%M%S").time()
+
+    if (route_short_name is None) or (jrny_dt is None) \
+        or (departure_stop_lat) is None or (departure_stop_lon) is None:
+        # required parameters missing
+        # ALERT the LERTS!!!!!
+        pass
+    else:
+        print ("OK - We're testing the route query!!")
+        route_query = db.session.query(Routes.route_id)
+        route_query = route_query.filter(Routes.route_short_name == route_short_name)
+        route_query = route_query.order_by(text('route_id asc'))
+
+        routes_for_shortname = []
+        for r in route_query.all():
+            routes_for_shortname.append(r.route_id)
+        print('We found ' + str(len(routes_for_shortname)) + ' routes for this shortname')
+        
+        # We now how a list of route_ids, we can use that list to get a list of trips
+        # for those routes...
+        trips_query = db.session.query(Trips).filter(Trips.route_id.in_(routes_for_shortname))
+
+        trips_for_routes = []
+        for t in trips_query.all():
+            trips_for_routes.append(t.trip_id)
+        
+        print('We found ' + str(len(trips_for_routes)) + ' trips for these routes')
+
+        stop_times_query = db.session.query(StopTime.trip_id)
+        stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
+        stop_times_query = stop_times_query.filter(StopTime.trip_id.in_(trips_for_routes))
+        # Google directions are 7 decimal places (cm accurate), but the GTFSR stop
+        # locations are 13 decimal places (nm accurate).  Use tolerance for comparison...
+        stop_times_query = stop_times_query.filter(func.abs(Stop.stop_lat - departure_stop_lat) < 0.0000005)
+        stop_times_query = stop_times_query.filter(func.abs(Stop.stop_lon - departure_stop_lon) < 0.0000005)
+        stop_times_query = stop_times_query.filter(StopTime.arrival_time < jrny_time)
+        stop_times_query = stop_times_query.order_by(text('arrival_time desc'))
+        trip_id = stop_times_query.limit(1).all()
+
+        # Following just useful for debugging...
+        # stop_times_for_selected_stop_before_arrival_time = []
+        # for i in stop_times_query.all():
+        #     stop_times_for_selected_stop_before_arrival_time.append(i.trip_id)
+        # print('We found ' + str(len(stop_times_for_selected_stop_before_arrival_time)) + ' stops before the arrival time.')
+
+        # At this point we've identified the * most likely * trip_id for the
+        # requested journey! Sweet - now we just return the list of stops for this
+        # trip_id!
+
+        stops_for_trip_query = db.session.query(StopTime)
+        stops_for_trip_query = stops_for_trip_query.filter(StopTime.trip_id == trip_id[0][0])
+
+        # All stops selected, omit stop_times detail
+        json_list=[st.serialize() for st in stops_for_trip_query.all()]
+
+    return jsonify(json_list)
+
+#??????????????????????????????????????/getStopTimes?route=<route_id>&stop_id=<stop_id>
+
+##########################################################################################
+#  END: CLOSE APPLICATION
+##########################################################################################
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
