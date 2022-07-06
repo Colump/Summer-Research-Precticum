@@ -10,6 +10,7 @@ from sqlalchemy import text, func
 import json
 from jinja2 import Template
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers
+from jtUtils import download_dataset_as_file
 
 # Imports for Model/Pickle Libs
 #import pickle
@@ -302,58 +303,10 @@ def get_trips(route_id):
         tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
     tripsQuery = tripsQuery.order_by(text('route_id asc'))
 
-    # See...
-    #https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
-    # ... for some benchmarking on a number of approaches to concatenating lots of strings...
-    # json_list=[i.serialize() for i in tripsQuery.all()]
-    # return jsonify(json_list)
-    def generate():
-        print("Generating Trips Extract...")
-        CHUNK_SIZE = 8192  # rows
-        row_count = 0
-
-        # "tripsQuery.all()" is a python list of results
-        #rows_remain = len(tripsQuery.all())
-        rows_remain = tripsQuery.count()
-        rows_chunk  = 0
-        chunk_posn  = 0
-        print("rows_remain", rows_remain)
-        print("rows_chunk", rows_chunk)
-        print("chunk_posn", chunk_posn)
-        print("===============================================")
-        for row in tripsQuery:
-            print("Looping: over all rows...")
-            if rows_remain > 0:
-                json_list = []
-                print("Looping: rows_remain is ", rows_remain)
-                if rows_remain >= CHUNK_SIZE:
-                    rows_chunk  = CHUNK_SIZE
-                    rows_remain = rows_remain - CHUNK_SIZE
-                else:
-                    rows_chunk  = rows_remain
-                    rows_remain = 0
-
-            # buffer = ''.join( \
-            #     [json.dumps(tripsQuery.all()[idx].serialize(), indent=4) \
-            #         for idx in range(chunk_posn, (chunk_posn + rows_chunk), 1)] \
-            #         )
-
-            json_list.append( json.dumps(row.serialize(), indent=4) )
-            chunk_posn += rows_chunk
-
-            buffer = ''.join( \
-            if buffer:
-                yield buffer
-            else:
-                break
-
-    return Response(generate(), mimetype='application/json')
-
-
-
-# mystring = "abcdef"
-#  mylist = list(mystring)
-#  mystring = "".join(mylist)
+    # Trips is a large data set.  For small datasets we return the json directly
+    # to the browser.  For larger datasets we return them as files.  Seeems
+    # arbitrary - should we use a parameter to control? Discuss with team.
+    return download_dataset_as_file(tripsQuery, 'trips')
 
 ##########################################################################################
 #  GROUP 3: COMPLEX QUERIES
@@ -481,3 +434,4 @@ if __name__ == "__main__":
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+

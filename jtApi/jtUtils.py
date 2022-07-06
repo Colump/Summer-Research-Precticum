@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import os, sys
+from flask import Response
 
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
@@ -26,4 +27,88 @@ def loadCredentials():
     credentials = json.load(file)
     file.close  # Can close the file now we have the data loaded...
     return credentials
+
+def download_dataset_as_file(query, name):
+    """
+
+    Returns a JSON object with the required credentials.
+    Implemented in a method as Credential storage will be subject to change.
+    """
+
+    def get_next_chunk_size(rows_remain):
+        """Calculate the next chunk size for a data set
+
+        Based on the remaining rows and the paramaterised optimimum chunk size
+        """
+        CHUNK_SIZE = int(loadCredentials()['DOWNLOAD_CHUNK_SIZE'])
+        print("get_next_chunk_size: rows_remain is ", rows_remain)
+        rows_chunk = 0
+        if rows_remain > 0:
+            if rows_remain >= CHUNK_SIZE:
+                rows_chunk  = CHUNK_SIZE
+            else:
+                rows_chunk  = rows_remain
+
+        return rows_chunk
+    
+    # See...
+    #https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
+    # ... for some benchmarking on a number of approaches to concatenating lots of strings...
+    # json_list=[i.serialize() for i in tripsQuery.all()]
+    # return jsonify(json_list)
+    def generate(query, name):
+        row_count = 0
+
+        # "tripsQuery.all()" is a python list of results
+        #rows_remain = len(tripsQuery.all())
+        rows_remain = query.count()
+        rows_chunk  = get_next_chunk_size(rows_remain)
+        row_count   = 0
+        json_list   = []
+        first_chunk = True
+        for row in query:
+            # Don't have to consider empty queries - if we have no results
+            # we will never enter this iterator.
+            
+            # Every time we complete a chunk we yield it and reset out list
+            # to an empty list...
+            if row_count > rows_chunk:
+                print("Starting next chunk...")
+                rows_remain -= rows_chunk  # we've jusr competed a chunk
+                rows_chunk = get_next_chunk_size(rows_remain)
+
+                if first_chunk:
+                    buffer = '{\n\"' + name + '\": [\n'
+                    first_chunk = False
+                else:
+                    buffer = ',\n'
+                buffer += ',\n'.join(json_list)
+                if buffer:
+                    yield buffer
+                
+                json_list = []
+                row_count = 0
+
+            # buffer = ''.join( \
+            #     [json.dumps(tripsQuery.all()[idx].serialize(), indent=4) \
+            #         for idx in range(chunk_posn, (chunk_posn + rows_chunk), 1)] \
+            #         )
+
+            json_list.append( json.dumps(row.serialize(), indent=4) )
+            row_count += 1
+        
+        # At the end - always yield whatever remains in the buffer...
+        # We always drop the last comma and close out our json list.
+        if first_chunk:
+            buffer = '{\n\"' + name + '\": [\n'
+            first_chunk = False
+        else:
+            buffer = ',\n'
+        buffer += ',\n'.join(json_list)
+        if buffer:
+            yield buffer + "\n]\n}"
+
+    return Response(generate(query, name), mimetype='application/json', \
+        headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
+
 
