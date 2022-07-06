@@ -302,25 +302,51 @@ def get_trips(route_id):
         tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
     tripsQuery = tripsQuery.order_by(text('route_id asc'))
 
-# See...
-#https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
-# ... for some benchmarking on a number of approaches to concatenating lots of strings...
+    # See...
+    #https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
+    # ... for some benchmarking on a number of approaches to concatenating lots of strings...
     # json_list=[i.serialize() for i in tripsQuery.all()]
     # return jsonify(json_list)
     def generate():
+        print("Generating Trips Extract...")
         CHUNK_SIZE = 8192  # rows
         row_count = 0
 
-        ''.join(['abc' for _ in range(loop_count)])
-json.dumps([i.serialize(), indent=4))
-        for row in tripsQuery.all():
-            row_count += 1
-            if buf:
-            yield buf
-        else:
-            break
+        # "tripsQuery.all()" is a python list of results
+        #rows_remain = len(tripsQuery.all())
+        rows_remain = tripsQuery.count()
+        rows_chunk  = 0
+        chunk_posn  = 0
+        print("rows_remain", rows_remain)
+        print("rows_chunk", rows_chunk)
+        print("chunk_posn", chunk_posn)
+        print("===============================================")
+        for row in tripsQuery:
+            print("Looping: over all rows...")
+            if rows_remain > 0:
+                json_list = []
+                print("Looping: rows_remain is ", rows_remain)
+                if rows_remain >= CHUNK_SIZE:
+                    rows_chunk  = CHUNK_SIZE
+                    rows_remain = rows_remain - CHUNK_SIZE
+                else:
+                    rows_chunk  = rows_remain
+                    rows_remain = 0
 
-            yield f"{','.join(row.serialize())}\n"
+            # buffer = ''.join( \
+            #     [json.dumps(tripsQuery.all()[idx].serialize(), indent=4) \
+            #         for idx in range(chunk_posn, (chunk_posn + rows_chunk), 1)] \
+            #         )
+
+            json_list.append( json.dumps(row.serialize(), indent=4) )
+            chunk_posn += rows_chunk
+
+            buffer = ''.join( \
+            if buffer:
+                yield buffer
+            else:
+                break
+
     return Response(generate(), mimetype='application/json')
 
 
