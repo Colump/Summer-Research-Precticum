@@ -5,9 +5,14 @@
     <!-- <StopsData></StopsData> -->
     <el-container>
       <el-aside width="250px">
-        <div class="iconOfWeb">icon here</div>
-        <UserForms></UserForms>
-        <ShowRouteButtom></ShowRouteButtom>
+        <div class="iconOfWeb">
+          <img src="./assets/blueTheme_jt_journey_around_clock.png" width="50px" height="50px"/>
+        </div>
+        <div>
+          <UserForms></UserForms>
+          <ShowRouteButtom></ShowRouteButtom>
+        </div>
+        
         <!-- <StopsData></StopsData> -->
         
       </el-aside>
@@ -98,7 +103,9 @@ export default {
   }
   .iconOfWeb{
     /* width: 100px; */
-    height: 100px;
+    margin-top: 10px;
+    height: 80px;
     line-height: 100px;
+    
   }
 </style>
