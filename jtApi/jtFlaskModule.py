@@ -168,14 +168,30 @@ def about():
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
 @jtFlaskApp.route("/agency/<agency_name>")
 def get_agency(agency_name):
+
+    args = request.args
+    download_type = args.get('dltype')
+ 
+    download_type must be either 'file' or 'json' - so we should have constants for file or json
+    if not a valid value - go to "invalid request page"
+
     agencyQuery = db.session.query(Agency)
     if agency_name != None:
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
     agencyQuery = agencyQuery.order_by(text('agency_name asc'))
 
-    # use serialize function to make a new list from the results
-    # just one serialize function so no if statement
-    json_list=[i.serialize() for i in agencyQuery.all()]
+
+
+    if file:
+        give them a file
+    else:
+        total_records = query.count()
+        if total_records > some threshold
+            send first 1000 recrds as json
+        else:
+            # use serialize function to make a new list from the results
+            # just one serialize function so no if statement
+            json_list=[i.serialize() for i in agencyQuery.all()]
     return jsonify(json_list)
 
 # endpoint for Calendar model
