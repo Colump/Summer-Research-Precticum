@@ -9,9 +9,13 @@ import VueRouter from 'vue-router'
 import myrouter from './router'
 import axios from 'axios'
 import VueAxios from 'vue-axios'
+import locale from '../node_modules/element-ui/lib/locale/lang/en'
+
+
+
 Vue.use(VueAxios, axios)
 
-Vue.use(ElementUI);
+Vue.use(ElementUI, { locale });
 
 // use router
 Vue.use(VueRouter);
