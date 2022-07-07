@@ -30,29 +30,98 @@ def loadCredentials():
     file.close  # Can close the file now we have the data loaded...
     return credentials
 
-def download_dataset_as_file(query, name):
+# 'Module Private' helper function for the various methods that download files...
+def _get_next_chunk_size(rows_remain):
+    """Calculate the next chunk size for a data set
+
+    Based on the remaining rows and the paramaterised optimimum chunk size
+    """
+    CHUNK_SIZE = int(loadCredentials()['DOWNLOAD_CHUNK_SIZE'])
+    print("get_next_chunk_size: rows_remain is ", rows_remain)
+    rows_chunk = 0
+    if rows_remain > 0:
+        if rows_remain >= CHUNK_SIZE:
+            rows_chunk  = CHUNK_SIZE
+        else:
+            rows_chunk  = rows_remain
+
+    return rows_chunk
+
+def download_query_results_as_csv(query, name):
     """
 
-    Returns a JSON object with the required credentials.
-    Implemented in a method as Credential storage will be subject to change.
+    Returns a CSV File with one row per record in the query result set.
     """
 
-    def get_next_chunk_size(rows_remain):
-        """Calculate the next chunk size for a data set
+    def get_buffer(row_list, first_chunk, query):
+        if first_chunk:
+            # We need to build the string for the first line of the .csv - the column headers
+            col_headers = ''
+            for column_desc in query.statement.columns.keys():
+                # Each 'column_desc is a dict, with several properties per column.
+                col_headers += column_desc + ','
+            if len(col_headers) > 1:
+                col_headers = col_headers[:-1]
 
-        Based on the remaining rows and the paramaterised optimimum chunk size
-        """
-        CHUNK_SIZE = int(loadCredentials()['DOWNLOAD_CHUNK_SIZE'])
-        print("get_next_chunk_size: rows_remain is ", rows_remain)
-        rows_chunk = 0
-        if rows_remain > 0:
-            if rows_remain >= CHUNK_SIZE:
-                rows_chunk  = CHUNK_SIZE
-            else:
-                rows_chunk  = rows_remain
-
-        return rows_chunk
+            buffer = col_headers + '\n'
+            first_chunk = False
+        else:
+            buffer = '\n'
+        buffer += '\n'.join(row_list)  # csv - join the elements with 'commas'
+        return buffer, first_chunk
     
+    def generate(query, name):
+        row_count = 0
+
+        # "tripsQuery.all()" is a python list of results
+        #rows_remain = len(tripsQuery.all())
+        rows_remain = query.count()
+        rows_chunk  = _get_next_chunk_size(rows_remain)
+        row_count   = 0
+        row_list   = []
+        first_chunk = True
+        for row in query:
+            # Don't have to consider empty queries - if we have no results
+            # we will never enter this iterator.
+            
+            # Every time we complete a chunk we yield it and reset out list
+            # to an empty list...
+            if row_count > rows_chunk:
+                print("Starting next chunk...")
+                rows_remain -= rows_chunk  # we've jusr competed a chunk
+                rows_chunk = _get_next_chunk_size(rows_remain)
+
+                buffer, first_chunk = get_buffer(row_list, first_chunk, query)
+                if buffer:
+                    yield buffer
+                
+                row_list = []
+                row_count = 0
+
+            # If we build up our the string we plan to send by repeatedly appending,
+            # we're creating a new string each time.  This is quite memory expensive
+            # and inefficient.
+            # Instead we build a list of objects - which we will later convert to a string.
+            # 'row_list' will be a list of strings...
+            row_list.append( '"' + '","'.join([str(value) for value in row.serialize().values()]) + '"')
+            row_count += 1
+        
+        # At the end - always yield whatever remains in the buffer...
+        # We always drop the last comma and close out our json list.
+        buffer, first_chunk = get_buffer(row_list, first_chunk, query)
+        if buffer:
+            yield buffer
+
+    return Response(generate(query, name), mimetype='text/csv', \
+        headers={'Content-disposition': 'attachment; filename=' + name + '.csv'})
+
+
+def download_query_results_as_json(query, name):
+    """
+
+    Returns a JSON List with one object per record in the query result set.
+    """
+
     def get_buffer(json_list, first_chunk, name):
         if first_chunk:
             buffer = '{\n\"' + name + '\": [\n'
@@ -73,7 +142,7 @@ def download_dataset_as_file(query, name):
         # "tripsQuery.all()" is a python list of results
         #rows_remain = len(tripsQuery.all())
         rows_remain = query.count()
-        rows_chunk  = get_next_chunk_size(rows_remain)
+        rows_chunk  = _get_next_chunk_size(rows_remain)
         row_count   = 0
         json_list   = []
         first_chunk = True
@@ -86,7 +155,7 @@ def download_dataset_as_file(query, name):
             if row_count > rows_chunk:
                 print("Starting next chunk...")
                 rows_remain -= rows_chunk  # we've jusr competed a chunk
-                rows_chunk = get_next_chunk_size(rows_remain)
+                rows_chunk = _get_next_chunk_size(rows_remain)
 
                 buffer, first_chunk = get_buffer(json_list, first_chunk, name)
                 if buffer:
@@ -110,7 +179,6 @@ def download_dataset_as_file(query, name):
 
     return Response(generate(query, name), mimetype='application/json', \
         headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
-
 
 #         popssible approaches to zip response...
 

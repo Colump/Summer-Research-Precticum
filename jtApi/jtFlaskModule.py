@@ -10,7 +10,7 @@ from sqlalchemy import text, func
 import json
 from jinja2 import Template
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers
-from jtUtils import download_dataset_as_file
+from jtUtils import download_query_results_as_csv
 
 # Imports for Model/Pickle Libs
 #import pickle
@@ -306,7 +306,7 @@ def get_trips(route_id):
     # Trips is a large data set.  For small datasets we return the json directly
     # to the browser.  For larger datasets we return them as files.  Seeems
     # arbitrary - should we use a parameter to control? Discuss with team.
-    return download_dataset_as_file(tripsQuery, 'trips')
+    return download_query_results_as_csv(tripsQuery, 'trips')
 
 ##########################################################################################
 #  GROUP 3: COMPLEX QUERIES
@@ -433,4 +433,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
