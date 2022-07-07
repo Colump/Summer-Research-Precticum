@@ -51,6 +51,15 @@ def download_dataset_as_file(query, name):
 
         return rows_chunk
     
+    def get_buffer(json_list, first_chunk, name):
+        if first_chunk:
+            buffer = '{\n\"' + name + '\": [\n'
+            first_chunk = False
+        else:
+            buffer = ',\n'
+        buffer += ',\n'.join(json_list)
+        return buffer, first_chunk
+    
     # See...
     #https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
     # ... for some benchmarking on a number of approaches to concatenating lots of strings...
@@ -77,12 +86,7 @@ def download_dataset_as_file(query, name):
                 rows_remain -= rows_chunk  # we've jusr competed a chunk
                 rows_chunk = get_next_chunk_size(rows_remain)
 
-                if first_chunk:
-                    buffer = '{\n\"' + name + '\": [\n'
-                    first_chunk = False
-                else:
-                    buffer = ',\n'
-                buffer += ',\n'.join(json_list)
+                buffer, first_chunk = get_buffer(json_list, first_chunk, name)
                 if buffer:
                     yield buffer
                 
@@ -99,16 +103,9 @@ def download_dataset_as_file(query, name):
         
         # At the end - always yield whatever remains in the buffer...
         # We always drop the last comma and close out our json list.
-        if first_chunk:
-            buffer = '{\n\"' + name + '\": [\n'
-            first_chunk = False
-        else:
-            buffer = ',\n'
-        buffer += ',\n'.join(json_list)
+        buffer, first_chunk = get_buffer(json_list, first_chunk, name)
         if buffer:
-            yield buffer + "\n]\n}"
+            yield buffer + "\n]\n}"  # <- We close the last after the last buffer yield
 
     return Response(generate(query, name), mimetype='application/json', \
         headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
-
-

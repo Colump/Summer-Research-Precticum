@@ -9,7 +9,8 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text, func
 import json
 from jinja2 import Template
-from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers
+from jtUtils import download_dataset_as_file
 
 # Imports for Model/Pickle Libs
 #import pickle
@@ -277,20 +278,6 @@ def get_stops(stop_id):
 #     json_list=[i.serialize() for i in stoptimeQuery.all()]
 #     return jsonify(json_list)
     
-# # endpoint for Trips
-# @jtFlaskApp.route("/trips", defaults={'route_id':None})
-# @jtFlaskApp.route("/trips/<route_id>")
-# def get_trips(route_id):
-#     tripsQuery = db.session.query(Trips)
-#     if route_id != None:
-#         tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
-#     tripsQuery = tripsQuery.order_by(text('route_id asc'))
-
-#     # use serialize to make a new list from the results
-#     # just one serialize functiomn so no if statement
-#     json_list=[i.serialize() for i in tripsQuery.all()]
-#     return jsonify(json_list)
-
 # endpoint for Transfers
 @jtFlaskApp.route("/transfers", defaults={'from_stop_id':None})
 @jtFlaskApp.route("/transfers/<from_stop_id>")
@@ -304,6 +291,22 @@ def get_transfers(from_stop_id):
     # just one serialize functiomn so no if statement
     json_list=[i.serialize() for i in transferQuery.all()]
     return jsonify(json_list)
+
+# endpoint for Trips
+# Trips is a large table - so we don't return the json directly to user in the
+# resonse, instead we stream them a file with the json inside!
+@jtFlaskApp.route("/trips", defaults={'route_id':None})
+@jtFlaskApp.route("/trips/<route_id>")
+def get_trips(route_id):
+    tripsQuery = db.session.query(Trips)
+    if route_id != None:
+        tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
+    tripsQuery = tripsQuery.order_by(text('route_id asc'))
+
+    # Trips is a large data set.  For small datasets we return the json directly
+    # to the browser.  For larger datasets we return them as files.  Seeems
+    # arbitrary - should we use a parameter to control? Discuss with team.
+    return download_dataset_as_file(tripsQuery, 'trips')
 
 ##########################################################################################
 #  GROUP 3: COMPLEX QUERIES
