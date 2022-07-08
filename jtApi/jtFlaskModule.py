@@ -6,6 +6,7 @@ from sqlite3 import Date
 # in a Response object with the application/json mimetype.
 from flask import Flask, g, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
+from importlib_metadata import csv
 from sqlalchemy import text, func
 import json
 from jinja2 import Template
@@ -171,9 +172,20 @@ def get_agency(agency_name):
 
     args = request.args
     download_type = args.get('dltype')
- 
-    download_type must be either 'file' or 'json' - so we should have constants for file or json
-    if not a valid value - go to "invalid request page"
+    
+    jsonfile = 'json'
+    csvfile = 'file'
+
+    if download_type == jsonfile:
+        return #jsonfile
+    elif download_type == csvfile:
+        return # csvfile
+    elif download_type != jsonfile or csvfile:
+        return
+        # route to error ?
+
+    # download_type must be either 'file' or 'json' - so we should have constants for file or json
+    # if not a valid value - go to "invalid request page"
 
     agencyQuery = db.session.query(Agency)
     if agency_name != None:
@@ -182,12 +194,13 @@ def get_agency(agency_name):
 
 
 
-    if file:
-        give them a file
+    if download_type:
+        # give them a file
+        download_dataset_as_file(download_type, filename)
     else:
-        total_records = query.count()
-        if total_records > some threshold
-            send first 1000 recrds as json
+        total_records = agencyQuery.count()
+        if total_records > 8192:
+            send first 1000 recrords as json
         else:
             # use serialize function to make a new list from the results
             # just one serialize function so no if statement
