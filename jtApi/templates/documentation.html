@@ -56,6 +56,63 @@
             How much instruction is required for a JSON interface? Document...
         </p>
         <h2>Specifications</h2>
+        <!--
+            Original information on the various data sets taken from:
+            https://developers.google.com/transit/gtfs/reference#agencytxt
+        -->
+        <hr>
+        <h3>Genius Prediction Engine</h3>
+        <p>
+
+        </p>
+        <hr>
+        <h3>Agency</h3>
+        <p>
+            Transit agencies with service represented in this dataset.
+            Download the latest Agency dataset for Dublin as <a href="localhost/agency?dltype=json">.json</a>
+            or as a <a href="localhost/agency?dltype=csv">.csv</a> file.
+        </p>
+        <table class="table table-hover">
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>Stop_Id</td>
+                <td>varchar(12)</td>
+                <td>n/a</td>
+                <td>A unique identifier for this stop, as defined by the respective transit authority</td>
+              </tr>
+              <tr>
+                <td>Stop_Name</td>
+                <td>varchar(64)</td>
+                <td>n/a</td>
+                <td>The stop name, as defined by the respective transit authority</td>
+              </tr>
+              <tr>
+                <td>Stop_Lat</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The latitude of this stop</td>
+              </tr>
+              <tr>
+                <td>Stop_Lon</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The longitude of this stop</td>
+              </tr>
+              <tr>
+                <td>Dist_From_CC</td>
+                <td>double</td>
+                <td>n/a</td>
+                <td>The distance of this stop from the Dublin City Center, where the City Center is defined as the center of O'Connell
+                    street bridge (53.347269, -6.259107) and the distance is calculated using the haversine formula.
+                </td>
+              </tr>
+        </table>
+        <hr>
         <h3>Stops</h3>
         <p>Bla bla bla - some information about this json extract - perhaps a link</p>
         <table class="table table-hover">

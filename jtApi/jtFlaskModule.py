@@ -20,6 +20,10 @@ import os, sys
 
 import requests
 
+CONST_DLTYPE  = 'dltype'
+CONST_JSONFILE = 'json'
+CONST_CSVFILE  = 'csv'
+
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
 # ... Python, if needing to use relative paths in order to make it easier to 
@@ -119,6 +123,11 @@ def documentation():
     # This route renders a template from the template folder
     return render_template('documentation.html')
 
+@jtFlaskApp.route('/invalid_dataset.html')
+def documentation():
+    # This route renders a template from the template folder
+    return render_template('invalid_dataset.html')
+
 @jtFlaskApp.route('/about.html')
 def about():
     # This route renders a template from the template folder
@@ -171,19 +180,8 @@ def about():
 def get_agency(agency_name):
 
     args = request.args
-    download_type = args.get('dltype')
+    download_type = args.get(CONST_DLTYPE)  # q - if user specifies /agency/id they should get ONe agency
     
-    jsonfile = 'json'
-    csvfile = 'file'
-
-    if download_type == jsonfile:
-        return #jsonfile
-    elif download_type == csvfile:
-        return # csvfile
-    elif download_type != jsonfile or csvfile:
-        return
-        # route to error ?
-
     # download_type must be either 'file' or 'json' - so we should have constants for file or json
     # if not a valid value - go to "invalid request page"
 
@@ -192,20 +190,38 @@ def get_agency(agency_name):
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
     agencyQuery = agencyQuery.order_by(text('agency_name asc'))
 
+ 
+    if download_type == CONST_CSVFILE:
+        # give them a csvfile
+        return download_dataset_as_file(download_type, 'agency')
+    elif download_type == CONST_JSONFILE:
 
-
-    if download_type:
-        # give them a file
-        download_dataset_as_file(download_type, filename)
-    else:
         total_records = agencyQuery.count()
-        if total_records > 8192:
-            send first 1000 recrords as json
+        dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT']:)
+        if total_records > dl_row_limit:
+            json_list = []
+            row_count = 0
+            for row in agencyQuery:
+                json_list.append( row.serialize() )
+                row_count += 1
+                
+                if row_count > dl_row_limit:
+                    break
         else:
             # use serialize function to make a new list from the results
             # just one serialize function so no if statement
-            json_list=[i.serialize() for i in agencyQuery.all()]
-    return jsonify(json_list)
+            json_list=[row.serialize() for row in agencyQuery.all()]
+        
+        return jsonify(json_list)
+
+     else:
+        # in here ? Is the agency id supplied? if it is, just do the one
+        # if there is no id and no download_type that's when we need an error page.
+        find the way to either return the value from another endpoint 
+        or redirect this to another end point 
+        or call another end point
+        return
+        # route to error ?
 
 # endpoint for Calendar model
 @jtFlaskApp.route("/calendar", defaults={'service_id':None})
