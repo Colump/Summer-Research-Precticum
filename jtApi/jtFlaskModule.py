@@ -124,7 +124,7 @@ def documentation():
     return render_template('documentation.html')
 
 @jtFlaskApp.route('/invalid_dataset.html')
-def documentation():
+def documentation2():
     # This route renders a template from the template folder
     return render_template('invalid_dataset.html')
 
@@ -197,7 +197,7 @@ def get_agency(agency_name):
     elif download_type == CONST_JSONFILE:
 
         total_records = agencyQuery.count()
-        dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT']:)
+        dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
         if total_records > dl_row_limit:
             json_list = []
             row_count = 0
@@ -214,13 +214,13 @@ def get_agency(agency_name):
         
         return jsonify(json_list)
 
-     else:
+     #else:
         # in here ? Is the agency id supplied? if it is, just do the one
         # if there is no id and no download_type that's when we need an error page.
-        find the way to either return the value from another endpoint 
-        or redirect this to another end point 
-        or call another end point
-        return
+        #find the way to either return the value from another endpoint 
+        #or redirect this to another end point 
+       # or call another end point
+        #return
         # route to error ?
 
 # endpoint for Calendar model
