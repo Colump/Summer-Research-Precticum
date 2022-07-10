@@ -1,26 +1,21 @@
 # -*- coding: utf-8 -*-
 from datetime import date, datetime, timedelta
-from email import header
 from pickle import NONE
-from sqlite3 import Date
-from wsgiref import headers
 # jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
 # in a Response object with the application/json mimetype.
-from flask import Flask, g, request, render_template, jsonify
-from flask import Flask, Response, g, request, render_template, jsonify
+from flask import flash, Flask, g, jsonify, make_response, redirect, request, render_template, url_for
+from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
-from importlib_metadata import csv
+from forms import UserForm
 from sqlalchemy import text, func
 import json
 from jinja2 import Template
-from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
 from jtUtils import query_results_as_compressed_csv
-
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd
-import os, sys
-
+import os, os.path, sys
 import requests
 
 # According to the article here:
@@ -88,6 +83,9 @@ jtFlaskApp.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
             + jtFlaskApp.config['DB_SRVR'] + ":" + jtFlaskApp.config['DB_PORT']\
             + "/" + jtFlaskApp.config['DB_NAME'] + "?charset=utf8mb4"
 
+# 'csrf' gives us a mechanism for controlling csrf behaviour on forms (enabled by default)
+csrf = CSRFProtect(jtFlaskApp)
+
 db = SQLAlchemy(jtFlaskApp)
 
 ##########################################################################################
@@ -127,6 +125,11 @@ def about():
     # This route renders a template from the template folder
     return render_template('about.html')
 
+@jtFlaskApp.route('/TKTESTING.do', methods=['GET'])
+def TKTESTING():
+    # This route renders a template from the template folder
+    return render_template('test_forms.html', form=UserForm())
+
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
     ########################################################################
@@ -165,7 +168,7 @@ def about():
     ########################################################################
 
 ##########################################################################################
-#  GROUP 3: STRAIGHTFORWARD JSON EXTRACTS
+#  GROUP 3: STRAIGHTFORWARD DATASET EXTRACTS
 ##########################################################################################
 
 # endpoint for Agency model
@@ -416,7 +419,79 @@ def get_stops_by_route():
 
     return jsonify(json_list)
 
-#??????????????????????????????????????/getStopTimes?route=<route_id>&stop_id=<stop_id>
+##########################################################################################
+#  GROUP 4: JT_UI SUPPORT FUNCTIONS
+##########################################################################################
+
+@jtFlaskApp.route("/login.do", methods=['POST'])
+def login():
+    """For the supplier username and hashed password, attempt login
+
+    Returns
+    """
+    resp = jsonify(success=True)
+    resp.status_code = 200  # Success
+    #resp.status_code = 401  # Unauthorized
+    return resp
+
+@jtFlaskApp.route("/get_profile_picture.do", methods=['GET'])
+def get_profile_picture():
+    args = request.args
+    gpp_username = args.get('username')
+    user = db.session.query(JT_User).filter_by(username=gpp_username).one()
+
+    response = make_response(user.profile_picture)
+    extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
+    response.headers.set('Content-Type', 'image/' + extension)
+    return response
+
+@jtFlaskApp.route("/register.do", methods=['POST'])
+@csrf.exempt
+def register():
+    #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
+    #   -> 'request.form' only contains form input data.
+    #   -> 'request.files' contains file upload data.
+    # You need to pass the combination of both to the form. Since a form inherits
+    # from Flask-WTF's Form (now called FlaskForm), it will handle this automatically
+    # if you don't pass anything to the form!!
+    user_form = UserForm(meta={'csrf': False})  # see forms.py
+
+    # 'validate_on_submit' ensures BOTH post AND form checks passed!
+    valid = user_form.validate_on_submit()
+    if valid:
+        print("username ->", user_form.username.data, "-", type(user_form.username.data))
+        print("password_hash ->", user_form.password_hash.data, "-", type(user_form.password_hash.data))
+        print("nickname ->", user_form.nickname.data, "-", type(user_form.nickname.data))
+        print("colour ->", user_form.colour.data, "-", type(user_form.colour.data))
+        print("profile_picture ->", user_form.profile_picture.data, "-", type(user_form.profile_picture.data))
+        new_user = JT_User()
+        user_form.populate_obj(new_user)
+        # It appears the 'populate_obj' doesn't handle files well - so pos
+        # populate_obj we do file fields manually...
+        if user_form.profile_picture.data.filename:
+            new_user.profile_picture_filename = user_form.profile_picture.data.filename
+            new_user.profile_picture = user_form.profile_picture.data.read()
+        else:
+            new_user.profile_picture_filename = None
+            new_user.profile_picture = None
+
+        db.session.add(new_user)
+        db.session.flush()
+        db.session.commit()
+
+        # filename = secure_filename(f.filename)
+        flash('SUCCESS')
+        return render_template('test_forms.html', form=user_form)
+    else:
+        # 'form.errors' is only populated when you call either validate() or
+        # validate_on_submit.  So you can't check this in advance!
+        # Log any errors in the server log (while devloping at least...)
+        print("ERRORS Detected on form:")
+        for key in user_form.errors:
+            for message in user_form.errors[key]:
+                print("\t" + str(key)+ " : " + message)
+
+    return render_template('test_forms.html', form=user_form)
 
 ##########################################################################################
 #  END: CLOSE APPLICATION
@@ -437,4 +512,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

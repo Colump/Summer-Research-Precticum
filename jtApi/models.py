@@ -4,7 +4,7 @@ from tokenize import Double
 from sqlalchemy import Column, ForeignKey, Integer, Table, null
 from sqlalchemy.schema import Index
 from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy import String, DateTime, Float, Integer, SmallInteger
+from sqlalchemy import DateTime, Float, Integer, SmallInteger, String, LargeBinary
 from sqlalchemy.orm import declarative_base, relationship
 
 Base = declarative_base()
@@ -240,6 +240,19 @@ class Transfers(Base):
        }
     def __repr__(self):
         return '<Transfers %r>' % (self.from_stop_id, self.to_stop_id, self.transfer_type, self.min_transfer_time)
+
+class JT_User(Base):
+    __tablename__ = 'jt_user'
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)  # Auto-increment should be default
+    username = Column(String(256), primary_key=True, nullable=False)
+    password_hash = Column(String(60), nullable=False)
+    nickname = Column(String(256), nullable=True)
+    colour = Column(String(6), nullable=True)
+    profile_picture_filename = Column(String(256), nullable=True)
+    profile_picture = Column(LargeBinary, nullable=True)
+
+    def __repr__(self):
+        return f'StopTime("{self.id}","{self.name}"'
         
 # class weatherHistory(db.Model):
 #     __tablename__ = 'weatherHistory'

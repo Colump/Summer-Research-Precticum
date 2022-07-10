@@ -79,6 +79,14 @@
         <!-- Navbar -->
     </header>
     <main>
+        <!-- Display flashed messages - this could be styled maybe into an alert bar? -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                <p>{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         <!-- The main layout is the full width (container-fluid) of the page with:
           -> a 1-twelfth-width page navigation menu on the left
           -> the remaining 11-twelfths dedicated to content
