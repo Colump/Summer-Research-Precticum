@@ -80,35 +80,55 @@
                 <th>Description</th>
               </tr>
               <tr>
-                <td>Stop_Id</td>
-                <td>varchar(12)</td>
+                <td>Agency_Id</td>
+                <td>varchar(32)</td>
                 <td>n/a</td>
-                <td>A unique identifier for this stop, as defined by the respective transit authority</td>
+                <td>A unique identifier for this agency.</td>
               </tr>
               <tr>
-                <td>Stop_Name</td>
+                <td>Agency_Name</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The agency name.</td>
+              </tr>
+              <tr>
+                <td>Agency_url</td>
+                <td>carchar(128)</td>
+                <td>n/a</td>
+                <td>URL link to the TFI website.</td>
+              </tr>
+              <tr>
+                <td>Agency_timezone</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The timezone the bus agency operates in.</td>
+              </tr>
+              <tr>
+                <td>Agency_lang</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The language the agency operates in.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_phone</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The agency phone number.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_lang</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The language the agency operates in.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_col</td>
                 <td>varchar(64)</td>
                 <td>n/a</td>
-                <td>The stop name, as defined by the respective transit authority</td>
-              </tr>
-              <tr>
-                <td>Stop_Lat</td>
-                <td>double</td>
-                <td>n/a</td>
-                <td>The latitude of this stop</td>
-              </tr>
-              <tr>
-                <td>Stop_Lon</td>
-                <td>double</td>
-                <td>n/a</td>
-                <td>The longitude of this stop</td>
-              </tr>
-              <tr>
-                <td>Dist_From_CC</td>
-                <td>double</td>
-                <td>n/a</td>
-                <td>The distance of this stop from the Dublin City Center, where the City Center is defined as the center of O'Connell
-                    street bridge (53.347269, -6.259107) and the distance is calculated using the haversine formula.
+                <td>
                 </td>
               </tr>
         </table>
