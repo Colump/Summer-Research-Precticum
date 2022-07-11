@@ -491,7 +491,9 @@ def register():
             for message in user_form.errors[key]:
                 print("\t" + str(key)+ " : " + message)
 
-    return render_template('test_forms.html', form=user_form)
+    response = make_response(render_template('test_forms.html', form=user_form))
+    response.headers.set('Access-Control-Allow-Origin', '*')
+    return response
 
 ##########################################################################################
 #  END: CLOSE APPLICATION

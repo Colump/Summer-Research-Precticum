@@ -111,7 +111,7 @@ setup(
 
       entry_points={
             'console_scripts': [
-                  'jt_dl = jtApi.jt_gtfs_loader:main'
+                  'jt_dl = jt_gtfs_loader:main'
             ]
       }
 )

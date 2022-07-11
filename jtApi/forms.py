@@ -20,18 +20,7 @@ class UserForm(FlaskForm):
         [
             DataRequired(),
             Length(min=8,
-            message=('Your password hash is too short.')),
-            EqualTo('confirm_hash', message='Passwords must match')
-        ]
-    )
-    confirm_hash = PasswordField(
-        'Repeat Password'
-    )
-    email = EmailField(
-        'Email',
-        [
-            DataRequired(),
-            Email()
+            message=('Your password hash is too short.'))
         ]
     )
     nickname = StringField(
