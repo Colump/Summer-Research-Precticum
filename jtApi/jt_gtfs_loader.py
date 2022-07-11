@@ -349,9 +349,6 @@ def main():
     credentials = load_credentials()
     import_dir  = jt_gtfs_module_dir + "/import/"
 
-    print("TEMP: credentials loaded, imports complete, path is:", sys.path)
-    sys.exit()
-
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)
     # to monitor the running data loader process.  This way if there is a failure
