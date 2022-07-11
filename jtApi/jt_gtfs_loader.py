@@ -8,13 +8,20 @@ import os, sys, csv
 import zipfile
 from zipfile import ZipFile
 import requests
-from jtUtils import loadCredentials
 import traceback
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+# This might seem unusual... but to make sure we can import modules from the
+# folder where jt_gtfs_loader is installed (e.g. if called as an installed
+# endpoint) - we always add the module directory to the python path. Endpoints
+# can be called from any 'working directory' - but modules can only be imported
+# from the python path etc..
+jt_gtfs_module_dir = os.path.dirname(__file__)
+sys.path.insert(0, jt_gtfs_module_dir)
 from jtCalcStopDistFromCC import loopOverAllStopsAndCalcDistFromCC
+from jtUtils import loadCredentials
 
 def download_gtfs_schedule_data(credentials, import_dir):
     """Download the latest version of the GTFS Schedule Data.
@@ -340,8 +347,10 @@ def main():
     print('\tLoading credentials.')
     # Load our private credentials from a JSON file
     credentials = loadCredentials()
-    working_dir = os.path.dirname(__file__)
-    import_dir  = working_dir + "/import/"
+    import_dir  = jt_gtfs_module_dir + "/import/"
+
+    print("TEMP: credentials loaded, imports complete, path is:", sys.path)
+    sys.exit()
 
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)
