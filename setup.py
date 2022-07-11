@@ -77,8 +77,8 @@ setup(
       python_requires='>=3.9',
 
       license='MIT',
-      #packages=['jtApi'],
-      packages=find_packages(include=['jtApi', 'jtApi.*']),
+      packages=['jtApi'],
+      #packages=find_packages(include=['jtApi', 'jtApi.*']),
       zip_safe=False,
 
       # Additional classifiers that give some characteristics about the package.

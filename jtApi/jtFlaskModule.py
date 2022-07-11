@@ -11,7 +11,7 @@ from sqlalchemy import text, func
 import json
 from jinja2 import Template
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
-from jtUtils import query_results_as_compressed_csv
+from jt_utils import query_results_as_compressed_csv
 # Imports for Model/Pickle Libs
 #import pickle
 #import pandas as pd

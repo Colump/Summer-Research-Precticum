@@ -9,10 +9,10 @@ comp47360_group3_raduno.egg-info/requires.txt
 comp47360_group3_raduno.egg-info/top_level.txt
 jtApi/__init__.py
 jtApi/forms.py
-jtApi/jtCalcStopDistFromCC.py
 jtApi/jtFlaskModule.py
-jtApi/jtUtils.py
+jtApi/jt_calc_stop_dist_from_cc.py
 jtApi/jt_gtfs_loader.py
 jtApi/jt_scheduler.sh
+jtApi/jt_utils.py
 jtApi/models.py
 jtApi/nta_gtfsr_test3.py

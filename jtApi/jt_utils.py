@@ -15,9 +15,9 @@ import zlib
 # be constructed by using os.path.join()...
 # (the value of __file__ is a string, which is set when module was imported by a loader)
 # Application Startup...
-jtUtilsParentDir = os.path.dirname(os.path.dirname(__file__))
+jt_utils_parent_dir = os.path.dirname(os.path.dirname(__file__))
 
-def loadCredentials():
+def load_credentials():
     """Load the credentials required for accessing the Weather API, Google Maps, etc.
 
     Returns a JSON object with the required credentials.
@@ -27,7 +27,7 @@ def loadCredentials():
     # This file is not saved to GitHub and is placed on each EC2 instance
     # by a team member.
     # Load the JSON file
-    file = open(os.path.join(jtUtilsParentDir, 'journeytime.json'), 'r')
+    file = open(os.path.join(jt_utils_parent_dir, 'journeytime.json'), 'r')
     credentials = json.load(file)
     file.close  # Can close the file now we have the data loaded...
     return credentials
@@ -42,7 +42,7 @@ def _get_next_chunk_size(rows_remain):
 
     Based on the remaining rows and the paramaterised optimimum chunk size
     """
-    CHUNK_SIZE = int(loadCredentials()['DOWNLOAD_CHUNK_SIZE'])
+    CHUNK_SIZE = int(load_credentials()['DOWNLOAD_CHUNK_SIZE'])
     rows_chunk = 0
     if rows_remain > 0:
         if rows_remain >= CHUNK_SIZE:

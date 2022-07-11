@@ -20,8 +20,8 @@ from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, St
 # from the python path etc..
 jt_gtfs_module_dir = os.path.dirname(__file__)
 sys.path.insert(0, jt_gtfs_module_dir)
-from jtCalcStopDistFromCC import loopOverAllStopsAndCalcDistFromCC
-from jtUtils import loadCredentials
+from jt_calc_stop_dist_from_cc import loop_over_stops_calc_dist_from_cc
+from jt_utils import load_credentials
 
 def download_gtfs_schedule_data(credentials, import_dir):
     """Download the latest version of the GTFS Schedule Data.
@@ -346,7 +346,7 @@ def main():
 
     print('\tLoading credentials.')
     # Load our private credentials from a JSON file
-    credentials = loadCredentials()
+    credentials = load_credentials()
     import_dir  = jt_gtfs_module_dir + "/import/"
 
     print("TEMP: credentials loaded, imports complete, path is:", sys.path)
@@ -394,7 +394,7 @@ def main():
 
             # With the data loaded, post-process it to include the distance from the City
             # Center
-            loopOverAllStopsAndCalcDistFromCC(Session)
+            loop_over_stops_calc_dist_from_cc(Session)
         
         # Make sure to close the connection - a memory leak on this would kill
         # us...

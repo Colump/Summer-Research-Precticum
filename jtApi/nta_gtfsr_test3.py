@@ -2,7 +2,7 @@ import sys
 from google.transit import gtfs_realtime_pb2
 import requests
 import json
-from jtUtils import loadCredentials
+from jt_utils import load_credentials
 
 # NOTE
 # If you're here you've probably already inspected the documentation at:

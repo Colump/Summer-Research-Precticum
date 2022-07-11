@@ -13,16 +13,22 @@ if script is being run as a script (not imported) call main() function
 
 """
 
-import sys
+import os, sys
 from haversine import haversine, Unit
-from jtUtils import loadCredentials
-
 from sqlalchemy import create_engine
 import traceback
 from sqlalchemy.orm import sessionmaker
+# This might seem unusual... but to make sure we can import modules from the
+# folder where jt_gtfs_loader is installed (e.g. if called as an installed
+# endpoint) - we always add the module directory to the python path. Endpoints
+# can be called from any 'working directory' - but modules can only be imported
+# from the python path etc..
+jt_calc_stop_dist_from_cc_module_dir = os.path.dirname(__file__)
+sys.path.insert(0, jt_calc_stop_dist_from_cc_module_dir)
 from models import Stop
+from jt_utils import load_credentials
 
-def loopOverAllStopsAndCalcDistFromCC(Session):
+def loop_over_stops_calc_dist_from_cc(Session):
     """
     """
     # Each point is represented by a tuple, (lat, lon). Define a fixed point for
@@ -63,7 +69,7 @@ def main():
     print('of the city as many of the bus terminus stop surround that point (53.347269°-6.259107°).')
     print('')
 
-    credentials = loadCredentials()
+    credentials = load_credentials()
 
     # For more information on SqlAlchemy and using ORM see:
     #   -> https://docs.sqlalchemy.org/en/14/orm/tutorial.html
@@ -103,7 +109,7 @@ def main():
             # maintained by the Engine, and holds onto it until we commit all changes and/or close the
             # session object.
 
-            loopOverAllStopsAndCalcDistFromCC(Session)
+            loop_over_stops_calc_dist_from_cc(Session)
 
         # Make sure to close the connection - a memory leak on this would kill
         # us...
