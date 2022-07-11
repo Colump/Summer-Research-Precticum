@@ -4,15 +4,14 @@
 
 """
 
+from datetime import datetime
 import os, sys, csv
-import zipfile
-from zipfile import ZipFile
 import requests
-import traceback
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker
-from datetime import datetime
-from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+import traceback
+import zipfile
+from zipfile import ZipFile
 # This might seem unusual... but to make sure we can import modules from the
 # folder where jt_gtfs_loader is installed (e.g. if called as an installed
 # endpoint) - we always add the module directory to the python path. Endpoints
@@ -20,6 +19,7 @@ from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, St
 # from the python path etc..
 jt_gtfs_module_dir = os.path.dirname(__file__)
 sys.path.insert(0, jt_gtfs_module_dir)
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
 from jt_calc_stop_dist_from_cc import loop_over_stops_calc_dist_from_cc
 from jt_utils import load_credentials
 
