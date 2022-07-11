@@ -1,0 +1,2 @@
+[console_scripts]
+jt_dl = jtApi.jt_gtfs_loader:main

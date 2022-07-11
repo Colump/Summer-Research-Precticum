@@ -103,14 +103,15 @@ setup(
             # Here are the topics that my library covers.
             'Topic :: Education',
 
-            ]
+            ],
       
-      #scripts=['jt_scheduled_tasks/jt_scheduler.sh'],
+      # When we install the package, setuptools will copy the script to our PATH
+      # and make it available for general use.
+      scripts=['jtApi/jt_scheduler.sh'],
 
-      # entry_points={
-      #       'console_scripts': [
-      #             'jt_dl = jt_scheduled_tasks.data_loader:main',
-      #             'jt_resample = jt_scheduled_tasks.data_resampler:main'
-      #       ]
-      # }
+      entry_points={
+            'console_scripts': [
+                  'jt_dl = jtApi.jt_gtfs_loader:main'
+            ]
+      }
 )
