@@ -423,15 +423,39 @@ def get_stops_by_route():
 #  GROUP 4: JT_UI SUPPORT FUNCTIONS
 ##########################################################################################
 
+# @app.route('/', methods=['GET'])
+# @app.route('/', methods=['PUT'])
+# @app.route('/', methods=['POST'])
+# @app.route('/', methods=['DELETE'])
+
 @jtFlaskApp.route("/login.do", methods=['POST'])
+@csrf.exempt
 def login():
-    """For the supplier username and hashed password, attempt login
+    """For the supplied username and hashed password, attempt login
 
     Returns
     """
-    resp = jsonify(success=True)
-    resp.status_code = 200  # Success
-    #resp.status_code = 401  # Unauthorized
+    form = request.form
+    login_username = form['username']
+    login_pwhash = form['password_hash']
+    print("from request, login_username ->", login_username)
+    print("from request, login_pwhash ->", login_pwhash)
+
+    resp = ''
+    try:
+        user = db.session.query(JT_User).filter_by(username=login_username).one()
+        if user.password_hash == login_pwhash:
+            resp = jsonify(success=True)
+            resp.status_code = 200  # Success
+        else:
+            resp = jsonify(success=False)
+            resp.status_code = 401  # Unauthorized
+    except:
+        # Don't really care what failed... if auth didn't succeed then we just
+        # throw the toys out of the pram.
+        resp = jsonify(success=False)
+        resp.status_code = 401  # Unauthorized
+
     return resp
 
 @jtFlaskApp.route("/get_profile_picture.do", methods=['GET'])
@@ -459,28 +483,32 @@ def register():
     # 'validate_on_submit' ensures BOTH post AND form checks passed!
     valid = user_form.validate_on_submit()
     if valid:
-        print("username ->", user_form.username.data, "-", type(user_form.username.data))
-        print("password_hash ->", user_form.password_hash.data, "-", type(user_form.password_hash.data))
-        print("nickname ->", user_form.nickname.data, "-", type(user_form.nickname.data))
-        print("colour ->", user_form.colour.data, "-", type(user_form.colour.data))
-        print("profile_picture ->", user_form.profile_picture.data, "-", type(user_form.profile_picture.data))
-        new_user = JT_User()
-        user_form.populate_obj(new_user)
-        # It appears the 'populate_obj' doesn't handle files well - so pos
-        # populate_obj we do file fields manually...
-        if user_form.profile_picture.data.filename:
-            new_user.profile_picture_filename = user_form.profile_picture.data.filename
-            new_user.profile_picture = user_form.profile_picture.data.read()
-        else:
-            new_user.profile_picture_filename = None
-            new_user.profile_picture = None
+        try:
+            print("username ->", user_form.username.data, "-", type(user_form.username.data))
+            print("password_hash ->", user_form.password_hash.data, "-", type(user_form.password_hash.data))
+            print("nickname ->", user_form.nickname.data, "-", type(user_form.nickname.data))
+            print("colour ->", user_form.colour.data, "-", type(user_form.colour.data))
+            print("profile_picture ->", user_form.profile_picture.data, "-", type(user_form.profile_picture.data))
+            new_user = JT_User()
+            user_form.populate_obj(new_user)
+            # It appears the 'populate_obj' doesn't handle files well - so pos
+            # populate_obj we do file fields manually...
+            if user_form.profile_picture.data.filename:
+                new_user.profile_picture_filename = user_form.profile_picture.data.filename
+                new_user.profile_picture = user_form.profile_picture.data.read()
+            else:
+                new_user.profile_picture_filename = None
+                new_user.profile_picture = None
 
-        db.session.add(new_user)
-        db.session.flush()
-        db.session.commit()
+            db.session.add(new_user)
+            db.session.flush()
+            db.session.commit()
 
-        # filename = secure_filename(f.filename)
-        flash('SUCCESS')
+            flash('SUCCESS')
+        except:                   # * see comment below
+            db.session.rollback()
+            flash('FAILURE')
+
         return render_template('test_forms.html', form=user_form)
     else:
         # 'form.errors' is only populated when you call either validate() or

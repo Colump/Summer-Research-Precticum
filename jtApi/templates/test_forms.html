@@ -5,28 +5,21 @@
 <div class="row">
     <div class="col p-4">
         <!-- We only display the sidebar on XL screens (d-none by default...)-->
-        <form method="POST" action="/register.do" enctype="multipart/form-data">
+        <form method="POST" action="/login.do">
             <label for="uname">Username: </label>
             <input type="text" id="uname" name="username"><br>
-            <label for="pass">Password (8 characters minimum):</label>
+            <label for="pass">Password_hash (8 characters minimum):</label>
             <input type="password" id="pass" name="password_hash" minlength="8" required><br>
-            <label for="nname">Nickname: </label>
-            <input type="text" id="nname" name="nickname"><br>
-            <label for="colour">Colour: </label>
-            <input type="text" id="colour" name="colour"><br>
-            <label for="prof_pic">Add A Profile Picture: </label>
-            <input type="file" id="prof_pic" name="profile_picture" /><br>
-            <input type="submit" value="Register">
+            <input type="submit" value="Log In">
         </form>
     </div>
 </div>
-<!--
+
 <div class="row">
     <div class="col p-4">
-        <!- - We only display the sidebar on XL screens (d-none by default...)- ->
         {{ form.name }}
         <form method="POST" action="{{ url_for('register') }}" enctype="multipart/form-data">
-            { {form.csrf_token()} }
+            {{ form.csrf_token() }}
             {% for field in form if field.widget.input_type != 'hidden' if field.type != 'SubmitField' %}
                 {{ field.label }}
                 {{ field }}
@@ -42,5 +35,4 @@
         </form>
     </div>
 </div>
--->
 {% endblock %}

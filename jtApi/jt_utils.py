@@ -6,7 +6,6 @@ import struct
 import time
 import zlib
 
-
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
 # ... Python, if needing to use relative paths in order to make it easier to 
