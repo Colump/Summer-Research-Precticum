@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
-from msilib.schema import File
+#from msilib.schema import File
 import os, sys
 from flask import Response
 from numpy import choose
