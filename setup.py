@@ -59,21 +59,26 @@ setup(
 
       # These are the dependencies the library needs in order to run.
       install_requires=[
+            'email-validator==1.2.1',
             'flask>=2.0.3',
+            'Flask-Reuploaded==1.2.0',
             'flask-sqlalchemy>=2.5.1',
             'haversine>=2.5.1',
             'mysql-connector-python>=8.0.0',
             'requests==2.27.1',
             'sqlalchemy==1.4.27',
             'pandas==1.4.2',
-            'scikit-learn==1.0.2'
+            'scikit-learn==1.0.2',
+            'WTForms==3.0.1',
+            'zipp>=3.6.0'
        ],
 
       # Here I can specify the python version necessary to run this library.
       python_requires='>=3.9',
 
       license='MIT',
-      packages=['jtApi'],
+      #packages=['jtApi'],
+      packages=find_packages(include=['jtApi', 'jtApi.*']),
       zip_safe=False,
 
       # Additional classifiers that give some characteristics about the package.
@@ -111,7 +116,7 @@ setup(
 
       entry_points={
             'console_scripts': [
-                  'jt_dl = jt_gtfs_loader:main'
+                  'jt_dl = jtApi.jt_gtfs_loader:main'
             ]
       }
 )
