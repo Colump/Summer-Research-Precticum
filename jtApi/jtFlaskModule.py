@@ -4,7 +4,7 @@ from pickle import NONE
 from sqlite3 import Date
 # jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
 # in a Response object with the application/json mimetype.
-from flask import Flask, g, request, render_template, jsonify
+from flask import Flask, g, redirect, request, render_template, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from importlib_metadata import csv
 from sqlalchemy import text, func
@@ -124,7 +124,7 @@ def documentation():
     return render_template('documentation.html')
 
 @jtFlaskApp.route('/invalid_dataset.html')
-def documentation2():
+def invalid_dataset():
     # This route renders a template from the template folder
     return render_template('invalid_dataset.html')
 
@@ -132,6 +132,10 @@ def documentation2():
 def about():
     # This route renders a template from the template folder
     return render_template('about.html')
+
+@jtFlaskApp.route('/downloads.html')
+def downloads():
+    return render_template ('downloads.html')
 
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
@@ -182,21 +186,20 @@ def get_agency(agency_name):
     args = request.args
     download_type = args.get(CONST_DLTYPE)  # q - if user specifies /agency/id they should get ONe agency
     
-    # download_type must be either 'file' or 'json' - so we should have constants for file or json
     # if not a valid value - go to "invalid request page"
 
     agencyQuery = db.session.query(Agency)
-    if agency_name != None:
-        agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
-    agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+    #if agency_name != None:
+      #  agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
+    #sagencyQuery = agencyQuery.order_by(text('agency_name asc'))
 
- 
-    if download_type == CONST_CSVFILE:
+def file_choice(download_type):
+        agencyQuery = db.session.query(Agency)
+        if download_type == CONST_CSVFILE:
         # give them a csvfile
-        return download_dataset_as_file(download_type, 'agency')
-    elif download_type == CONST_JSONFILE:
-
-        total_records = agencyQuery.count()
+            return download_dataset_as_file(download_type, 'agency')
+        elif download_type == CONST_JSONFILE:
+            total_records = agencyQuery.count()
         dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
         if total_records > dl_row_limit:
             json_list = []
@@ -214,7 +217,14 @@ def get_agency(agency_name):
         
         return jsonify(json_list)
 
-     #else:
+    # else:
+    #     if agency_name != None:
+    #         agencyQuery = agencyQuery.filter(Agency.agency_name == agency_name)
+    #         agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+    #         json_list=[i.serialize() for i in agencyQuery.all()]
+    #         return jsonify(json_list)
+    #     else:
+    #         return redirect ("http://localhost:8080/invalid_dataset.html")
         # in here ? Is the agency id supplied? if it is, just do the one
         # if there is no id and no download_type that's when we need an error page.
         #find the way to either return the value from another endpoint 
