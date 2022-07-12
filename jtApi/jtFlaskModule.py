@@ -192,7 +192,8 @@ def get_agency(agency_name):
     if agency_name != None:
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
         agencyQuery = agencyQuery.order_by(text('agency_name asc'))
-        json_list=[row.serialize() for row in agencyQuery.one()]
+        json_list=[row.serialize() for row in agencyQuery.all()] # ".one" causes a TypeError, ".all" returns just the specified agency
+                                                                     
     else:
         if download_type == CONST_CSVFILE:
             # give them a csvfile
