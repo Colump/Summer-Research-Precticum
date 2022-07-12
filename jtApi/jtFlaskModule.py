@@ -6,7 +6,7 @@ from pickle import NONE
 from flask import flash, Flask, g, jsonify, make_response, redirect, request, render_template, url_for
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
-from forms import UserForm
+from forms import *
 from sqlalchemy import text, func
 import json
 from jinja2 import Template
@@ -420,13 +420,82 @@ def get_stops_by_route():
     return jsonify(json_list)
 
 ##########################################################################################
-#  GROUP 4: JT_UI SUPPORT FUNCTIONS
+#  GROUP 4: JT_UI RESTful SUPPORT FUNCTIONS
 ##########################################################################################
 
-# @app.route('/', methods=['GET'])
-# @app.route('/', methods=['PUT'])
-# @app.route('/', methods=['POST'])
-# @app.route('/', methods=['DELETE'])
+def get_success_response():
+    resp = jsonify(success=True)
+    resp.status_code = 200  # Success
+    return resp
+
+def get_failure_response():
+    resp = jsonify(success=False)
+    resp.status_code = 401  # Unauthorized
+
+def log_errors(errors):
+    print("ERRORS Detected on form:")
+    for key in errors:
+        for message in errors[key]:
+            print("\t" + str(key)+ " : " + message)
+
+# @app.route('/', methods=['GET']) - for queries
+# @app.route('/', methods=['PUT']) - for inserts
+# @app.route('/', methods=['POST']) - for updates
+# @app.route('/', methods=['DELETE']) - for deletes
+
+@jtFlaskApp.route("/check_username_available.do", methods=['POST'])
+@csrf.exempt
+def login():
+    """Check if the supplied username is available
+
+    Returns RESTful success/fail
+    """
+    check_form = CheckUsernameAvailableForm(meta={'csrf': False})  # see forms.py
+
+    resp = get_failure_response()  # Assume not available
+    # 'validate_on_submit' ensures BOTH post AND form checks passed!
+    if check_form.validate_on_submit():
+        try:
+            desired_username = check_form.username.data
+            count_users_with_username = db.session.query(JT_User).filter_by(username=desired_username).count()
+            if count_users_with_username == 0:
+                resp = get_success_response()
+        except:
+            pass
+
+    return resp
+
+@jtFlaskApp.route("/register.do", methods=['POST'])
+@csrf.exempt
+def register():
+    #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
+    #   -> 'request.form' only contains form input data.
+    #   -> 'request.files' contains file upload data.
+    # You need to pass the combination of both to the form. Since a form inherits
+    # from Flask-WTF's Form (now called FlaskForm), it will handle this automatically
+    # if you don't pass anything to the form!!
+    reg_form = RegisterForm(meta={'csrf': False})  # see forms.py
+
+    resp = get_failure_response()  # Assume failure
+    if reg_form.validate_on_submit():
+        try:
+            new_user = JT_User()
+            reg_form.populate_obj(new_user)
+
+            db.session.add(new_user)
+            db.session.flush()
+            db.session.commit()
+
+            resp = get_success_response()
+        except:                   # * see comment below
+            db.session.rollback()
+    else:
+        # 'form.errors' is only populated when you call either validate() or
+        # validate_on_submit.  So you can't check this in advance!
+        # Log any errors in the server log (while devloping at least...)
+        log_errors(reg_form.errors)
+
+    return resp
 
 @jtFlaskApp.route("/login.do", methods=['POST'])
 @csrf.exempt
@@ -435,26 +504,60 @@ def login():
 
     Returns
     """
-    form = request.form
-    login_username = form['username']
-    login_pwhash = form['password_hash']
-    print("from request, login_username ->", login_username)
-    print("from request, login_pwhash ->", login_pwhash)
+    login_form = LoginForm(meta={'csrf': False})  # see forms.py
 
-    resp = ''
-    try:
-        user = db.session.query(JT_User).filter_by(username=login_username).one()
-        if user.password_hash == login_pwhash:
-            resp = jsonify(success=True)
-            resp.status_code = 200  # Success
-        else:
-            resp = jsonify(success=False)
-            resp.status_code = 401  # Unauthorized
-    except:
-        # Don't really care what failed... if auth didn't succeed then we just
-        # throw the toys out of the pram.
-        resp = jsonify(success=False)
-        resp.status_code = 401  # Unauthorized
+    resp = get_failure_response()  # Assume failure
+    if login_form.validate_on_submit():
+        try:
+            jt_user = db.session.query(JT_User).filter_by(username=login_form.username.data).one()
+            if jt_user.password_hash == login_form.password_hash.data:
+                resp = get_success_response()
+        except:                   # * see comment below
+            pass
+    else:
+        log_errors(login_form.errors)
+
+    return resp
+
+@jtFlaskApp.route("/update_user.do", methods=['POST'])
+@csrf.exempt
+def register():
+    #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
+    #   -> 'request.form' only contains form input data.
+    #   -> 'request.files' contains file upload data.
+    # You need to pass the combination of both to the form. Since a form inherits
+    # from Flask-WTF's Form (now called FlaskForm), it will handle this automatically
+    # if you don't pass anything to the form!!
+    upd_usr_form = UpdateUserForm(meta={'csrf': False})  # see forms.py
+
+    resp = get_failure_response()  # Assume failure
+    if upd_usr_form.validate_on_submit():
+        try:
+            # print("username ->", upd_usr_form.username.data, "-", type(upd_usr_form.username.data))
+            # print("password_hash ->", upd_usr_form.password_hash.data, "-", type(upd_usr_form.password_hash.data))
+            # print("nickname ->", upd_usr_form.nickname.data, "-", type(upd_usr_form.nickname.data))
+            # print("colour ->", upd_usr_form.colour.data, "-", type(upd_usr_form.colour.data))
+            # print("profile_picture ->", upd_usr_form.profile_picture.data, "-", type(upd_usr_form.profile_picture.data))
+            jt_user = db.session.query(JT_User).filter_by(username=upd_usr_form.username.data).one()
+            upd_usr_form.populate_obj(jt_user)  # Overwrite old values
+            # It appears the 'populate_obj' doesn't handle files well - so pos
+            # populate_obj we do file fields manually...
+            if upd_usr_form.profile_picture.data.filename:
+                jt_user.profile_picture_filename = upd_usr_form.profile_picture.data.filename
+                jt_user.profile_picture = upd_usr_form.profile_picture.data.read()
+            else:
+                jt_user.profile_picture_filename = None
+                jt_user.profile_picture = None
+
+            db.session.flush()
+            db.session.commit()
+
+            resp = get_success_response()
+        except:                   # * see comment below
+            db.session.rollback()
+
+    else:
+        log_errors(upd_usr_form.errors)
 
     return resp
 
@@ -468,58 +571,6 @@ def get_profile_picture():
     extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
     response.headers.set('Content-Type', 'image/' + extension)
     return response
-
-@jtFlaskApp.route("/register.do", methods=['POST'])
-@csrf.exempt
-def register():
-    #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
-    #   -> 'request.form' only contains form input data.
-    #   -> 'request.files' contains file upload data.
-    # You need to pass the combination of both to the form. Since a form inherits
-    # from Flask-WTF's Form (now called FlaskForm), it will handle this automatically
-    # if you don't pass anything to the form!!
-    user_form = UserForm(meta={'csrf': False})  # see forms.py
-
-    # 'validate_on_submit' ensures BOTH post AND form checks passed!
-    valid = user_form.validate_on_submit()
-    if valid:
-        try:
-            print("username ->", user_form.username.data, "-", type(user_form.username.data))
-            print("password_hash ->", user_form.password_hash.data, "-", type(user_form.password_hash.data))
-            print("nickname ->", user_form.nickname.data, "-", type(user_form.nickname.data))
-            print("colour ->", user_form.colour.data, "-", type(user_form.colour.data))
-            print("profile_picture ->", user_form.profile_picture.data, "-", type(user_form.profile_picture.data))
-            new_user = JT_User()
-            user_form.populate_obj(new_user)
-            # It appears the 'populate_obj' doesn't handle files well - so pos
-            # populate_obj we do file fields manually...
-            if user_form.profile_picture.data.filename:
-                new_user.profile_picture_filename = user_form.profile_picture.data.filename
-                new_user.profile_picture = user_form.profile_picture.data.read()
-            else:
-                new_user.profile_picture_filename = None
-                new_user.profile_picture = None
-
-            db.session.add(new_user)
-            db.session.flush()
-            db.session.commit()
-
-            flash('SUCCESS')
-        except:                   # * see comment below
-            db.session.rollback()
-            flash('FAILURE')
-
-        return render_template('test_forms.html', form=user_form)
-    else:
-        # 'form.errors' is only populated when you call either validate() or
-        # validate_on_submit.  So you can't check this in advance!
-        # Log any errors in the server log (while devloping at least...)
-        print("ERRORS Detected on form:")
-        for key in user_form.errors:
-            for message in user_form.errors[key]:
-                print("\t" + str(key)+ " : " + message)
-
-    return render_template('test_forms.html', form=user_form)
 
 ##########################################################################################
 #  END: CLOSE APPLICATION

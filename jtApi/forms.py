@@ -9,7 +9,15 @@ from flask_wtf.file import FileAllowed, FileRequired
 from wtforms.fields import EmailField, FileField, PasswordField, StringField, SubmitField
 from wtforms.validators import DataRequired, EqualTo, Email, Length
 
-class UserForm(FlaskForm):
+class CheckUsernameAvailableForm(FlaskForm):
+    """User Maintenance form."""
+    username = StringField(
+        'Username',
+        [DataRequired()]
+    )
+    submit = SubmitField('Check')
+
+class RegisterForm(FlaskForm):
     """User Maintenance form."""
     username = StringField(
         'Username',
@@ -19,7 +27,39 @@ class UserForm(FlaskForm):
         'Password Hash',
         [
             DataRequired(),
-            Length(min=8,
+            Length(min=60,
+            message=('Your password hash is too short.'))
+        ]
+    )
+    submit = SubmitField('Register')
+
+class LoginForm(FlaskForm):
+    """User Maintenance form."""
+    username = StringField(
+        'Username',
+        [DataRequired()]
+    )
+    password_hash = PasswordField(
+        'Password Hash',
+        [
+            DataRequired(),
+            Length(min=60,
+            message=('Your password hash is too short.'))
+        ]
+    )
+    submit = SubmitField('Login')
+
+class UpdateUserForm(FlaskForm):
+    """User Maintenance form."""
+    username = StringField(
+        'Username',
+        [DataRequired()]
+    )
+    password_hash = PasswordField(
+        'Password Hash',
+        [
+            DataRequired(),
+            Length(min=60,
             message=('Your password hash is too short.'))
         ]
     )
@@ -45,4 +85,4 @@ class UserForm(FlaskForm):
             FileAllowed(IMAGES, 'Unsupported File Type.')
         ]
     )
-    submit = SubmitField('Register')
+    submit = SubmitField('Update')
