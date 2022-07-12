@@ -179,65 +179,52 @@ def downloads():
 ##########################################################################################
 
 # endpoint for Agency model
+# user can use EITHER: 'agency name' as a key
+# -OR- supply argument '?dltype' to be either json or csv
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
 @jtFlaskApp.route("/agency/<agency_name>")
 def get_agency(agency_name):
     args = request.args
-
-    download_type = args.get(CONST_DLTYPE)  # q - if user specifies /agency/id they should get ONe agency
+    download_type = args.get(CONST_DLTYPE)  # q might be blank?
 
     agencyQuery = db.session.query(Agency)
 
     if agency_name != None:
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
         agencyQuery = agencyQuery.order_by(text('agency_name asc'))
-        json_list=[row.serialize() for row in agencyQuery.all()]
+        json_list=[row.serialize() for row in agencyQuery.one()]
     else:
         if download_type == CONST_CSVFILE:
             # give them a csvfile
-            return download_dataset_as_file(download_type, 'agency')
+#================================================================
+#================================================================
+#================================================================
+            return download_dataset_as_file(agencyQuery, 'agency')  # THIS SHOULD BE ZIP FILE!!!!!
         else:
-            download_type == CONST_JSONFILE:
             total_records = agencyQuery.count()
-        dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
-        if total_records > dl_row_limit:
-            json_list = []
-            row_count = 0
-            for row in agencyQuery:
-                json_list.append( row.serialize() )
-                row_count += 1
-                
-                if row_count > dl_row_limit:
-                    break
-        else:
-            # use serialize function to make a new list from the results
-            # just one serialize function so no if statement
-            json_list=[row.serialize() for row in agencyQuery.all()]
-        
-        return jsonify(json_list)    
-    # if not a valid value - go to "invalid request page"
+            dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
 
+            if total_records > dl_row_limit:
+                json_list = []
+                row_count = 0
+                for row in agencyQuery:
+                    json_list.append( row.serialize() )
+                    row_count += 1
+                    
+                    if row_count > dl_row_limit:
+                        break
+                if download_type == CONST_JSONFILE:
+                    print("WE WOULD DOWNload our json list as a file - if the function existed!!!")
+                    #return download_dataset_as_file(??????query?????, 'agency')
+            else:
+                if download_type == CONST_JSONFILE:
+                    return download_dataset_as_file(agencyQuery, 'agency')
+                 # use serialize function to make a new list from the results
+                # just one serialize function so no if statement
+                json_list=[row.serialize() for row in agencyQuery.all()]
         
     return jsonify(json_list)
 
-
-       
-
-    # else:
-    #     if agency_name != None:
-    #         agencyQuery = agencyQuery.filter(Agency.agency_name == agency_name)
-    #         agencyQuery = agencyQuery.order_by(text('agency_name asc'))
-    #         json_list=[i.serialize() for i in agencyQuery.all()]
-    #         return jsonify(json_list)
-    #     else:
-    #         return redirect ("http://localhost:8080/invalid_dataset.html")
-        # in here ? Is the agency id supplied? if it is, just do the one
-        # if there is no id and no download_type that's when we need an error page.
-        #find the way to either return the value from another endpoint 
-        #or redirect this to another end point 
-       # or call another end point
-        #return
-        # route to error ?
 
 # endpoint for Calendar model
 @jtFlaskApp.route("/calendar", defaults={'service_id':None})
