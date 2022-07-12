@@ -128,7 +128,7 @@ def about():
 @jtFlaskApp.route('/TKTESTING.do', methods=['GET'])
 def TKTESTING():
     # This route renders a template from the template folder
-    return render_template('test_forms.html', form=UserForm())
+    return render_template('test_forms.html', form=UpdateUserForm())
 
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
@@ -431,12 +431,14 @@ def get_success_response():
 def get_failure_response():
     resp = jsonify(success=False)
     resp.status_code = 401  # Unauthorized
+    return resp
 
 def log_errors(errors):
     print("ERRORS Detected on form:")
     for key in errors:
         for message in errors[key]:
             print("\t" + str(key)+ " : " + message)
+    return
 
 # @app.route('/', methods=['GET']) - for queries
 # @app.route('/', methods=['PUT']) - for inserts
@@ -445,7 +447,7 @@ def log_errors(errors):
 
 @jtFlaskApp.route("/check_username_available.do", methods=['POST'])
 @csrf.exempt
-def login():
+def check_username_available():
     """Check if the supplied username is available
 
     Returns RESTful success/fail
@@ -521,7 +523,7 @@ def login():
 
 @jtFlaskApp.route("/update_user.do", methods=['POST'])
 @csrf.exempt
-def register():
+def update_user():
     #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
     #   -> 'request.form' only contains form input data.
     #   -> 'request.files' contains file upload data.

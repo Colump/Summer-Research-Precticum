@@ -5,20 +5,41 @@
 <div class="row">
     <div class="col p-4">
         <!-- We only display the sidebar on XL screens (d-none by default...)-->
+        <form method="POST" action="/check_username_available.do">
+            <label for="uname">Username: </label>
+            <input type="text" id="uname" name="username"><br>
+            <input type="submit" value="Check">
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        <!-- We only display the sidebar on XL screens (d-none by default...)-->
+        <form method="POST" action="/register.do">
+            <label for="uname">Username: </label>
+            <input type="text" id="uname" name="username"><br>
+            <label for="pass">Password_hash (8 characters minimum):</label>
+            <input type="password" id="pass" name="password_hash" minlength="8" required><br>
+            <input type="submit" value="REgister">
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        <!-- We only display the sidebar on XL screens (d-none by default...)-->
         <form method="POST" action="/login.do">
             <label for="uname">Username: </label>
             <input type="text" id="uname" name="username"><br>
             <label for="pass">Password_hash (8 characters minimum):</label>
             <input type="password" id="pass" name="password_hash" minlength="8" required><br>
-            <input type="submit" value="Log In">
+            <input type="submit" value="Login">
         </form>
     </div>
 </div>
-
 <div class="row">
     <div class="col p-4">
         {{ form.name }}
-        <form method="POST" action="{{ url_for('register') }}" enctype="multipart/form-data">
+        <form method="POST" action="{{ url_for('update_user') }}" enctype="multipart/form-data">
             {{ form.csrf_token() }}
             {% for field in form if field.widget.input_type != 'hidden' if field.type != 'SubmitField' %}
                 {{ field.label }}
