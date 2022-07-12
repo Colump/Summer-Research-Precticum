@@ -101,10 +101,10 @@ schedule)
     #   -> That the project conda virtual environment 'comp47360py39_jt' is configured
     #   -> That dudewmb.json (with our credentials) are available in the account login directory
     #   -> *** SUPER IMPORTANT *** That the ".bashrc_conda" script is available
-    #      in the ubuntu home directory (the conda environments won't work without it)
+    #      in the student home directory (the conda environments won't work without it)
     echo "SHELL=/bin/bash" >> "${cron_dir}/jt_scheduled_tasks"
     echo "BASH_ENV=~/.bashrc_conda" >> "${cron_dir}/jt_scheduled_tasks"
-    echo "0   4    * * * ubuntu conda activate comp47360py39_jt && ${jt_gtfs_loader_module} >> ${home_dir}/jt_scheduled_tasks.log 2>&1 && conda deactivate" >> "${cron_dir}/jt_scheduled_tasks"
+    echo "0   4    * * * student conda activate comp47360py39_jt && ${jt_gtfs_loader_module} >> ${home_dir}/jt_scheduled_tasks.log 2>&1 && conda deactivate" >> "${cron_dir}/jt_scheduled_tasks"
 
     # Make sure there's a new line after the last command - cron seems to like it...
     echo "" >> "${cron_dir}/jt_scheduled_tasks"
