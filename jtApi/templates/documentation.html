@@ -135,6 +135,7 @@
         <hr>
         <h3>Stops</h3>
         <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+        <div>
         <table class="table table-hover">
             <tr>
                 <th>Field Name</th>
@@ -175,6 +176,147 @@
                 </td>
               </tr>
         </table>
+      </div>
+      <div>
+        <hr>
+        <h3>Calendar</h3>
+        <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+        <table class="table table-hover">
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>Service_id</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>Uniquely identifies a set of dates when service is available for one or more routes. </td>
+              </tr>
+              <tr>
+                <td>Monday</td>
+                <td>Int)</td>
+                <td>n/a</td>
+                <td>1 - Service is available for all Mondays in the date range.
+                  0 - Service is not available for Mondays in the date range.</td>
+              </tr>
+              <tr>
+                <td>Tuesday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Tuesdays
+                </td>
+              </tr>
+              <tr>
+                <td>Wednesday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Wednesdays
+                </td>
+              </tr>
+              <tr>
+                <td>Thursday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Thursdays
+                </td>
+              </tr>
+              <tr>
+                <td>Friday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Fridays
+                </td>
+              </tr>
+              <tr>
+                <td>Saturday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Saturdays                </td>
+              </tr>
+              <tr>
+                <td>Sunday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Sundays</td>
+              </tr>
+        </table>
+      </div>
+
+      <h3>Calendar Dates</h3>
+      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+      <table class="table table-hover">
+          <tr>
+              <th>Field Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>Service_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Identifies a set of dates when service is available for one or more routes. </td>
+            </tr>
+            <tr>
+              <td>Date</td>
+              <td>Datetime</td>
+              <td>n/a</td>
+              <td>Indicates whether service is available on the date specified in the date field.</td>
+            </tr>
+      </table>
+    </div>
+    <div>
+      <hr>
+      <h3>Routes</h3>
+      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+      <table class="table table-hover">
+          <tr>
+              <th>Field Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>Route_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Identifies a route.</td>
+            </tr>
+            <tr>
+              <td>Agency_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Agency for the specified route.</td>
+            </tr>
+            <tr>
+              <td>Route_short_name</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Short name of a route.</td>
+            </tr>
+            <tr>
+              <td>Route_long_name</td>
+              <td>varchar(125)</td>
+              <td>n/a</td>
+              <td>Full name of a route.</td>
+            </tr>
+            <tr>
+              <td>Route_type</td>
+              <td>Int</td>
+              <td>n/a</td>
+              <td>Indicates the type of transportation used on a route.</td>
+            </tr>
+            <tr>
+              <td>Friday</td>
+              <td>Int</td>
+              <td>n/a</td>
+              <td>Functions in the same way as monday except applies to Fridays.
+              </td>
+            </tr>
+      </table>
+    </div>
     </div>
 </div>
 {% endblock %}
