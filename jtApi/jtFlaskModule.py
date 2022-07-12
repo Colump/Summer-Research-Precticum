@@ -182,23 +182,22 @@ def downloads():
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
 @jtFlaskApp.route("/agency/<agency_name>")
 def get_agency(agency_name):
-
     args = request.args
+
     download_type = args.get(CONST_DLTYPE)  # q - if user specifies /agency/id they should get ONe agency
-    
-    # if not a valid value - go to "invalid request page"
 
     agencyQuery = db.session.query(Agency)
-    #if agency_name != None:
-      #  agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
-    #sagencyQuery = agencyQuery.order_by(text('agency_name asc'))
 
-def file_choice(download_type):
-        agencyQuery = db.session.query(Agency)
+    if agency_name != None:
+        agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
+        agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+        json_list=[row.serialize() for row in agencyQuery.all()]
+    else:
         if download_type == CONST_CSVFILE:
-        # give them a csvfile
+            # give them a csvfile
             return download_dataset_as_file(download_type, 'agency')
-        elif download_type == CONST_JSONFILE:
+        else:
+            download_type == CONST_JSONFILE:
             total_records = agencyQuery.count()
         dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
         if total_records > dl_row_limit:
@@ -215,7 +214,14 @@ def file_choice(download_type):
             # just one serialize function so no if statement
             json_list=[row.serialize() for row in agencyQuery.all()]
         
-        return jsonify(json_list)
+        return jsonify(json_list)    
+    # if not a valid value - go to "invalid request page"
+
+        
+    return jsonify(json_list)
+
+
+       
 
     # else:
     #     if agency_name != None:
