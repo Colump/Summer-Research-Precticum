@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block main %}
+<script>
+    function warningBox(){
+        confirm("Woah there cowboy! That's a mighty big file you've selected, are you sure you want to downlaod it?")
+    }
+</script>
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+    <p>Would you like <a href='path/to/file' Download onclick="warningBox">CSV</a> or <a href='path/to/file' Download>JSON.</a>
+    </p>
+</div>
+{% endblock %}

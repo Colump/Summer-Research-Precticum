@@ -56,8 +56,86 @@
             How much instruction is required for a JSON interface? Document...
         </p>
         <h2>Specifications</h2>
+        <!--
+            Original information on the various data sets taken from:
+            https://developers.google.com/transit/gtfs/reference#agencytxt
+        -->
+        <hr>
+        <h3>Genius Prediction Engine</h3>
+        <p>
+
+        </p>
+        <hr>
+        <h3>Agency</h3>
+        <p>
+            Transit agencies with service represented in this dataset.
+            Download the latest Agency dataset for Dublin as <a href="http://localhost:8080/agency?dltype=json">.json</a>
+            or as a <a href="http://localhost:8080/agency?dltype=csv">.csv</a> file.
+        </p>
+        <table class="table table-hover">
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>Agency_Id</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>A unique identifier for this agency.</td>
+              </tr>
+              <tr>
+                <td>Agency_Name</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The agency name.</td>
+              </tr>
+              <tr>
+                <td>Agency_url</td>
+                <td>carchar(128)</td>
+                <td>n/a</td>
+                <td>URL link to the TFI website.</td>
+              </tr>
+              <tr>
+                <td>Agency_timezone</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The timezone the bus agency operates in.</td>
+              </tr>
+              <tr>
+                <td>Agency_lang</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The language the agency operates in.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_phone</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The agency phone number.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_lang</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>The language the agency operates in.
+                </td>
+              </tr>
+              <tr>
+                <td>Agency_col</td>
+                <td>varchar(64)</td>
+                <td>n/a</td>
+                <td>
+                </td>
+              </tr>
+        </table>
+        <hr>
         <h3>Stops</h3>
         <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+        <div>
         <table class="table table-hover">
             <tr>
                 <th>Field Name</th>
@@ -98,6 +176,147 @@
                 </td>
               </tr>
         </table>
+      </div>
+      <div>
+        <hr>
+        <h3>Calendar</h3>
+        <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+        <table class="table table-hover">
+            <tr>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Required</th>
+                <th>Description</th>
+              </tr>
+              <tr>
+                <td>Service_id</td>
+                <td>varchar(32)</td>
+                <td>n/a</td>
+                <td>Uniquely identifies a set of dates when service is available for one or more routes. </td>
+              </tr>
+              <tr>
+                <td>Monday</td>
+                <td>Int)</td>
+                <td>n/a</td>
+                <td>1 - Service is available for all Mondays in the date range.
+                  0 - Service is not available for Mondays in the date range.</td>
+              </tr>
+              <tr>
+                <td>Tuesday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Tuesdays
+                </td>
+              </tr>
+              <tr>
+                <td>Wednesday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Wednesdays
+                </td>
+              </tr>
+              <tr>
+                <td>Thursday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Thursdays
+                </td>
+              </tr>
+              <tr>
+                <td>Friday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Fridays
+                </td>
+              </tr>
+              <tr>
+                <td>Saturday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Saturdays                </td>
+              </tr>
+              <tr>
+                <td>Sunday</td>
+                <td>Int</td>
+                <td>n/a</td>
+                <td>Functions in the same way as monday except applies to Sundays</td>
+              </tr>
+        </table>
+      </div>
+
+      <h3>Calendar Dates</h3>
+      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+      <table class="table table-hover">
+          <tr>
+              <th>Field Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>Service_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Identifies a set of dates when service is available for one or more routes. </td>
+            </tr>
+            <tr>
+              <td>Date</td>
+              <td>Datetime</td>
+              <td>n/a</td>
+              <td>Indicates whether service is available on the date specified in the date field.</td>
+            </tr>
+      </table>
+    </div>
+    <div>
+      <hr>
+      <h3>Routes</h3>
+      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
+      <table class="table table-hover">
+          <tr>
+              <th>Field Name</th>
+              <th>Type</th>
+              <th>Required</th>
+              <th>Description</th>
+            </tr>
+            <tr>
+              <td>Route_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Identifies a route.</td>
+            </tr>
+            <tr>
+              <td>Agency_id</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Agency for the specified route.</td>
+            </tr>
+            <tr>
+              <td>Route_short_name</td>
+              <td>varchar(32)</td>
+              <td>n/a</td>
+              <td>Short name of a route.</td>
+            </tr>
+            <tr>
+              <td>Route_long_name</td>
+              <td>varchar(125)</td>
+              <td>n/a</td>
+              <td>Full name of a route.</td>
+            </tr>
+            <tr>
+              <td>Route_type</td>
+              <td>Int</td>
+              <td>n/a</td>
+              <td>Indicates the type of transportation used on a route.</td>
+            </tr>
+            <tr>
+              <td>Friday</td>
+              <td>Int</td>
+              <td>n/a</td>
+              <td>Functions in the same way as monday except applies to Fridays.
+              </td>
+            </tr>
+      </table>
+    </div>
     </div>
 </div>
 {% endblock %}

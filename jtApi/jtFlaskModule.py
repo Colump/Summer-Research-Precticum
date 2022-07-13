@@ -7,6 +7,9 @@ from flask import flash, Flask, g, jsonify, make_response, redirect, request, re
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from forms import *
+from flask import Flask, g, redirect, request, render_template, jsonify
+from flask_sqlalchemy import SQLAlchemy
+from importlib_metadata import csv
 from sqlalchemy import text, func
 import json
 from jinja2 import Template
@@ -17,6 +20,10 @@ from jt_utils import query_results_as_compressed_csv
 #import pandas as pd
 import os, os.path, sys
 import requests
+
+CONST_DLTYPE  = 'dltype'
+CONST_JSONFILE = 'json'
+CONST_CSVFILE  = 'csv'
 
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
@@ -120,6 +127,11 @@ def documentation():
     # This route renders a template from the template folder
     return render_template('documentation.html')
 
+@jtFlaskApp.route('/invalid_dataset.html')
+def invalid_dataset():
+    # This route renders a template from the template folder
+    return render_template('invalid_dataset.html')
+
 @jtFlaskApp.route('/about.html')
 def about():
     # This route renders a template from the template folder
@@ -129,6 +141,10 @@ def about():
 def TKTESTING():
     # This route renders a template from the template folder
     return render_template('test_forms.html', form=UpdateUserForm())
+
+@jtFlaskApp.route('/downloads.html')
+def downloads():
+    return render_template ('downloads.html')
 
     ########################################################################
     #      vvvvv SqlAlchemy ORM DB Access reference notes BELOW vvvvv
@@ -172,18 +188,53 @@ def TKTESTING():
 ##########################################################################################
 
 # endpoint for Agency model
+# user can use EITHER: 'agency name' as a key
+# -OR- supply argument '?dltype' to be either json or csv
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
 @jtFlaskApp.route("/agency/<agency_name>")
 def get_agency(agency_name):
+    args = request.args
+    download_type = args.get(CONST_DLTYPE)  # q might be blank?
+
     agencyQuery = db.session.query(Agency)
+
     if agency_name != None:
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
-    agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+        agencyQuery = agencyQuery.order_by(text('agency_name asc'))
+        json_list=[row.serialize() for row in agencyQuery.all()] # ".one" causes a TypeError, ".all" returns just the specified agency
+                                                                     
+    else:
+        if download_type == CONST_CSVFILE:
+            # give them a csvfile
+#================================================================
+#================================================================
+#================================================================
+            return download_dataset_as_file(agencyQuery, 'agency')  # THIS SHOULD BE ZIP FILE!!!!!
+        else:
+            total_records = agencyQuery.count()
+            dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
 
-    # use serialize function to make a new list from the results
-    # just one serialize function so no if statement
-    json_list=[i.serialize() for i in agencyQuery.all()]
+            if total_records > dl_row_limit:
+                json_list = []
+                row_count = 0
+                for row in agencyQuery:
+                    json_list.append( row.serialize() )
+                    row_count += 1
+                    
+                    if row_count > dl_row_limit:
+                        break
+                if download_type == CONST_JSONFILE:
+                    print("WE WOULD DOWNload our json list as a file - if the function existed!!!")
+                    #return download_dataset_as_file(??????query?????, 'agency')
+            else:
+                if download_type == CONST_JSONFILE:
+                    return download_dataset_as_file(agencyQuery, 'agency')
+                 # use serialize function to make a new list from the results
+                # just one serialize function so no if statement
+                json_list=[row.serialize() for row in agencyQuery.all()]
+        
     return jsonify(json_list)
+
 
 # endpoint for Calendar model
 @jtFlaskApp.route("/calendar", defaults={'service_id':None})
