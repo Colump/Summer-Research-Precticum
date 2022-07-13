@@ -1,25 +1,21 @@
 # -*- coding: utf-8 -*-
 from datetime import date, datetime, timedelta
-from pickle import NONE
 # jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
 # in a Response object with the application/json mimetype.
 from flask import flash, Flask, g, jsonify, make_response, redirect, request, render_template, url_for
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from forms import *
-from flask import Flask, g, redirect, request, render_template, jsonify
-from flask_sqlalchemy import SQLAlchemy
-from importlib_metadata import csv
-from sqlalchemy import text, func
-import json
 from jinja2 import Template
+import json
+from jt_utils import query_results_as_json, query_results_as_compressed_csv
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
-from jt_utils import query_results_as_compressed_csv
+import os, os.path
+from pickle import NONE
+from sqlalchemy import text, func
+
 # Imports for Model/Pickle Libs
-#import pickle
 #import pandas as pd
-import os, os.path, sys
-import requests
 
 CONST_DLTYPE  = 'dltype'
 CONST_JSONFILE = 'json'
@@ -187,54 +183,75 @@ def downloads():
 #  GROUP 3: STRAIGHTFORWARD DATASET EXTRACTS
 ##########################################################################################
 
-# endpoint for Agency model
-# user can use EITHER: 'agency name' as a key
-# -OR- supply argument '?dltype' to be either json or csv
+def get_dataset_in_format_requested(request, query, filename):
+    args = request.args
+    download_type = args.get(CONST_DLTYPE)  # will be blank sometimes...
+
+    if download_type == CONST_CSVFILE:
+        # User requested everything as a .csv file. This is our preferred
+        # option (minimum bandwidth), serve the user a compressed .csv file
+        response = query_results_as_compressed_csv(query, filename)
+    else:
+        # User requested everything as EITHER straighforward json or the json
+        # returned as an attachement. Some of the tables are large, so we do
+        # some checks before completing the request...
+
+        # Find out how many records are involved...
+        total_records = query.count()
+        dl_row_limit_json        = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON'])
+        dl_row_limit_json_attach = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT'])
+
+        # NOTE: For the data we have at the moment, every 1,000,000 records
+        # corresponds (quite roughly) to 100MB of filesize.  So... if we want
+        # a 10MB limit, this corresponds to circa 100,000 rows
+
+        if download_type == CONST_JSONFILE:
+            # User requested everything as a .json file.
+            if total_records > dl_row_limit_json_attach:
+                #======================================================================================
+                # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
+                #======================================================================================
+                return query_results_as_json(query.limit(dl_row_limit_json_attach), filename)
+            else:
+                return query_results_as_json(query, filename)
+        else:
+            # User wants JSON direct to the screen (not as an attached file)
+            if total_records > dl_row_limit_json:
+                #======================================================================================
+                # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
+                #======================================================================================
+                response = jsonify([row.serialize() for row in query.limit(dl_row_limit_json).all()])
+            else:
+                # Requested data set is under the row limit, send it!
+                response = jsonify([row.serialize() for row in query.all()])
+    
+    return response
+
+# Endpoint for Agency model
+# user can use EITHER:
+#   'agency name' as a key (to get json response for just one agency)
+# -OR-
+#   supply argument '?dltype' ('json' or 'csv') to download content as a file
 @jtFlaskApp.route("/agency", defaults={'agency_name':None})
 @jtFlaskApp.route("/agency/<agency_name>")
 def get_agency(agency_name):
-    args = request.args
-    download_type = args.get(CONST_DLTYPE)  # q might be blank?
-
     agencyQuery = db.session.query(Agency)
 
+    response = None
     if agency_name != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
         agencyQuery = agencyQuery.filter(Agency.agency_name ==  agency_name)
         agencyQuery = agencyQuery.order_by(text('agency_name asc'))
-        json_list=[row.serialize() for row in agencyQuery.all()] # ".one" causes a TypeError, ".all" returns just the specified agency
-                                                                     
+
+        response = jsonify([row.serialize() for row in agencyQuery.all()]) # ".one" causes a TypeError, ".all" returns just the specified agency
     else:
-        if download_type == CONST_CSVFILE:
-            # give them a csvfile
-#================================================================
-#================================================================
-#================================================================
-            return download_dataset_as_file(agencyQuery, 'agency')  # THIS SHOULD BE ZIP FILE!!!!!
-        else:
-            total_records = agencyQuery.count()
-            dl_row_limit = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT'])
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, agencyQuery, 'agency')
 
-            if total_records > dl_row_limit:
-                json_list = []
-                row_count = 0
-                for row in agencyQuery:
-                    json_list.append( row.serialize() )
-                    row_count += 1
-                    
-                    if row_count > dl_row_limit:
-                        break
-                if download_type == CONST_JSONFILE:
-                    print("WE WOULD DOWNload our json list as a file - if the function existed!!!")
-                    #return download_dataset_as_file(??????query?????, 'agency')
-            else:
-                if download_type == CONST_JSONFILE:
-                    return download_dataset_as_file(agencyQuery, 'agency')
-                 # use serialize function to make a new list from the results
-                # just one serialize function so no if statement
-                json_list=[row.serialize() for row in agencyQuery.all()]
-        
-    return jsonify(json_list)
-
+    return response
 
 # endpoint for Calendar model
 @jtFlaskApp.route("/calendar", defaults={'service_id':None})
@@ -353,18 +370,26 @@ def get_transfers(from_stop_id):
 # endpoint for Trips
 # Trips is a large table - so we don't return the json directly to user in the
 # resonse, instead we stream them a file with the json inside!
-@jtFlaskApp.route("/trips", defaults={'route_id':None})
-@jtFlaskApp.route("/trips/<route_id>")
-def get_trips(route_id):
+@jtFlaskApp.route("/trips", defaults={'trip_id':None})
+@jtFlaskApp.route("/trips/<trip_id>")
+def get_trips(trip_id):
     tripsQuery = db.session.query(Trips)
-    if route_id != None:
-        tripsQuery = tripsQuery.filter(Trips.route_id == route_id)
-    tripsQuery = tripsQuery.order_by(text('route_id asc'))
 
-    # Trips is a large data set.  For small datasets we return the json directly
-    # to the browser.  For larger datasets we return them as files.  Seeems
-    # arbitrary - should we use a parameter to control? Discuss with team.
-    return query_results_as_compressed_csv(tripsQuery, 'trips')
+    response = None
+    if trip_id != None:
+        # Simplest use case - user requires information on single trip
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
+        tripsQuery = tripsQuery.filter(Trips.trip_id == trip_id)
+
+        response = jsonify([row.serialize() for row in tripsQuery.all()]) # ".one" causes a TypeError, ".all" returns just the specified trip
+    else:
+        # No specific trip requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, tripsQuery, 'trips')
+
+    return response
+
 
 ##########################################################################################
 #  GROUP 3: COMPLEX QUERIES
@@ -469,6 +494,13 @@ def get_stops_by_route():
         json_list=[st.serialize() for st in stops_for_trip_query.all()]
 
     return jsonify(json_list)
+
+# For now - this is just a placeholder....
+@jtFlaskApp.route('/get_journey_time.do', methods=['POST'])
+def get_journey_time():
+    trips = request.json
+    resp = get_success_response()
+    return resp
 
 ##########################################################################################
 #  GROUP 4: JT_UI RESTful SUPPORT FUNCTIONS
@@ -644,4 +676,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
