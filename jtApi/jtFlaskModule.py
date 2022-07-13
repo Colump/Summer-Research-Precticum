@@ -677,3 +677,12 @@ if __name__ == "__main__":
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+
+
+# {
+#     "filesize": "WARNING", 
+#     "description": "The number of records in the agency extract exceeds the maximum number that can be streamed as a .json file", 
+#     "limits1": "A maximum of nnnnnn records can be delivered directly to a clients browswer", 
+#     "limits2": "A maximum of nnnnnn records can be delivered as a .json file attachment", 
+#     "limits3": "There is currently no limit on filesizes downloaded as compressed .csv.gz"
+# }, 
