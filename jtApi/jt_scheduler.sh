@@ -18,6 +18,7 @@ home_dir="/home/student"
 cron_dir="/etc/cron.d"
 #cron_dir="/etc/cron.d"
 jt_gtfs_loader_module="jt_dl"
+jt_model_update="curl -s https://api.journeyti.me/update_model_list.do"
 
 # Helper function - save me keying command summary twice, ensures consistancy in
 # user docs (such as they are)
@@ -104,7 +105,9 @@ schedule)
     #      in the student home directory (the conda environments won't work without it)
     echo "SHELL=/bin/bash" >> "${cron_dir}/jt_scheduled_tasks"
     echo "BASH_ENV=~/.bashrc_conda" >> "${cron_dir}/jt_scheduled_tasks"
-    echo "0   4    * * * student conda activate comp47360py39_jt && ${jt_gtfs_loader_module} >> ${home_dir}/jt_scheduled_tasks.log 2>&1 && conda deactivate" >> "${cron_dir}/jt_scheduled_tasks"
+    echo "0 4 * * * student conda activate comp47360py39_jt && ${jt_gtfs_loader_module} >> ${home_dir}/jt_scheduled_tasks.log 2>&1 && conda deactivate" >> "${cron_dir}/jt_scheduled_tasks"
+    # Should we be logging the following? Or should we dump to /dev/null...??
+    echo "0 * * * * student conda activate comp47360py39_jt && ${jt_model_update} >> ${home_dir}/jt_scheduled_tasks.log 2>&1 && conda deactivate" >> "${cron_dir}/jt_scheduled_tasks"
 
     # Make sure there's a new line after the last command - cron seems to like it...
     echo "" >> "${cron_dir}/jt_scheduled_tasks"

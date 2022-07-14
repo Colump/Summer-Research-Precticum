@@ -414,8 +414,10 @@ def main():
     # returns (minutes, seconds)
     #minutes = divmod(elapsedTime.seconds, 60) 
     minutes = divmod(elapsedTime.total_seconds(), 60) 
-    print('Iteration Complete! (Elapsed time:', minutes[0], 'minutes',
-                                    minutes[1], 'seconds)\n')
+    print('Iteration Complete! (Elapsed time:', minutes[0], 'minutes', minutes[1], 'seconds)\n')
+    print('--------------------------------------------------------------------------------')
+    print('================================================================================')
+    print('--------------------------------------------------------------------------------\n')
     sys.exit()
 
 if __name__ == '__main__':

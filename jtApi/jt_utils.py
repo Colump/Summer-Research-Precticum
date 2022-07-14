@@ -2,6 +2,7 @@
 from flask import Response, stream_with_context
 import json
 import os, sys
+from pathlib import Path
 import struct
 import time
 import zlib
@@ -14,7 +15,23 @@ import zlib
 # be constructed by using os.path.join()...
 # (the value of __file__ is a string, which is set when module was imported by a loader)
 # Application Startup...
-jt_utils_parent_dir = os.path.dirname(os.path.dirname(__file__))
+jt_utils_dir = os.path.dirname(__file__)
+jt_utils_parent_dir = os.path.dirname(jt_utils_dir)
+
+class HourlyPaidEmployee():
+    def __init__(self, name):
+        # Instance Variables
+        self.hours = 0
+    def set_hours(self, hours):
+        self.hours = hours
+    def get_pay(self):
+        return self.rate * self.hours
+
+    @classmethod
+    def rollcall(cls):
+        print("We have", cls.dog_count,"dogs.")
+        for name in cls.dogs:
+            print(name)
 
 def load_credentials():
     """Load the credentials required for accessing the Weather API, Google Maps, etc.
@@ -206,3 +223,23 @@ def query_results_as_json(query, name):
 
     return Response(generate(query, name), mimetype='application/json', \
         headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
+
+def get_available_model_line_ids():
+    AVAILABLE_MODEL_LINE_IDS = []
+    end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
+
+    # iterate over files in that directory
+    files = Path(end_to_end_model_dir).glob('*.pickle')
+    for file in files:
+        AVAILABLE_MODEL_LINE_IDS.append(Path(file).stem)
+
+    return AVAILABLE_MODEL_LINE_IDS
+
+def query_results_as_json(query, name):
+    """Predict the journey time for a trip
+
+    Returns a JSON List with one object per record in the query result set.
+    Uses the end-to-end model when...
+    Uses the stop-to-stop model when...
+    """
+

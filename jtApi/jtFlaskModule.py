@@ -8,7 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from forms import *
 from jinja2 import Template
 import json
-from jt_utils import query_results_as_json, query_results_as_compressed_csv
+from jt_utils import get_available_model_line_ids, query_results_as_json, query_results_as_compressed_csv
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
 import os, os.path
 from pickle import NONE
@@ -21,7 +21,9 @@ CONST_DLTYPE  = 'dltype'
 CONST_JSONFILE = 'json'
 CONST_CSVFILE  = 'csv'
 
-CONST_MODEL_LINE_IDS = ['46A', '15', '42']
+# In a fully configured environment, a scheduled job updates this list each morning
+# at 03:30. It can also be updated manually by calling the URL: /update_model_list.do
+AVAILABLE_MODEL_LINE_IDS = []
 
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
@@ -30,11 +32,12 @@ CONST_MODEL_LINE_IDS = ['46A', '15', '42']
 # module is located in using os.path.dirname(__file__). A full path name can then
 # be constructed by using os.path.join()...
 # Application Startup...
-jtFlaskModParentDir = os.path.dirname(os.path.dirname(__file__))
+jtFlaskModDir = os.path.dirname(__file__)
+jtFlaskModParentDir = os.path.dirname(jtFlaskModDir)
 print("===================================================================")
 print("jtFlaskApp: Application Start-up.")
-print("            Parent Dir. is ->")
-print("            " + str(jtFlaskModParentDir) + "\n")
+print("            Module Directory is ->", str(jtFlaskModDir))
+print("            Parent Dir. is ->",  str(jtFlaskModParentDir))
 
 # Create our flask app.
 # Static files are server from the 'static' directory
@@ -505,6 +508,20 @@ def get_stops_by_route():
 @csrf.exempt
 def json_parrot():
     return jsonify(request.json)
+
+
+# Simple endpoint to submission of json and return it to the user...
+@jtFlaskApp.route('/update_model_list.do', methods=['GET'])
+# The following decorator means this function will run once just before the first
+# request is processed (NOT on startup, just before the first request)
+@jtFlaskApp.before_first_request
+def update_model_list():
+    AVAILABLE_MODEL_LINE_IDS = get_available_model_line_ids()
+
+    return jsonify(AVAILABLE_MODEL_LINE_IDS)
+
+
+
 
 # The simplest approach by far is to define a URL that performs the action, and have a cron job that
 # runs curl or wget to request (with POST) the URL and trigger the action at the required time. This
