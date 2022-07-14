@@ -4,6 +4,25 @@
 <!-- The container for this row is in the base.html template -->
 <div class="row">
     <div class="col p-4">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script type="text/javascript">
+            $.ajax({
+                type: "POST",
+                url: "http://localhost/json_parrot.do",
+                data: JSON.stringify({ "userName": "fred", "password" : "sneaky_stuff", "random_thing" : "no_kidding_thats_random"}),
+                contentType: "application/json",
+                success: function (result) {
+                    console.log(result);
+                },
+                error: function (result, status) {
+                    console.log(result);
+                }
+                });
+        </script>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
         <!-- We only display the sidebar on XL screens (d-none by default...)-->
         <form method="POST" action="/check_username_available.do">
             <label for="uname">Username: </label>
@@ -15,7 +34,7 @@
 <div class="row">
     <div class="col p-4">
         <!-- We only display the sidebar on XL screens (d-none by default...)-->
-        <form method="POST" action="/register.do">
+        <form method="POST" action="https://api.journeyti.me/register.do">
             <label for="uname">Username: </label>
             <input type="text" id="uname" name="username"><br>
             <label for="pass">Password_hash (8 characters minimum):</label>
