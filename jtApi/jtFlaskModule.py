@@ -21,6 +21,8 @@ CONST_DLTYPE  = 'dltype'
 CONST_JSONFILE = 'json'
 CONST_CSVFILE  = 'csv'
 
+CONST_MODEL_LINE_IDS = ['46A', '15', '42']
+
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
 # ... Python, if needing to use relative paths in order to make it easier to 
@@ -220,7 +222,10 @@ def get_dataset_in_format_requested(request, query, filename):
                 #======================================================================================
                 # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
                 #======================================================================================
-                response = jsonify([row.serialize() for row in query.limit(dl_row_limit_json).all()])
+                list = []
+                list.append("My Warning Json HERE")
+                list.append([row.serialize() for row in query.limit(dl_row_limit_json).all()])
+                response = jsonify(list)
             else:
                 # Requested data set is under the row limit, send it!
                 response = jsonify([row.serialize() for row in query.all()])
@@ -495,12 +500,35 @@ def get_stops_by_route():
 
     return jsonify(json_list)
 
+# Simple endpoint to submission of json and return it to the user...
+@jtFlaskApp.route('/json_parrot.do', methods=['POST'])
+@csrf.exempt
+def json_parrot():
+    return jsonify(request.json)
+
+# The simplest approach by far is to define a URL that performs the action, and have a cron job that
+# runs curl or wget to request (with POST) the URL and trigger the action at the required time. This
+# requires no additional packages and is very lightweight. 
+# DEFINE A FUNCTION TO LIST ALL THE PICKLES AND STORE THEM in A VARIABLE - CRON THIS FUNCTION
+
+
 # For now - this is just a placeholder....
-@jtFlaskApp.route('/get_journey_time.do', methods=['POST'])
-def get_journey_time():
-    trips = request.json
-    resp = get_success_response()
-    return resp
+# @jtFlaskApp.route('/get_journey_time.do', methods=['POST'])
+# @csrf.exempt
+# def get_journey_time():
+
+#     def JourneyStep():
+#     resp = None
+#     if request.json:
+#         prediction_request = json.loads(request.json)
+
+#         # the request can contain multiple steps
+        
+#         total_dist_m = prediction_request['distance']['value']
+#         total_time_s = prediction_request['duration']['value']
+
+#         resp = get_success_response()
+#     return resp
 
 ##########################################################################################
 #  GROUP 4: JT_UI RESTful SUPPORT FUNCTIONS
