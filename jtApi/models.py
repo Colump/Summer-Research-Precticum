@@ -1,11 +1,11 @@
 #from flask_sqlalchemy import SQLAlchemy
 from re import T
 from tokenize import Double
-from sqlalchemy import Column, ForeignKey, Integer, Table, null
-from sqlalchemy.schema import Index
-from sqlalchemy import Column, ForeignKey, Table
-from sqlalchemy import DateTime, Float, Integer, SmallInteger, String, LargeBinary
+from sqlalchemy import Column, DateTime, Float, ForeignKey, func, Integer
+from sqlalchemy import LargeBinary, SmallInteger, String, Table, null
 from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy.schema import Index
+from sqlalchemy.types import UserDefinedType
 
 Base = declarative_base()
 
@@ -14,78 +14,24 @@ Base = declarative_base()
 # # it there...
 # db = SQLAlchemy()
 
-class Stop(Base):
-    __tablename__ = 'stops'
-    # Note how we never define an __init__ method on the stops class? That’s
-    # because SQLAlchemy adds an implicit constructor to all model classes which
-    # accepts keyword arguments for all its columns and relationships. If you
-    # decide to override the constructor for any reason, make sure to keep accepting
-    # **kwargs and call the super constructor with those **kwargs to preserve this
-    # behavior.
-    stop_id = Column(String(12), primary_key=True)
-    stop_name = Column(String(64), unique=False, nullable=False)
-    stop_lat = Column(Float, unique=False, nullable=False)
-    stop_lon = Column(Float, unique=False, nullable=False)
-    dist_from_cc = Column(Float, unique=False, nullable=True)
+#===============================================================================
+#===============================================================================
+#===============================================================================
 
-    # Notes on SQLAlchemy relationship definitions here:
-    # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html
-    #stop_times = relationship("StopTime")
+class Point(UserDefinedType):
+    cache_ok=True
+    def get_col_spec(self):
+        return "POINT"
 
-    # NOTES: If writing a method to serialize an SQLAlchemy object, if that object
-    #       contains a date you might see the error "TypeError: Object of type
-    #       'datetime' is not JSON serializable".  One approach to work around
-    #       that is:
-    #         -> if isinstance(o, (datetime.date, datetime.time)):
-    #                'my_date': self.my_date.isoformat(),
-    #         -> if isinstance(o, datetime.timedelta):
-    #                'my_date': str(self.my_date),
+    def bind_expression(self, bindvalue):
+        return func.ST_GeomFromText(bindvalue, type_=self)
 
-    def serialize_norels(self):
-       """Return object data in easily serializeable format, no relationships"""
-       return  {
-            'stop_id': self.stop_id,
-            'stop_name': self.stop_name,
-            'stop_lat': self.stop_lat,
-            'stop_lon': self.stop_lon,
-            'dist_from_cc': self.dist_from_cc,
-        }
+    def column_expression(self, col):
+        return func.ST_AsText(col, type_=self)
 
-    def __repr__(self):
-        return '<Stop %r>' % self.stop_name
-
-class StopTime(Base):
-    __tablename__ = 'stop_times'
-    trip_id = Column(String(32), primary_key=True, nullable=False)
-    arrival_time = Column(DateTime, primary_key=True, nullable=False)
-    departure_time = Column(DateTime, primary_key=True, nullable=False)
-    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), primary_key=True, nullable=False)
-    stop_id = Column(String(12), primary_key=True, nullable=False)
-    stop_sequence = Column(SmallInteger, primary_key=True, nullable=False)
-    stop_headsign = Column(String(64), nullable=False)
-    pickup_type = Column(SmallInteger, nullable=False)
-    drop_off_type = Column(SmallInteger, nullable=False)
-    # Note the American spelling of traveled - it caught me out - but thats what
-    # is used in GTFS...
-    shape_dist_traveled = Column(Float, nullable=False)
-
-    def serialize(self):
-       """Return object data in easily serializeable format"""
-       return  {
-            'trip_id': self.trip_id,
-            'arrival_time': str(self.arrival_time),
-            'departure_time': str(self.departure_time),
-            'stop_id': self.stop_id,
-            'stop_sequence': self.stop_sequence,
-            'stop_headsign': self.stop_headsign,
-            'pickup_type': self.pickup_type,
-            'drop_off_type': self.drop_off_type,
-            'shape_dist_traveled': self.shape_dist_traveled
-        }
-
-    def __repr__(self):
-        return f'StopTime("{self.trip_id}",{self.arrival_time},{self.departure_time},"{self.stop_id}",{self.stop_sequence})'
-        #return '<StopTime %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
+#===============================================================================
+#===============================================================================
+#===============================================================================
 
 class Agency(Base):
     __tablename__ = 'agency'
@@ -111,7 +57,6 @@ class Agency(Base):
 
     def __repr__(self):
         return '<Agency %r>' % (self.agency_id, self.agency_name)
-
 
 class Calendar(Base):
     __tablename__ = 'calendar'
@@ -200,6 +145,81 @@ class Shapes(Base):
 
     def __repr__(self):
         return '<Routes %r>' % (self.shape_id, self.shape_pt_lat, self.shape_pt_lon)    
+
+
+class Stop(Base):
+    __tablename__ = 'stops'
+    # Note how we never define an __init__ method on the stops class? That’s
+    # because SQLAlchemy adds an implicit constructor to all model classes which
+    # accepts keyword arguments for all its columns and relationships. If you
+    # decide to override the constructor for any reason, make sure to keep accepting
+    # **kwargs and call the super constructor with those **kwargs to preserve this
+    # behavior.
+    stop_id = Column(String(12), primary_key=True)
+    stop_name = Column(String(64), unique=False, nullable=False)
+    stop_lat = Column(Float, unique=False, nullable=False)
+    stop_lon = Column(Float, unique=False, nullable=False)
+    stop_position = Column(Point, unique=False, nullable=False)
+    dist_from_cc = Column(Float, unique=False, nullable=False)
+
+    # Notes on SQLAlchemy relationship definitions here:
+    # https://docs.sqlalchemy.org/en/14/orm/basic_relationships.html
+    #stop_times = relationship("StopTime")
+
+    # NOTES: If writing a method to serialize an SQLAlchemy object, if that object
+    #       contains a date you might see the error "TypeError: Object of type
+    #       'datetime' is not JSON serializable".  One approach to work around
+    #       that is:
+    #         -> if isinstance(o, (datetime.date, datetime.time)):
+    #                'my_date': self.my_date.isoformat(),
+    #         -> if isinstance(o, datetime.timedelta):
+    #                'my_date': str(self.my_date),
+
+    def serialize_norels(self):
+       """Return object data in easily serializeable format, no relationships"""
+       return  {
+            'stop_id': self.stop_id,
+            'stop_name': self.stop_name,
+            'stop_lat': self.stop_lat,
+            'stop_lon': self.stop_lon
+        }
+
+    def __repr__(self):
+        return '<Stop %r>' % self.stop_name
+
+class StopTime(Base):
+    __tablename__ = 'stop_times'
+    trip_id = Column(String(32), primary_key=True, nullable=False)
+    arrival_time = Column(DateTime, primary_key=True, nullable=False)
+    departure_time = Column(DateTime, primary_key=True, nullable=False)
+    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), primary_key=True, nullable=False)
+    stop_id = Column(String(12), primary_key=True, nullable=False)
+    stop_sequence = Column(SmallInteger, primary_key=True, nullable=False)
+    stop_headsign = Column(String(64), nullable=False)
+    pickup_type = Column(SmallInteger, nullable=False)
+    drop_off_type = Column(SmallInteger, nullable=False)
+    # Note the American spelling of traveled - it caught me out - but thats what
+    # is used in GTFS...
+    shape_dist_traveled = Column(Float, nullable=False)
+
+    def serialize(self):
+       """Return object data in easily serializeable format"""
+       return  {
+            'trip_id': self.trip_id,
+            'arrival_time': str(self.arrival_time),
+            'departure_time': str(self.departure_time),
+            'stop_id': self.stop_id,
+            'stop_sequence': self.stop_sequence,
+            'stop_headsign': self.stop_headsign,
+            'pickup_type': self.pickup_type,
+            'drop_off_type': self.drop_off_type,
+            'shape_dist_traveled': self.shape_dist_traveled
+        }
+
+    def __repr__(self):
+        return f'StopTime("{self.trip_id}",{self.arrival_time},{self.departure_time},"{self.stop_id}",{self.stop_sequence})'
+        #return '<StopTime %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
+
 
 class Trips(Base):
     __tablename__ = 'trips'

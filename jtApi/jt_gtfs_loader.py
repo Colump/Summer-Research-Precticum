@@ -1,17 +1,10 @@
-# 2022-07-01 TK/BF/YC/CP; Group 3, "Raduno"
-#            COMP47360 Research Practicum
+# 2022-06-20 TK/BF/YC/CP; Group 3, "Raduno", "JourneyTi.me" Project
+#            Comp47360 Research Practicum 
 """
 
 """
 
-from datetime import datetime
 import os, sys, csv
-import requests
-import sqlalchemy as db
-from sqlalchemy.orm import sessionmaker
-import traceback
-import zipfile
-from zipfile import ZipFile
 # This might seem unusual... but to make sure we can import modules from the
 # folder where jt_gtfs_loader is installed (e.g. if called as an installed
 # endpoint) - we always add the module directory to the python path. Endpoints
@@ -19,9 +12,24 @@ from zipfile import ZipFile
 # from the python path etc..
 jt_gtfs_module_dir = os.path.dirname(__file__)
 sys.path.insert(0, jt_gtfs_module_dir)
-from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
-from jt_calc_stop_dist_from_cc import loop_over_stops_calc_dist_from_cc
+
+from datetime import datetime
+from haversine import haversine, Unit
 from jt_utils import load_credentials
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+import requests
+import sqlalchemy as db
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+import traceback
+import zipfile
+from zipfile import ZipFile
+
+
+# Each point is represented by a tuple, (lat, lon). Define a fixed point for
+# Dublin City Center...
+CONST_DUBLIN_CC = (53.347269, -6.259107)
+
 
 def download_gtfs_schedule_data(credentials, import_dir):
     """Download the latest version of the GTFS Schedule Data.
@@ -56,6 +64,7 @@ def download_gtfs_schedule_data(credentials, import_dir):
 
     return gtfs_schedule_data_file
 
+
 def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI):
     """Extract the contents of the GTFS Schedule Data zip to the import directory
 
@@ -78,6 +87,7 @@ def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI)
         # during the next pass...
 
     return
+
 
 def import_gtfs_txt_files_to_db(import_dir, Session):
     """Iterate Over the GTFS Txt Files, Import them to the db
@@ -211,7 +221,17 @@ def import_gtfs_txt_files_to_db(import_dir, Session):
                                 stop_id=row[0],
                                 stop_name=row[1],
                                 stop_lat=row[2],
-                                stop_lon=row[3]
+                                stop_lon=row[3],
+                                # (See custom 'Point' type in models.py for following...)
+                                # Note that spatial points are defined "lon-lat"
+                                stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
+                                # 'stop_position' is binary information.  If you want to "see" it in a
+                                # query the easiest way is to use one of the built in functions to display
+                                # it. E.g:
+                                #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position) FROM stops
+
+                                # Calculate distance to city center using haversine (in km) ...
+                                dist_from_cc = haversine(CONST_DUBLIN_CC, (float(row[2]), float(row[3])))
                             )
                             session.add(stop)
 
@@ -281,6 +301,7 @@ def import_gtfs_txt_files_to_db(import_dir, Session):
             
             print('')
 
+
 def commit_batch_and_start_new_session(session, Session):
     """Commit the session once the object session limit is reached.
 
@@ -294,6 +315,7 @@ def commit_batch_and_start_new_session(session, Session):
 
     return session
 
+
 def truncate_table(session, model):
     """Truncate (Delete All Rows From) the Supplied Database Table
 
@@ -304,6 +326,7 @@ def truncate_table(session, model):
     print(' ' + str(num_rows_deleted) + ' Rows Deleted.')
 
     return
+
 
 # If we need reference objects - load that shit in advance!  That way we're not loading for each
 # row...
@@ -389,10 +412,6 @@ def main():
             # we import the content to the db.
             import_gtfs_txt_files_to_db(import_dir, Session)
 
-            # With the data loaded, post-process it to include the distance from the City
-            # Center
-            loop_over_stops_calc_dist_from_cc(Session)
-        
         # Make sure to close the connection - a memory leak on this would kill
         # us...
         connection.close()

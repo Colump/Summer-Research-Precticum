@@ -1,8 +1,13 @@
 # -*- coding: utf-8 -*-
+from datetime import timedelta
 from flask import Response, stream_with_context
 import json
+import logging
 import os, sys
+from models import Routes, Stop, StopTime, Trips
 from pathlib import Path
+from sqlalchemy import asc, desc, text, func
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound  # Exceptions
 import struct
 import time
 import zlib
@@ -18,20 +23,7 @@ import zlib
 jt_utils_dir = os.path.dirname(__file__)
 jt_utils_parent_dir = os.path.dirname(jt_utils_dir)
 
-class HourlyPaidEmployee():
-    def __init__(self, name):
-        # Instance Variables
-        self.hours = 0
-    def set_hours(self, hours):
-        self.hours = hours
-    def get_pay(self):
-        return self.rate * self.hours
-
-    @classmethod
-    def rollcall(cls):
-        print("We have", cls.dog_count,"dogs.")
-        for name in cls.dogs:
-            print(name)
+log = logging.getLogger(__name__)  # Standard naming...
 
 def load_credentials():
     """Load the credentials required for accessing the Weather API, Google Maps, etc.
@@ -48,9 +40,11 @@ def load_credentials():
     file.close  # Can close the file now we have the data loaded...
     return credentials
 
+
 ##########################################################################################
 #  Extracts (JSON, .CSV)
 ##########################################################################################
+
 
 # 'Module Private' helper function for the various methods that download files...
 def _get_next_chunk_size(rows_remain):
@@ -67,6 +61,7 @@ def _get_next_chunk_size(rows_remain):
             rows_chunk  = rows_remain
 
     return rows_chunk
+
 
 def query_results_as_compressed_csv(query, name):
     """
@@ -224,22 +219,304 @@ def query_results_as_json(query, name):
     return Response(generate(query, name), mimetype='application/json', \
         headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
 
-def get_available_model_line_ids():
-    AVAILABLE_MODEL_LINE_IDS = []
+
+##########################################################################################
+#  Predictions
+##########################################################################################
+
+
+class JourneyPrediction:
+    """Model representing journey time prediction information
+
+    INPUTS are included
+    RESULTS are included
+    Other factors are involved in choosing which input model to use: whether an
+    end-to-end model is available, etc.. But those factors are common to all
+    predictions, the data encapsulated here is for a single journey
+    """
+    def __init__(self, route_shortname, route_shortname_pickle_exists, planned_duration_s, planned_departure_datetime):
+        # Instance Variables
+        self.set_route_shortname(route_shortname)
+        self.set_route_shortname_pickle_exists(route_shortname_pickle_exists)
+        self.set_planned_duration_s(planned_duration_s)
+        self.set_planned_departure_datetime(planned_departure_datetime)
+        self.set_predicted_duration_s(0)
+
+    def set_route_shortname(self, route_shortname):
+        self._route_shortname = route_shortname
+    def set_route_shortname_pickle_exists(self, route_shortname_pickle_exists):
+        self._route_shortname_pickle_exists = route_shortname_pickle_exists
+    def set_planned_duration_s(self, planned_duration_s):
+        self._planned_duration_s = planned_duration_s
+    def set_planned_departure_datetime(self, planned_departure_datetime):
+        self._planned_departure_datetime = planned_departure_datetime
+    def set_predicted_duration_s(self, predicted_duration_s):
+        self._predicted_duration_s = predicted_duration_s
+
+    def get_route_shortname(self):
+        return self._route_shortname
+    def get_route_shortname_pickle_exists(self):
+        return self._route_shortname_pickle_exists
+    def get_planned_duration_s(self):
+        return self._planned_duration_s
+    def get_planned_departure_datetime(self):
+        return self._planned_departure_datetime
+    def get_predicted_duration_s(self):
+        return self._predicted_duration_s
+
+
+class StepStop:
+    """Model representing the stops on one step of a journey (part of a 'trip')
+
+    """
+    def __init__(self, stop, stop_sequence, shape_dist_traveled):
+        # Instance Variables
+        self.set_stop(stop)
+        self.set_stop_sequence(stop_sequence)
+        self.set_shape_dist_traveled(shape_dist_traveled)
+
+    def set_stop(self, stop):
+        self._stop = stop
+    def set_stop_sequence(self, stop_sequence):
+        self._stop_sequence = stop_sequence
+    def set_shape_dist_traveled(self, shape_dist_traveled):
+        self._shape_dist_traveled = shape_dist_traveled
+
+    def get_stop(self):
+        return self._stop
+    def get_stop_sequence(self):
+        return self._stop_sequence
+    def get_shape_dist_traveled(self):
+        return self._shape_dist_traveled
+
+    def serialize(self):
+       """Return object data in easily serializeable format"""
+       return  {
+            'stop_id': self.stop.stop_id,
+            'stop_name': self.stop.stop_name,
+            'stop_lat': self.stop.stop_lat,
+            'stop_lon': self.stop.stop_lon,
+            'stop_sequence': self.get_stop_sequence(),
+            'stop_lon': self.get_shape_dist_traveled()
+        }
+
+
+def get_available_end_to_end_models():
+    """Return a list of all End-to-End model pickles currently on disk
+    """
+    AVAILABLE_MODEL_ROUTE_SHORTNAMES = []
     end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
 
     # iterate over files in that directory
     files = Path(end_to_end_model_dir).glob('*.pickle')
     for file in files:
-        AVAILABLE_MODEL_LINE_IDS.append(Path(file).stem)
+        AVAILABLE_MODEL_ROUTE_SHORTNAMES.append(Path(file).stem)
 
-    return AVAILABLE_MODEL_LINE_IDS
+    return AVAILABLE_MODEL_ROUTE_SHORTNAMES
 
-def query_results_as_json(query, name):
-    """Predict the journey time for a trip
 
-    Returns a JSON List with one object per record in the query result set.
+# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
+# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
+# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
+def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time, \
+    departure_stop_name, departure_stop_lat, departure_stop_lon, \
+    arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
+    """Returns an ordered list of stops for a selected LineId
+    
+    Each route_shortname can (potentially) represent a collection of routes
+    We identify the 'most likely route' based on a chosen datetime, starting
+    from a chosen stop (identified by lat/lon coordinates)
+    Returns an empty list on error
+    Returns a list of 'StepStops' on success
+    """
+    # There are many routes with the same short name
+    # There are many trips for each route
+    # Trips only run on certain days, based on the service id
+
+    # In 'traditional' SQL the query to find the trip id (which will then give
+    # us our sequence of stops) is as follows:
+
+    # SELECT stop_times.trip_id
+    # FROM stop_times
+    # INNER JOIN stops ON stop_times.stop_id=stops.stop_id
+    # WHERE stop_times.trip_id IN (
+    #     SELECT trips.trip_id FROM trips WHERE trips.route_id IN (
+    #         SELECT routes.route_id FROM routes WHERE routes.route_short_name = '17'
+    #     )
+    # )
+    # AND ABS(stops.stop_lat - 53.3351498) < 0.0000005
+    # AND ABS(stops.stop_lon - -6.2943145) < 0.0000005
+    # AND arrival_time < CAST('16:54:00' AS TIME)
+    # ORDER BY arrival_time DESC
+    # LIMIT 1;
+
+    # We ASSUME google directions is hot enough to only suggest routes that are
+    # running on the requested travel date (i.e. we don't cross check the calendar
+    # or calendar_dates tables)
+
+    def _identify_stop(db, name, lat, lon):
+        """Returns a the 'most likely' Stop (sqlachemy model) for the supplied inputs
+        
+        Attempts to identify Stop by exact shortname match first.
+        If that fails OR if multiple results are found then select the stop using
+        the MySQL 'ST_DISTANCE_SPHERE' method to identify to stop closest to the
+        supplied lat/long.
+        """
+        stop = None
+        position_match_required = False
+        try:
+            # Exact MATCH based ON NAME
+            stop_query = db.session.query(Stop)
+            stop_query = stop_query.filter(Stop.stop_name == name)
+            stop = stop_query.one()
+        except NoResultFound as nrf:
+            # log.warning('\tNo Stops found for stop name: ' + name)
+            position_match_required = True
+        except MultipleResultsFound as mrf:
+            # log.warning('\tMultiple Stops found for stop name: ' + name)
+            position_match_required = True
+        
+        if position_match_required:
+            # # Initially I couldn't find a nice 'ORM' way to do the following so
+            # # had resorted to MySQL syntax for speed.
+            # raw_sql = \
+            #     'SELECT *, ST_DISTANCE_SPHERE(' \
+            #         + 'stops.stop_position, POINT(' + str(stop_lon) + ', ' + str(stop_lat) + ')' \
+            #         + ')' \
+            #         + ' AS distance' \
+            #     + ' FROM stops' \
+            #     + ' ORDER BY distance ASC' \
+            #     + ' LIMIT 1'
+            # log.debug(raw_sql)
+            # result = db.engine.execute(raw_sql).one()
+            #position = func.ST_MakePoint(lon, lat)
+
+            # MySQL Spatial Function reference:
+            #   https://dev.mysql.com/doc/refman/8.0/en/spatial-function-reference.html
+            distance_col = func.ST_Distance_Sphere( \
+                Stop.stop_position, \
+                func.ST_PointFromText('point(' + str(lon) + ' ' + str(lat) + ')')
+                )
+            stop_query = db.session.query(Stop, distance_col)
+            stop_query = stop_query.order_by(asc(distance_col))
+            result = stop_query.first()
+            # print('stop name is ' + result[0].stop_name)
+            # print('distance is -> ' + str(result[1]))
+            
+            stop = result[0]
+
+        return stop
+
+    log.debug('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
+
+    stoptimes_whole_trip = []
+    if (route_shortname is None) or (jrny_time is None) \
+        or (departure_stop_name is None) or (departure_stop_lat is None) or (departure_stop_lon is None) \
+        or (arrival_stop_name is None) or (arrival_stop_lat is None) or (arrival_stop_lon is None):
+        # required parameters missing
+        # ALERT the LERTS!!!!!
+        pass
+    else:
+        # Look up routes for supplied short name. Should always find some...
+        route_query = db.session.query(Routes.route_id)
+        route_query = route_query.filter(Routes.route_long_name == route_name)
+        route_query = route_query.filter(Routes.route_short_name == route_shortname)
+        route_query = route_query.order_by(text('route_id asc'))
+
+        routes_for_shortname = []
+        for r in route_query.all():
+            routes_for_shortname.append(r.route_id)
+        # log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
+        
+        # We now how a list of route_ids, we can use that list to get a list of trips
+        # for those routes...
+        trips_query = db.session.query(Trips)
+        trips_query = trips_query.filter(Trips.route_id.in_(routes_for_shortname))
+
+        # Identify trips for the routes
+        trips_for_routes = []
+        for t in trips_query.all():
+            trips_for_routes.append(t.trip_id)
+        # log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
+
+        # Identify the departure stop (by lat/lon)
+        depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
+        # log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
+
+        # Identify the arrival stop (by lat/lon)
+        arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
+        # log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
+
+        stop_times_query = db.session.query(StopTime.trip_id)
+        #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
+        stop_times_query = stop_times_query.filter(StopTime.trip_id.in_(trips_for_routes))
+        # Additionally filtering by 'trip_headsign' in most cases ensures we never
+        # mistake an inbound trip for an outbound trip.
+        if stop_headsign:
+            # A lot of the GTFS data have leading spaces, the google data does not...
+            # ... so func.ltrim
+            stop_times_query = stop_times_query.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
+        stop_times_query = stop_times_query.filter(StopTime.stop_id == depstop.stop_id)
+        stop_times_query = stop_times_query.filter(StopTime.arrival_time < jrny_time)
+        stop_times_query = stop_times_query.order_by(text('arrival_time desc'))
+        trip_id = stop_times_query.limit(1).all()
+        log.debug('\tMost likely trip identified: ' + str(trip_id))
+
+        # At this point we've identified the * most likely * trip_id for the
+        # requested journey! Sweet - now we just return the list of stops for this
+        # trip_id!
+        stoptimes_for_trip_query = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
+        stoptimes_for_trip_query = stoptimes_for_trip_query.join(Stop, StopTime.stop_id == Stop.stop_id)
+        stoptimes_for_trip_query = stoptimes_for_trip_query.filter(StopTime.trip_id == trip_id[0][0])
+        stoptimes_for_trip_query = stoptimes_for_trip_query.order_by(text('stop_sequence'))
+        # All stops selected, omit stop_times detail
+        stoptimes_whole_trip = stoptimes_for_trip_query.all()
+
+        step_stops  = []
+        stops_in_step = False
+        # 'stoptimes_whole_trip' is in stop_sequence order remember...
+        for row in stoptimes_whole_trip:
+            stop = row[2]
+            if (stop.stop_id == depstop.stop_id) or (stops_in_step):
+                step_stops.append(StepStop(stop, row[0], row[1]))
+                stops_in_step = True
+            if (stop.stop_id == arrstop.stop_id):
+                stops_in_step = False
+
+    return step_stops
+
+
+def predict_journey_time(prediction_requests):
+    """Predict the journey time(s) for journeys listed in 'prediction_requests' list
+
+    Returns a List with one JourneyPrediction object per record in the query result set.
     Uses the end-to-end model when...
     Uses the stop-to-stop model when...
     """
 
+    for JourneyPrediction in prediction_requests:
+        # Tom has guessed that all trips in Dublin will take... 10 minutes! Let's see
+        # if a masters course in DA and using some of the most advanced machine
+        # learning techniques available can improve on my 'model'!
+        JourneyPrediction.set_predicted_duration_s(600)
+    
+    return prediction_requests  # Return the completed set of prediction_requests
+
+
+def time_rounded_to_hrs_mins_as_string(seconds):
+    """Time (seconds) supplied converted to a String as hrs and mins
+
+    Timne is rounded to the nearest minute.
+    """
+    # divmod() accepts two ints as parameters, returns a tuple containing the quotient and remainder of their division
+    mins, secs = divmod(seconds, 60)  # secs is 'remaining seconds', we don't show them, but used for rounding...
+    hrs, mins = divmod(mins,60)
+    if secs >= 30:
+        mins += 1
+
+    time_string = ''
+    if hrs > 0:
+        time_string += str(hrs) + ' hrs, '
+    time_string += str(mins) + ' mins'  # Rounded to nearest minute...
+
+    return time_string
