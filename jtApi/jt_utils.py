@@ -234,12 +234,14 @@ class JourneyPrediction:
     end-to-end model is available, etc.. But those factors are common to all
     predictions, the data encapsulated here is for a single journey
     """
-    def __init__(self, route_shortname, route_shortname_pickle_exists, planned_duration_s, planned_departure_datetime):
+    def __init__(self, route_shortname, route_shortname_pickle_exists, planned_duration_s, planned_departure_datetime, step_stpps):
         # Instance Variables
         self.set_route_shortname(route_shortname)
         self.set_route_shortname_pickle_exists(route_shortname_pickle_exists)
         self.set_planned_duration_s(planned_duration_s)
         self.set_planned_departure_datetime(planned_departure_datetime)
+        # 'step_stops' is a list of StepStop model objects for the current journey step.
+        self.set_step_stpps(step_stpps)
         self.set_predicted_duration_s(0)
 
     def set_route_shortname(self, route_shortname):
@@ -250,6 +252,8 @@ class JourneyPrediction:
         self._planned_duration_s = planned_duration_s
     def set_planned_departure_datetime(self, planned_departure_datetime):
         self._planned_departure_datetime = planned_departure_datetime
+    def set_step_stpps(self, step_stpps):
+        self._step_stpps = step_stpps
     def set_predicted_duration_s(self, predicted_duration_s):
         self._predicted_duration_s = predicted_duration_s
 
@@ -261,6 +265,8 @@ class JourneyPrediction:
         return self._planned_duration_s
     def get_planned_departure_datetime(self):
         return self._planned_departure_datetime
+    def get_step_stpps(self):
+        return self._step_stpps
     def get_predicted_duration_s(self):
         return self._predicted_duration_s
 
@@ -418,59 +424,59 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         pass
     else:
         # Look up routes for supplied short name. Should always find some...
-        route_query = db.session.query(Routes.route_id)
-        route_query = route_query.filter(Routes.route_long_name == route_name)
-        route_query = route_query.filter(Routes.route_short_name == route_shortname)
-        route_query = route_query.order_by(text('route_id asc'))
+        routes = db.session.query(Routes.route_id)
+        routes = routes.filter(Routes.route_long_name == route_name)
+        routes = routes.filter(Routes.route_short_name == route_shortname)
+        routes = routes.order_by(text('route_id asc'))
 
         routes_for_shortname = []
-        for r in route_query.all():
+        for r in routes.all():
             routes_for_shortname.append(r.route_id)
         # log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
         
         # We now how a list of route_ids, we can use that list to get a list of trips
         # for those routes...
-        trips_query = db.session.query(Trips)
-        trips_query = trips_query.filter(Trips.route_id.in_(routes_for_shortname))
+        trips = db.session.query(Trips)
+        trips = trips.filter(Trips.route_id.in_(routes_for_shortname))
 
-        # Identify trips for the routes
+        # Extract a list of trip_id's from the 'trips' query result...
         trips_for_routes = []
-        for t in trips_query.all():
+        for t in trips.all():
             trips_for_routes.append(t.trip_id)
         # log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
 
-        # Identify the departure stop (by lat/lon)
+        # Identify the departure stop (by name first, then by lat/lon)
         depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
         # log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
 
-        # Identify the arrival stop (by lat/lon)
+        # Identify the arrival stop (by name first, then by lat/lon)
         arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
         # log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
 
-        stop_times_query = db.session.query(StopTime.trip_id)
+        trip_from_stoptimes = db.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
-        stop_times_query = stop_times_query.filter(StopTime.trip_id.in_(trips_for_routes))
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.trip_id.in_(trips_for_routes))
         # Additionally filtering by 'trip_headsign' in most cases ensures we never
         # mistake an inbound trip for an outbound trip.
         if stop_headsign:
             # A lot of the GTFS data have leading spaces, the google data does not...
             # ... so func.ltrim
-            stop_times_query = stop_times_query.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
-        stop_times_query = stop_times_query.filter(StopTime.stop_id == depstop.stop_id)
-        stop_times_query = stop_times_query.filter(StopTime.arrival_time < jrny_time)
-        stop_times_query = stop_times_query.order_by(text('arrival_time desc'))
-        trip_id = stop_times_query.limit(1).all()
+            trip_from_stoptimes = trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
+        trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
+        trip_id = trip_from_stoptimes.limit(1).all()
         log.debug('\tMost likely trip identified: ' + str(trip_id))
 
         # At this point we've identified the * most likely * trip_id for the
         # requested journey! Sweet - now we just return the list of stops for this
         # trip_id!
-        stoptimes_for_trip_query = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
-        stoptimes_for_trip_query = stoptimes_for_trip_query.join(Stop, StopTime.stop_id == Stop.stop_id)
-        stoptimes_for_trip_query = stoptimes_for_trip_query.filter(StopTime.trip_id == trip_id[0][0])
-        stoptimes_for_trip_query = stoptimes_for_trip_query.order_by(text('stop_sequence'))
+        stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
+        stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
+        stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id[0][0])
+        stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
         # All stops selected, omit stop_times detail
-        stoptimes_whole_trip = stoptimes_for_trip_query.all()
+        stoptimes_whole_trip = stepstops_info_for_trip.all()
 
         step_stops  = []
         stops_in_step = False
@@ -486,7 +492,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
     return step_stops
 
 
-def predict_journey_time(prediction_requests):
+def predict_journey_time(journey_prediction):
     """Predict the journey time(s) for journeys listed in 'prediction_requests' list
 
     Returns a List with one JourneyPrediction object per record in the query result set.
@@ -494,13 +500,12 @@ def predict_journey_time(prediction_requests):
     Uses the stop-to-stop model when...
     """
 
-    for JourneyPrediction in prediction_requests:
-        # Tom has guessed that all trips in Dublin will take... 10 minutes! Let's see
-        # if a masters course in DA and using some of the most advanced machine
-        # learning techniques available can improve on my 'model'!
-        JourneyPrediction.set_predicted_duration_s(600)
+    # Tom has guessed that all trips in Dublin will take... 10 minutes! Let's see
+    # if a masters course in DA and using some of the most advanced machine
+    # learning techniques available can improve on my 'model'!
+    journey_prediction.set_predicted_duration_s(600)
     
-    return prediction_requests  # Return the completed set of prediction_requests
+    return journey_prediction  # Return the updated rediction_request
 
 
 def time_rounded_to_hrs_mins_as_string(seconds):

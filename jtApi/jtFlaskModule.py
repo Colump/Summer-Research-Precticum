@@ -480,8 +480,6 @@ def get_journey_time():
         # POST'ed to the server (as a python dictionary) using:
         prediction_request_json = request.json
 
-        prediction_requests = []
-        
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
@@ -506,36 +504,6 @@ def get_journey_time():
                 planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
                 log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
-                pred_req = JourneyPrediction(route_shortname, route_shortname_pickle_exists, planned_time_s, planned_departure_datetime)
-
-                prediction_requests.append(pred_req)
-
-        # We're built up a list of prediction requests *in the same order* as
-        # the json we've received.  Call a function to get the predicted journey
-        # time for each step.
-        prediction_requests = predict_journey_time(prediction_requests)
-        log.debug('-')
-        log.debug('Predictions Complete! Now beginning post processing:')
-        log.debug('-')
-
-        # Loop over the json we received now and add back in the predictions.
-        # This seems kinda crude... but I don't have a better option at the moment...
-        curr_posn = 0
-        log.debug('looping over routes')
-        for route in prediction_request_json['routes']:
-
-            # def JourneyPrediction():
-            no_of_steps_this_route = len(route['steps'])
-            log.debug("\tno_of_steps_this_route -> " + str(no_of_steps_this_route))
-
-            log.debug('\tlooping over steps')
-            for step in route['steps']:
-                # Extend the json to contain the prediction information...
-                predicted_duration = prediction_requests[curr_posn].get_predicted_duration_s()
-                step['predicted_duration'] = {}
-                step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
-                step['predicted_duration']['value'] = predicted_duration
-
                 # Extend the json to contain stop-by-stop route information...
                 # NOTE The mappings between Googles supplied data and the GTFSR
                 #      fields are *inferred* - I could not find documentation
@@ -555,6 +523,22 @@ def get_journey_time():
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
 
+                # Bundle everything we need to make a prediction into a convenient
+                # object. We can then pass this object to the prediction routine
+                journey_pred = JourneyPrediction( \
+                    route_shortname, route_shortname_pickle_exists, \
+                    planned_time_s, planned_departure_datetime, step_stops)
+
+                # Call a function to get the predicted journey time for this step.
+                journey_pred = predict_journey_time(journey_pred)
+
+                # Extend the json to contain the prediction information...
+                predicted_duration = journey_pred.get_predicted_duration_s()
+                step['predicted_duration'] = {}
+                step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
+                step['predicted_duration']['value'] = predicted_duration
+
+                # Extend the json to contain the step_stops information
                 step['stop_sequence'] = {}
                 step['stop_sequence']['stops'] = []
                 for step_stop in step_stops:
@@ -567,8 +551,6 @@ def get_journey_time():
                     step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
                     step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
                     step['stop_sequence']['stops'].append(step_stop_dict)
-
-                curr_posn += 1
 
         resp = jsonify(prediction_request_json)
 
