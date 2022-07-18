@@ -156,15 +156,32 @@ def query_results_as_compressed_csv(query, name):
     return response
 
 
-def query_results_as_json(query, name):
+def query_results_as_json(query, name, **kwargs):
     """
 
     Returns a JSON List with one object per record in the query result set.
     """
-
+    incl_limit_exceeded_warning = False
+    if 'limit_exceeded' in kwargs:
+        if kwargs['limit_exceeded'] == True:
+            incl_limit_exceeded_warning = True
+    
     def get_chunk(json_list, first_chunk, name):
         if first_chunk:
-            chunk = '{\n\"' + name + '\": [\n'
+            chunk = '{\n'
+            if incl_limit_exceeded_warning:
+                credentials = load_credentials()
+                dl_lim_json        = credentials['DOWNLOAD_ROW_LIMIT_JSON']
+                dl_lim_json_attach = credentials['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
+
+                chunk += '\"filesize_warning\": {\n'
+                chunk += '\"warning\": \"WARNING\",\n'
+                chunk += '\"description\": \"The number of records in this extract exceeds the current streamed .json file limit\",\n'
+                chunk += '\"limits1\": \"A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer\",\n'
+                chunk += '\"limits2\": \"A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment\",\n'
+                chunk += '\"limits3\": \"There is currently no limit on filesizes downloaded as compressed .csv.gz\"\n'
+                chunk += '},\n'
+            chunk += '\"' + name + '\": [\n'
             first_chunk = False
         else:
             chunk = ',\n'

@@ -175,7 +175,7 @@ class Stop(Base):
     #         -> if isinstance(o, datetime.timedelta):
     #                'my_date': str(self.my_date),
 
-    def serialize_norels(self):
+    def serialize(self):
        """Return object data in easily serializeable format, no relationships"""
        return  {
             'stop_id': self.stop_id,

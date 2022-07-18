@@ -222,7 +222,7 @@ def get_dataset_in_format_requested(request, query, filename):
                 #======================================================================================
                 # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
                 #======================================================================================
-                return query_results_as_json(query.limit(dl_row_limit_json_attach), filename)
+                return query_results_as_json(query.limit(dl_row_limit_json_attach), filename, limit_exceeded=True)
             else:
                 return query_results_as_json(query, filename)
         else:
@@ -232,7 +232,17 @@ def get_dataset_in_format_requested(request, query, filename):
                 # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
                 #======================================================================================
                 list = []
-                list.append("My Warning Json HERE")
+                dl_lim_json        = jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON']
+                dl_lim_json_attach = jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
+                warning = {}
+                warning['filesize_warning'] = {}
+                warning['filesize_warning']['warning'] = 'WARNING'
+                warning['filesize_warning']['description'] = 'The number of records in this extract exceeds the current streamed .json file limit'
+                warning['filesize_warning']['limits1'] = 'A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer'
+                warning['filesize_warning']['limits2'] = 'A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment'
+                warning['filesize_warning']['limits3'] = 'There is currently no limit on filesizes downloaded as compressed .csv.gz'
+                list.append(warning)
+
                 list.append([row.serialize() for row in query.limit(dl_row_limit_json).all()])
                 response = jsonify(list)
             else:
@@ -272,55 +282,87 @@ def get_agency(agency_name):
 @jtFlaskApp.route("/calendar/<service_id>")
 def get_calendar(service_id):
     calendarQuery = db.session.query(Calendar)
+ 
+    response = None
     if service_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
         calendarQuery = calendarQuery.filter(Calendar.service_id == service_id)
-    calendarQuery = calendarQuery.order_by(text('service_id asc'))
+        calendarQuery = calendarQuery.order_by(text('service_id asc'))
 
-    # use serialize to make a new list from the results
-    # just one serialize functiomn so no if statement
-    json_list=[i.serialize() for i in calendarQuery.all()]
-    return jsonify(json_list)
+        response = jsonify([row.serialize() for row in calendarQuery.all()]) # ".one" causes a TypeError, ".all" returns just the specified agency
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, calendarQuery, 'calendar')
+
+    return response
 
 # endpoint for CalendarDates
 @jtFlaskApp.route("/calendardates", defaults={'date':None})
 @jtFlaskApp.route("/calendardates/<date>")
 def get_calendar_dates(date):
     calendardatesQuery = db.session.query(CalendarDates)
-    if date != None:
-        calendardatesQuery = calendardatesQuery.filter(CalendarDates.date == date)
-    calendardatesQuery = calendardatesQuery.order_by(text('date asc'))
 
-    # use serialize to make a new list from the results
-    # just one serialize functiomn so no if statement
-    json_list=[i.serialize() for i in calendardatesQuery.all()]
-    return jsonify(json_list)
+    response = None
+    if date != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
+        calendardatesQuery = calendardatesQuery.filter(CalendarDates.date == date)
+        calendardatesQuery = calendardatesQuery.order_by(text('date asc'))
+
+        response = jsonify([row.serialize() for row in calendardatesQuery.all()])
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, calendardatesQuery, 'calendar_dates')
+
+    return response
 
 @jtFlaskApp.route("/routes", defaults={'route_id': None})
 @jtFlaskApp.route("/routes/<route_id>")
 def get_routes(route_id):
     routeQuery = db.session.query(Routes)
+
+    response = None
     if route_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
         routeQuery = routeQuery.filter(Routes.route_id == route_id)
-    routeQuery = routeQuery.order_by(text('route_id asc'))
+        routeQuery = routeQuery.order_by(text('route_id asc'))
 
-    # haven't done the serialization for routes in models.py so this won't work yet
-    # just copying the structure of the code above for get_stops function
-    json_list=[i.serialize() for i in routeQuery.all()]
-    return jsonify(json_list)
+        response = jsonify([row.serialize() for row in routeQuery.all()])
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, routeQuery, 'routes')
 
-# # endpoint for Shapes
-# @jtFlaskApp.route("/shapes", defaults={'shape_id':None})
-# @jtFlaskApp.route("/shapes/<shape_id>")
-# def get_shape(shape_id):
-#     shapeQuery = db.session.query(Shapes)
-#     if shape_id != None:
-#         shapeQuery = shapeQuery.filter(Shapes.shape_id == shape_id)
-#     shapeQuery = shape_id.order_by(text('shape_id asc'))
+    return response
 
-#     # use serialize to make a new list from the results
-#     # just one serialize functiomn so no if statement
-#     json_list=[i.serialize() for i in shapeQuery.all()]
-#     return jsonify(json_list)
+# endpoint for Shapes
+@jtFlaskApp.route("/shapes", defaults={'shape_id':None})
+@jtFlaskApp.route("/shapes/<shape_id>")
+def get_shape(shape_id):
+    shapeQuery = db.session.query(Shapes)
+
+    response = None
+    if shape_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
+        shapeQuery = shapeQuery.filter(Shapes.shape_id == shape_id)
+        shapeQuery = shape_id.order_by(text('shape_id asc'))
+
+        response = jsonify([row.serialize() for row in shapeQuery.all()])
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, shapeQuery, 'shapes')
+
+    return response
 
 @jtFlaskApp.route("/stops", defaults={'stop_id': None})
 @jtFlaskApp.route("/stops/<stop_id>")
@@ -338,48 +380,67 @@ def get_stops(stop_id):
     # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
 
     stopQuery = db.session.query(Stop)
+
+    response = None
     if stop_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
         stopQuery = stopQuery.filter(Stop.stop_id == stop_id)
-    stopQuery = stopQuery.order_by(text('stop_id asc'))
+        stopQuery = stopQuery.order_by(text('stop_id asc'))
 
-    # Use list comprehension (on the query results)... to build a new list.
-    if stop_id != None:
-        # Single stop selected, include stop_times detail
-        json_list=[i.serialize() for i in stopQuery.all()]
+        response = jsonify([row.serialize() for row in stopQuery.all()])
     else:
-        # All stops selected, omit stop_times detail
-        json_list=[i.serialize_norels() for i in stopQuery.all()]
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, stopQuery, 'stops')
 
-    return jsonify(json_list)
+    return response
 
-# # endpoint for StopTime model, should work because TK has written serialize function
-# # within StopTime
-# @jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
-# @jtFlaskApp.route("/stoptimes/<trip_id>")
-# def get_stop_times(trip_id):
-#     stoptimeQuery = db.session.query(StopTime)
-#     if trip_id != None:
-#         stoptimeQuery = stoptimeQuery.filter(StopTime.trip_id == trip_id)
-#     stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
+# endpoint for StopTime model, should work because TK has written serialize function
+# within StopTime
+@jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
+@jtFlaskApp.route("/stoptimes/<trip_id>")
+def get_stop_times(trip_id):
+    stoptimeQuery = db.session.query(StopTime)
 
-#     # Use list comprehension (on the query results)... to build a new list.
-#     # serialize is the only function within Routes so just return new serialized list
-#     json_list=[i.serialize() for i in stoptimeQuery.all()]
-#     return jsonify(json_list)
+    response = None
+    if trip_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
+        stoptimeQuery = stoptimeQuery.filter(StopTime.trip_id == trip_id)
+        stoptimeQuery = stoptimeQuery.order_by(text('trip_id asc'))
+
+        response = jsonify([row.serialize() for row in stoptimeQuery.all()])
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, stoptimeQuery, 'stoptimes')
+
+    return response
     
 # endpoint for Transfers
 @jtFlaskApp.route("/transfers", defaults={'from_stop_id':None})
 @jtFlaskApp.route("/transfers/<from_stop_id>")
 def get_transfers(from_stop_id):
     transferQuery = db.session.query(Transfers)
-    if from_stop_id != None:
-        transferQuery = transferQuery.filter(Transfers.from_stop_id == from_stop_id)
-    transferQuery = transferQuery.order_by(text('from_stop_id asc'))
 
-    # use serialize to make a new list from the results
-    # just one serialize functiomn so no if statement
-    json_list=[i.serialize() for i in transferQuery.all()]
-    return jsonify(json_list)
+    response = None
+    if from_stop_id != None:
+        # Simplest use case - user requires information on single agency
+        # No option to download this as a file (currently) - just return requested
+        # information as json.
+        transferQuery = transferQuery.filter(Transfers.from_stop_id == from_stop_id)
+        transferQuery = transferQuery.order_by(text('from_stop_id asc'))
+
+        response = jsonify([row.serialize() for row in transferQuery.all()])
+    else:
+        # No specific agency requested - decide how (and exactly what) to return
+        # to the user...
+        response = get_dataset_in_format_requested(request, transferQuery, 'transfers')
+
+    return response
 
 # endpoint for Trips
 # Trips is a large table - so we don't return the json directly to user in the
@@ -727,12 +788,3 @@ if __name__ == "__main__":
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
-
-
-# {
-#     "filesize": "WARNING", 
-#     "description": "The number of records in the agency extract exceeds the maximum number that can be streamed as a .json file", 
-#     "limits1": "A maximum of nnnnnn records can be delivered directly to a clients browswer", 
-#     "limits2": "A maximum of nnnnnn records can be delivered as a .json file attachment", 
-#     "limits3": "There is currently no limit on filesizes downloaded as compressed .csv.gz"
-# }, 

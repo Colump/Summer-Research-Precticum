@@ -4,7 +4,7 @@
 <!-- The container for this row is in the base.html template -->
 <div class="row">
   <!-- We only display the sidebar on XL screens (d-none by default...)-->
-  <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 1000vh;">
+  <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 500vh;">
     <div class="sticky-xl-top" style="top:175px">
       <!-- In-page Navigation -->
       <nav class="nav navbar-light flex-column">
@@ -36,564 +36,736 @@
   <!-- The side nav takes one column of our 12 columns. Define a wrapper div to
     take the remaining 11 columns of the grid
   -->
-  <div class="col-11">
-    <!-- Button trigger modal -->
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#downloadModal">
-      Show Modal (TEMP!)
-    </button>
-
-    <!-- Modal -->
+  <div class="col-11 p-5">
+    <!-- File Download Modal -->
     <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="downloadModalLabel">Large File Sizes Limited</h5>
+            <h5 class="modal-title" id="downloadModalLabel">Warning - Large File Sizes</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
           </div>
           <div class="modal-body">
-            ...
+            <p>
+              Some of the supporting data files available for download here are
+              large (hundreds of megabytes). Attempting to have such files streamed
+              directly to a brower in json is neither practical, nor an efficient
+              use of our bandwidth.
+            </p>
+            <p>All files are complete when downloaded as compressed .CSVs.</p>
+            <p>
+              If you have chosen to either download or view a file as .JSON - and
+              we are forced to limit it for practical reasons - we will include
+              a clear warning in the .JSON
+            </p>
+            <input type="hidden" name="downloadTarget" id="downloadTarget" value="" />
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            <button type="button" class="btn btn-primary">Save changes</button>
+            <button type="button" class="btn btn-primary" id="downloadModalContinueButton">Continue</button>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="col p-5 alert">
-      <span class="closebtn" onlcick="this.parentElement.style.display='none';">
-        <button type="button" class="btn-close" aria-label="Close"></button>
-      </span>
-      We may alter file sizes depending on the dataset to reduce bandwidth.
+    <script type="text/javascript">
+      // Define a function to give me a small (configurable) delay
+      //https://www.geeksforgeeks.org/how-to-delay-a-loop-in-javascript-using-async-await-with-promise/
+      const delay = ms => new Promise(res => setTimeout(res, ms));
+
+      // Define a function to close the modal, wait a bit, and then download the file
+      function setDownloadTargetValueAndOpenModal(target) {
+        document.getElementById('downloadTarget').value = target;
+        var myModal = new bootstrap.Modal(document.getElementById('downloadModal'))
+        myModal.show();
+      };
+
+      // Define a function to close the modal, wait a bit, and then download the file
+      const closeModalAndAccessFile = async () => {
+        var myModalEl = document.getElementById('downloadModal')
+        var myModal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
+        myModal.hide();
+
+        await delay(500);
+
+        window.location = document.getElementById('downloadTarget').value;
+      };
+
+      // Add an event listener so the modal calls our function on click...
+      document.getElementById("downloadModalContinueButton").addEventListener("click", closeModalAndAccessFile);
+    </script>
+
+
+    <!-- Page content -->
+    <div id="top" class="section-anchor"></div>
+
+    <h1>Journeyti.me API Reference</h1>
+    <p>
+      The journeyti.me prediction engine is free and available for anyone to use.
+      Predicting journey times on public transport is a complex task.
+    </p>
+    <p>An app consuming the output of this API will need to ask well-formed questions,
+      using appropriate data to support the provision of accurate journey times.
+    </p>
+    <p>
+      This API provides both static transit-system related information AND access
+      to the prediction engine. The static information is composed of a number of
+      json data sets that can be queried individually. Each set describes a particular
+      aspect of transit information (stops, routes, etc.) required for accessing
+      the prediction engine. For more information about each dataset, consult
+      the reference material below.
+    </p>
+    <h2>Using the API</h2>
+    <p>
+      *** IMPROVE THESE INSTRUCTIONS!!!
+    </p>
+    <h3>Prediction Engine</h3>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-8">
+          <textarea name="samplePredictionRequest" id="samplePredictionRequest" cols="100" rows="30"></textarea>
+          <script type="text/javascript">
+            var samplePredictionRequest = {
+              "title": "Journeyti.me Prediction Request",
+              "description": "Journeyti.me Step Journey Time Prediction Request",
+              "routes": [
+                {
+                  "steps": [
+                    {
+                      "distance": {
+                        "text": "7.3 km",
+                        "value": 7321
+                      },
+                      "duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "transit_details": {
+                        "arrival_stop": {
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281"
+                        },
+                        "arrival_time": {
+                          "text": "12:45pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657712742
+                        },
+                        "departure_stop": {
+                          "location": {
+                            "lat": 53.3094124,
+                            "lng": -6.218878399999999
+                          },
+                          "name": "UCD Belfield"
+                        },
+                        "departure_time": {
+                          "text": "12:20pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657711205
+                        },
+                        "headsign": "Phoenix Pk",
+                        "line": {
+                          "name": "Phoenix Park Gate - University College Dublin",
+                          "short_name": "46A"
+                        },
+                        "num_stops": 17
+                      }
+                    }
+                  ]
+                }
+              ]
+            };
+            document.getElementById('samplePredictionRequest').value = JSON.stringify(samplePredictionRequest, undefined, 4);
+          </script>
+        </div>
+      </div>
     </div>
-
-
-    <div class="col p-5">
-      <!-- Page content -->
-      <div id="top" class="section-anchor"></div>
-
-      <h1>Journeyti.me API Reference</h1>
-      <p>
-        The journeyti.me prediction engine is free and available for anyone to use. Predicting journey times on public
-        transport
-        is a complex task. An app consuming the output of this API will need to ask well-formed questions, using
-        appropriate data
-        to support the provision of accurate journey times.
-      </p>
-      <p>
-        This API provides both static transit-system related information AND access to the prediction engine. The static
-        information
-        is composed of a number of json data sets that can be queried individually. Each set describes a particular
-        aspect
-        of transit
-        information (stops, routes, etc.) required for accessing the prediction engine. For more information about each
-        dataset,
-        consult the reference material below.
-      </p>
-      <h2>Using the API</h2>
-      <p>
-        Do we give links to each individual json extract here? Or below ? Or both
-        How much instruction is required for a JSON interface? Document...
-      </p>
-      <h2>Specifications</h2>
-      <!--
+    <br />
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-8">
+          <textarea name="samplePredictionResponse" id="samplePredictionResponse" cols="100" rows="30"></textarea>
+          <script type="text/javascript">
+            var samplePredictionResponse = {
+              "title": "Journeyti.me Prediction Request",
+              "description": "Journeyti.me Step Journey Time Prediction Request",
+              "routes": [
+                {
+                  "steps": [
+                    {
+                      "distance": {
+                        "text": "7.3 km",
+                        "value": 7321
+                      },
+                      "duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "transit_details": {
+                        "arrival_stop": {
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281"
+                        },
+                        "arrival_time": {
+                          "text": "12:45pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657712742
+                        },
+                        "departure_stop": {
+                          "location": {
+                            "lat": 53.3094124,
+                            "lng": -6.218878399999999
+                          },
+                          "name": "UCD Belfield"
+                        },
+                        "departure_time": {
+                          "text": "12:20pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657711205
+                        },
+                        "headsign": "Phoenix Pk",
+                        "line": {
+                          "name": "Phoenix Park Gate - University College Dublin",
+                          "short_name": "46A"
+                        },
+                        "num_stops": 17
+                      },
+                      "predicted_duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "stop_sequence": [
+                        {
+                          "stop_id": 1234,
+                          "sequence_no": 1,
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281",
+                          "dist_from_last_stop": 1234
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            };
+            document.getElementById('samplePredictionResponse').value = JSON.stringify(samplePredictionResponse, undefined, 4);
+          </script>
+        </div>
+      </div>
+    </div>
+    <br />
+    <hr>
+    <h2>Supporting Data Specifications</h2>
+    <!--
             Original information on the various data sets taken from:
             https://developers.google.com/transit/gtfs/reference#agencytxt
         -->
-      <hr>
-      <h3>Genius Prediction Engine</h3>
-      <p>
-
-      </p>
-      <hr>
-      <h3>Agency</h3>
-      <p>
-        Transit agencies with service represented in this dataset.
-        Download the latest Agency dataset for Dublin as <a href="http://localhost:8080/agency?dltype=json">.json</a>
-        or as a <a href="http://localhost:8080/agency?dltype=csv">.csv</a> file.
-      </p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Agency_Id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>A unique identifier for this agency.</td>
-        </tr>
-        <tr>
-          <td>Agency_Name</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>The agency name.</td>
-        </tr>
-        <tr>
-          <td>Agency_url</td>
-          <td>carchar(128)</td>
-          <td>n/a</td>
-          <td>URL link to the TFI website.</td>
-        </tr>
-        <tr>
-          <td>Agency_timezone</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>The timezone the bus agency operates in.</td>
-        </tr>
-        <tr>
-          <td>Agency_lang</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>The language the agency operates in.
-          </td>
-        </tr>
-        <tr>
-          <td>Agency_phone</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>The agency phone number.
-          </td>
-        </tr>
-        <tr>
-          <td>Agency_lang</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>The language the agency operates in.
-          </td>
-        </tr>
-        <tr>
-          <td>Agency_col</td>
-          <td>varchar(64)</td>
-          <td>n/a</td>
-          <td>
-          </td>
-        </tr>
-      </table>
-      <hr>
-      <h3>Stops</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <div>
-        <table class="table table-hover">
-          <tr>
-            <th>Field Name</th>
-            <th>Type</th>
-            <th>Required</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>Stop_Id</td>
-            <td>varchar(12)</td>
-            <td>n/a</td>
-            <td>A unique identifier for this stop, as defined by the respective transit authority</td>
-          </tr>
-          <tr>
-            <td>Stop_Name</td>
-            <td>varchar(64)</td>
-            <td>n/a</td>
-            <td>The stop name, as defined by the respective transit authority</td>
-          </tr>
-          <tr>
-            <td>Stop_Lat</td>
-            <td>double</td>
-            <td>n/a</td>
-            <td>The latitude of this stop</td>
-          </tr>
-          <tr>
-            <td>Stop_Lon</td>
-            <td>double</td>
-            <td>n/a</td>
-            <td>The longitude of this stop</td>
-          </tr>
-          <tr>
-            <td>Dist_From_CC</td>
-            <td>double</td>
-            <td>n/a</td>
-            <td>The distance of this stop from the Dublin City Center, where the City Center is defined as the center of
-              O'Connell
-              street bridge (53.347269, -6.259107) and the distance is calculated using the haversine formula.
-            </td>
-          </tr>
-        </table>
-      </div>
-      <div>
-        <hr>
-        <h3>Calendar</h3>
-        <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-        <table class="table table-hover">
-          <tr>
-            <th>Field Name</th>
-            <th>Type</th>
-            <th>Required</th>
-            <th>Description</th>
-          </tr>
-          <tr>
-            <td>Service_id</td>
-            <td>varchar(32)</td>
-            <td>n/a</td>
-            <td>Uniquely identifies a set of dates when service is available for one or more routes. </td>
-          </tr>
-          <tr>
-            <td>Monday</td>
-            <td>Int)</td>
-            <td>n/a</td>
-            <td>1 - Service is available for all Mondays in the date range.
-              0 - Service is not available for Mondays in the date range.</td>
-          </tr>
-          <tr>
-            <td>Tuesday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Tuesdays
-            </td>
-          </tr>
-          <tr>
-            <td>Wednesday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Wednesdays
-            </td>
-          </tr>
-          <tr>
-            <td>Thursday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Thursdays
-            </td>
-          </tr>
-          <tr>
-            <td>Friday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Fridays
-            </td>
-          </tr>
-          <tr>
-            <td>Saturday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Saturdays </td>
-          </tr>
-          <tr>
-            <td>Sunday</td>
-            <td>Int</td>
-            <td>n/a</td>
-            <td>Functions in the same way as monday except applies to Sundays</td>
-          </tr>
-        </table>
-      </div>
-
-      <h3>Calendar Dates</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Service_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a set of dates when service is available for one or more routes. </td>
-        </tr>
-        <tr>
-          <td>Date</td>
-          <td>Datetime</td>
-          <td>n/a</td>
-          <td>Indicates whether service is available on the date specified in the date field.</td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Routes</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Route_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a route.</td>
-        </tr>
-        <tr>
-          <td>Agency_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Agency for the specified route.</td>
-        </tr>
-        <tr>
-          <td>Route_short_name</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Short name of a route.</td>
-        </tr>
-        <tr>
-          <td>Route_long_name</td>
-          <td>varchar(125)</td>
-          <td>n/a</td>
-          <td>Full name of a route.</td>
-        </tr>
-        <tr>
-          <td>Route_type</td>
-          <td>Int</td>
-          <td>n/a</td>
-          <td>Indicates the type of transportation used on a route.</td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Shapes</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Shape_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a shape.</td>
-        </tr>
-        <tr>
-          <td>Shape_pt_lat</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Latitude of a shape point.</td>
-        </tr>
-        <tr>
-          <td>Shape_pt_lon</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Longitude of a shape point.</td>
-        </tr>
-        <tr>
-          <td>Shape_pt_sequence</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Sequence in which the shape points connect to form the shape.</td>
-        </tr>
-        <tr>
-          <td>Shape_dist_traveled</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Actual distance traveled along the shape from the first shape point to the point specified in this record.
-          </td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Stops</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Stop_id</td>
-          <td>varchar(16)</td>
-          <td>n/a</td>
-          <td>Identifies a stop, station, or station entrance..</td>
-        </tr>
-        <tr>
-          <td>Stop_name</td>
-          <td>varchar(64)</td>
-          <td>n/a</td>
-          <td>Name of the location.</td>
-        </tr>
-        <tr>
-          <td>Stop_lat</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Latitude of the location.</td>
-        </tr>
-        <tr>
-          <td>Stop_lon</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Longitude of the location.</td>
-        </tr>
-        <tr>
-          <td>Distance_from_cc</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Distance from City Center.</td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Stop_times</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Trip_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a trip.</td>
-        </tr>
-        <tr>
-          <td>Arrival_time</td>
-          <td>Time</td>
-          <td>n/a</td>
-          <td>Arrival time at a specific stop for a specific trip on a route.</td>
-        </tr>
-        <tr>
-          <td>Departure_time</td>
-          <td>Time</td>
-          <td>n/a</td>
-          <td>Departure time from a specific stop for a specific trip on a route.</td>
-        </tr>
-        <tr>
-          <td>Stop_id</td>
-          <td>varchar(16)</td>
-          <td>n/a</td>
-          <td>Identifies the serviced stop.</td>
-        </tr>
-        <tr>
-          <td>Stop_sequence</td>
-          <td>Smallint</td>
-          <td>n/a</td>
-          <td>Order of stops for a particular trip.</td>
-        </tr>
-        <tr>
-          <td>Stop_headsign</td>
-          <td>Varchar(64)</td>
-          <td>n/a</td>
-          <td>Text that appears on signage identifying the trip's destination to riders.</td>
-        </tr>
-        <tr>
-          <td>Pickup_type</td>
-          <td>Smallint</td>
-          <td>n/a</td>
-          <td>Indicates pickup method.</td>
-        </tr>
-        <tr>
-          <td>Drop_off_type</td>
-          <td>Smallint</td>
-          <td>n/a</td>
-          <td>Indicates drop off method.</td>
-        </tr>
-        <tr>
-          <td>Shape_dist_travled</td>
-          <td>Double</td>
-          <td>n/a</td>
-          <td>Actual distance traveled along the associated shape, from the first stop to the stop specified in this
-            record.</td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Transfers</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>From_stop_id</td>
-          <td>varchar(16)</td>
-          <td>n/a</td>
-          <td>Identifies a stop or station where a connection between routes begins.</td>
-        </tr>
-        <tr>
-          <td>To_stop_id</td>
-          <td>Varchar(16)</td>
-          <td>n/a</td>
-          <td>Identifies a stop or station where a connection between routes ends.</td>
-        </tr>
-        <tr>
-          <td>Transfer_type</td>
-          <td>Smallint</td>
-          <td>n/a</td>
-          <td>Indicates the type of connection for the specified (from_stop_id, to_stop_id) pair.</td>
-        </tr>
-        <tr>
-          <td>Min_transfer_time</td>
-          <td>Int</td>
-          <td>n/a</td>
-          <td>Optional: Amount of time, in seconds, that must be available to permit a transfer between routes at the
-            specified stops.</td>
-        </tr>
-      </table>
-    </div>
-    <div>
-      <hr>
-      <h3>Trips</h3>
-      <p>Bla bla bla - some information about this json extract - perhaps a link</p>
-      <table class="table table-hover">
-        <tr>
-          <th>Field Name</th>
-          <th>Type</th>
-          <th>Required</th>
-          <th>Description</th>
-        </tr>
-        <tr>
-          <td>Route_id</td>
-          <td>varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a route.</td>
-        </tr>
-        <tr>
-          <td>Service_id</td>
-          <td>Varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a set of dates when service is available for one or more routes.</td>
-        </tr>
-        <tr>
-          <td>Trip_id</td>
-          <td>Varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a trip.</td>
-        </tr>
-        <tr>
-          <td>Shape_id</td>
-          <td>Varchar(32)</td>
-          <td>n/a</td>
-          <td>Identifies a shape.</td>
-        </tr>
-        <tr>
-          <td>Trip_headsign</td>
-          <td>Varchar(128)</td>
-          <td>n/a</td>
-          <td>Text that appears on signage identifying the trip's destination to riders.</td>
-        </tr>
-        <tr>
-          <td>Direction_id</td>
-          <td>Tinyint</td>
-          <td>n/a</td>
-          <td>Indicates the direction of travel for a trip.</td>
-        </tr>
-      </table>
-    </div>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency')">Agency</a></h3>
+    <p>
+      Transit agencies with service represented in this dataset.
+      Download the latest Agency dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Agency_Id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>A unique identifier for this agency.</td>
+      </tr>
+      <tr>
+        <td>Agency_Name</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The agency name.</td>
+      </tr>
+      <tr>
+        <td>Agency_url</td>
+        <td>carchar(128)</td>
+        <td>n/a</td>
+        <td>URL link to the TFI website.</td>
+      </tr>
+      <tr>
+        <td>Agency_timezone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The timezone the bus agency operates in.</td>
+      </tr>
+      <tr>
+        <td>Agency_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the agency operates in.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_phone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The agency phone number.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the agency operates in.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_col</td>
+        <td>varchar(64)</td>
+        <td>n/a</td>
+        <td>
+        </td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar')">Calendar</a></h3>
+    <p>
+      Service dates specified using a weekly schedule with start and end dates.
+      This file is required unless all dates of service are defined in calendar_dates.txt
+      Download the latest Calendar dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Uniquely identifies a set of dates when service is available for one or more routes. </td>
+      </tr>
+      <tr>
+        <td>Monday</td>
+        <td>Int)</td>
+        <td>n/a</td>
+        <td>1 - Service is available for all Mondays in the date range.
+          0 - Service is not available for Mondays in the date range.</td>
+      </tr>
+      <tr>
+        <td>Tuesday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Tuesdays
+        </td>
+      </tr>
+      <tr>
+        <td>Wednesday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Wednesdays
+        </td>
+      </tr>
+      <tr>
+        <td>Thursday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Thursdays
+        </td>
+      </tr>
+      <tr>
+        <td>Friday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Fridays
+        </td>
+      </tr>
+      <tr>
+        <td>Saturday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Saturdays </td>
+      </tr>
+      <tr>
+        <td>Sunday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Sundays</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates')">Calendar Dates</a>
+    </h3>
+    <p>
+      Exceptions for the services defined in the calendar.txt. If calendar.txt
+      is omitted, then calendar_dates.txt is required and must contain all dates
+      of service.
+      Download the latest Calendar Dates dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=csv')">.csv</a>
+      file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a set of dates when service is available for one or more routes. </td>
+      </tr>
+      <tr>
+        <td>Date</td>
+        <td>Datetime</td>
+        <td>n/a</td>
+        <td>Indicates whether service is available on the date specified in the date field.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes')">Routes</a></h3>
+    <p>
+      Transit routes. A route is a group of trips that are displayed to riders
+      as a single service.
+      Download the latest Routes dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Route_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a route.</td>
+      </tr>
+      <tr>
+        <td>Agency_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Agency for the specified route.</td>
+      </tr>
+      <tr>
+        <td>Route_short_name</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Short name of a route.</td>
+      </tr>
+      <tr>
+        <td>Route_long_name</td>
+        <td>varchar(125)</td>
+        <td>n/a</td>
+        <td>Full name of a route.</td>
+      </tr>
+      <tr>
+        <td>Route_type</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Indicates the type of transportation used on a route.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes')">Shapes</a></h3>
+    <p>
+      Rules for mapping vehicle travel paths, sometimes referred to as route
+      alignments.
+      Download the latest Shapes dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Shape_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a shape.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_lat</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Latitude of a shape point.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_lon</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Longitude of a shape point.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_sequence</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Sequence in which the shape points connect to form the shape.</td>
+      </tr>
+      <tr>
+        <td>Shape_dist_traveled</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Actual distance traveled along the shape from the first shape point to the point specified in this record.
+        </td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops')">Stops</a></h3>
+    <p>
+      Stops where vehicles pick up or drop off riders. Also defines stations
+      and station entrances.
+      Download the latest Stops dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop, station, or station entrance..</td>
+      </tr>
+      <tr>
+        <td>Stop_name</td>
+        <td>varchar(64)</td>
+        <td>n/a</td>
+        <td>Name of the location.</td>
+      </tr>
+      <tr>
+        <td>Stop_lat</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Latitude of the location.</td>
+      </tr>
+      <tr>
+        <td>Stop_lon</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Longitude of the location.</td>
+      </tr>
+      <tr>
+        <td>Distance_from_cc</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Distance from City Center.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes')">Stop Times</a></h3>
+    <p>
+      Times that a vehicle arrives at and departs from stops for each trip.
+      Download the latest Stop Times dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Trip_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a trip.</td>
+      </tr>
+      <tr>
+        <td>Arrival_time</td>
+        <td>Time</td>
+        <td>n/a</td>
+        <td>Arrival time at a specific stop for a specific trip on a route.</td>
+      </tr>
+      <tr>
+        <td>Departure_time</td>
+        <td>Time</td>
+        <td>n/a</td>
+        <td>Departure time from a specific stop for a specific trip on a route.</td>
+      </tr>
+      <tr>
+        <td>Stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies the serviced stop.</td>
+      </tr>
+      <tr>
+        <td>Stop_sequence</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Order of stops for a particular trip.</td>
+      </tr>
+      <tr>
+        <td>Stop_headsign</td>
+        <td>Varchar(64)</td>
+        <td>n/a</td>
+        <td>Text that appears on signage identifying the trip's destination to riders.</td>
+      </tr>
+      <tr>
+        <td>Pickup_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates pickup method.</td>
+      </tr>
+      <tr>
+        <td>Drop_off_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates drop off method.</td>
+      </tr>
+      <tr>
+        <td>Shape_dist_travled</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Actual distance traveled along the associated shape, from the first stop to the stop specified in this
+          record.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers')">Transfers</a></h3>
+    <p>
+      Rules for making connections at transfer points between routes.
+      Download the latest Transfers dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>From_stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop or station where a connection between routes begins.</td>
+      </tr>
+      <tr>
+        <td>To_stop_id</td>
+        <td>Varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop or station where a connection between routes ends.</td>
+      </tr>
+      <tr>
+        <td>Transfer_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates the type of connection for the specified (from_stop_id, to_stop_id) pair.</td>
+      </tr>
+      <tr>
+        <td>Min_transfer_time</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Optional: Amount of time, in seconds, that must be available to permit a transfer between routes at the
+          specified stops.</td>
+      </tr>
+    </table>
+    <hr>
+    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips')">Trips</a></h3>
+    <p>
+      Trips for each route. A trip is a sequence of two or more stops that
+      occur during a specific time period.
+      Download the latest Trips dataset for Dublin as
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Route_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a route.</td>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a set of dates when service is available for one or more routes.</td>
+      </tr>
+      <tr>
+        <td>Trip_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a trip.</td>
+      </tr>
+      <tr>
+        <td>Shape_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a shape.</td>
+      </tr>
+      <tr>
+        <td>Trip_headsign</td>
+        <td>Varchar(128)</td>
+        <td>n/a</td>
+        <td>Text that appears on signage identifying the trip's destination to riders.</td>
+      </tr>
+      <tr>
+        <td>Direction_id</td>
+        <td>Tinyint</td>
+        <td>n/a</td>
+        <td>Indicates the direction of travel for a trip.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <p>
+      For more detailed information see the <a href="https://developers.google.com/transit/gtfs/reference">
+        Google Developers Static Transit</a> reference.
+    </p>
   </div>
 </div>
 {% endblock %}
