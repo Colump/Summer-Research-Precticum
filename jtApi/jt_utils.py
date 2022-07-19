@@ -114,8 +114,16 @@ def query_results_as_compressed_csv(query, name):
         row_count      = 0
         row_list       = []
         first_chunk_tf = True
+        lastRowPK      = None
+        # query.yield_per(rows_chunk)
+        # while True:
+        #     rows = query.filter(Thing.id < lastThingID).limit(rows_chunk).all()
+        #     if not rows or len(rows) == 0: 
+        #         break
+        #     for row in rows:
+        #         lastRowPK = row.??????
+        #         analyze(thing)
         for row in query:
-
             # If we build up the string we plan to send by repeatedly appending,
             # we're creating a new string each time. This is quite memory expensive
             # and inefficient.
@@ -136,6 +144,7 @@ def query_results_as_compressed_csv(query, name):
                 chunk, first_chunk_tf = get_chunk(row_list, first_chunk_tf, query)
                 chunk_compressed = compressor.compress(chunk)
                 if chunk_compressed:
+                    print("yielding a chunk...")
                     yield chunk_compressed
                 crc = zlib.crc32(chunk, crc) & 0xFFFFFFFF  # Keep the CRC up to date...
                 length += len(chunk)
@@ -219,9 +228,9 @@ def query_results_as_json(query, name, **kwargs):
             if row_count >= rows_chunk:
                 rows_remain -= rows_chunk  # we've jusr competed a chunk
                 rows_chunk = _get_next_chunk_size(rows_remain)
-                print("Completed a chunk:")
-                print("\tRows Remaining ->", rows_remain)
-                print("\tRows This Chunk ->", rows_chunk)
+                log.debug("Completed a chunk:")
+                log.debug("\tRows Remaining ->", rows_remain)
+                log.debug("\tRows This Chunk ->", rows_chunk)
 
                 buffer, first_chunk = get_chunk(json_list, first_chunk, name)
                 if buffer:
@@ -482,15 +491,15 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
-        trip_id = trip_from_stoptimes.limit(1).all()
-        print('\tMost likely trip identified: ' + str(trip_id))
+        trip_query_result = trip_from_stoptimes.limit(1).all()
+        print('\tMost likely trip identified: ' + str(trip_query_result))
 
         # At this point we've identified the * most likely * trip_id for the
         # requested journey! Sweet - now we just return the list of stops for this
         # trip_id!
         stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
         stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
-        stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id[0][0])
+        stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_query_result[0][0])
         stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
         # All stops selected, omit stop_times detail
         stoptimes_whole_trip = stepstops_info_for_trip.all()
