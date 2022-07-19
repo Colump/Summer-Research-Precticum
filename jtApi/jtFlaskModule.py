@@ -540,18 +540,18 @@ def get_journey_time():
         # in JourneyPredictionRequestSpec.json.  We can conveniently get the JSON
         # POST'ed to the server (as a python dictionary) using:
         prediction_request_json = request.json
+        print("get_journey_time.do: request.json type is -> ", type(request.json))
 
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
         log.debug('looping over routes')
         for route in prediction_request_json['routes']:
-
-            # def JourneyPrediction():
+             # def JourneyPrediction():
             no_of_steps_this_route = len(route['steps'])
-            log.debug("\tno_of_steps_this_route -> " + str(no_of_steps_this_route))
+            print("\tno_of_steps_this_route -> " + str(no_of_steps_this_route))
 
-            log.debug('\tlooping over steps')
+            print('\tlooping over steps')
             for step in route['steps']:
                 
                 planned_time_s  = step['duration']['value']
@@ -563,7 +563,7 @@ def get_journey_time():
                 # Using datetime to construct our date seems to nicely cater
                 # for daylight savings times, differences from UTC etc. ...
                 planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
-                log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
+                print("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
                 # Extend the json to contain stop-by-stop route information...
                 # NOTE The mappings between Googles supplied data and the GTFSR
@@ -583,6 +583,7 @@ def get_journey_time():
                 step_stops = get_stops_by_route(db, route_name, route_short_name, stop_headsign, departure_time, \
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
+                print("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
 
                 # Bundle everything we need to make a prediction into a convenient
                 # object. We can then pass this object to the prediction routine

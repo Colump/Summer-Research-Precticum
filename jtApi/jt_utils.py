@@ -430,7 +430,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
 
         return stop
 
-    log.debug('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
+    print('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
 
     stoptimes_whole_trip = []
     if (route_shortname is None) or (jrny_time is None) \
@@ -449,7 +449,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         routes_for_shortname = []
         for r in routes.all():
             routes_for_shortname.append(r.route_id)
-        # log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
+        print('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
         
         # We now how a list of route_ids, we can use that list to get a list of trips
         # for those routes...
@@ -460,15 +460,15 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trips_for_routes = []
         for t in trips.all():
             trips_for_routes.append(t.trip_id)
-        # log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
+        print('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
 
         # Identify the departure stop (by name first, then by lat/lon)
         depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
-        # log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
+        print('\tIdentified departure stop -> ' + depstop.stop_name)
 
         # Identify the arrival stop (by name first, then by lat/lon)
         arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-        # log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
+        print('\tIdentified arrival stop -> ' + arrstop.stop_name)
 
         trip_from_stoptimes = db.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
@@ -483,7 +483,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
         trip_id = trip_from_stoptimes.limit(1).all()
-        log.debug('\tMost likely trip identified: ' + str(trip_id))
+        print('\tMost likely trip identified: ' + str(trip_id))
 
         # At this point we've identified the * most likely * trip_id for the
         # requested journey! Sweet - now we just return the list of stops for this
