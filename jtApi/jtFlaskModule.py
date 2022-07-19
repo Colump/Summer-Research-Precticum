@@ -600,19 +600,20 @@ def get_journey_time():
                 step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
                 step['predicted_duration']['value'] = predicted_duration
 
-                # Extend the json to contain the step_stops information
-                step['stop_sequence'] = {}
-                step['stop_sequence']['stops'] = []
-                for step_stop in step_stops:
-                    step_stop_dict = {}
-                    step_stop_dict['stop_id'] = step_stop.get_stop().stop_id
-                    step_stop_dict['name'] = step_stop.get_stop().stop_name
-                    step_stop_dict['location'] = {}
-                    step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
-                    step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
-                    step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
-                    step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
-                    step['stop_sequence']['stops'].append(step_stop_dict)
+                # Where possible - extend the json to contain the step_stops information
+                if len(step_stops) > 0:
+                    step['stop_sequence'] = {}
+                    step['stop_sequence']['stops'] = []
+                    for step_stop in step_stops:
+                        step_stop_dict = {}
+                        step_stop_dict['stop_id'] = step_stop.get_stop().stop_id
+                        step_stop_dict['name'] = step_stop.get_stop().stop_name
+                        step_stop_dict['location'] = {}
+                        step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
+                        step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
+                        step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
+                        step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
+                        step['stop_sequence']['stops'].append(step_stop_dict)
 
         resp = jsonify(prediction_request_json)
 

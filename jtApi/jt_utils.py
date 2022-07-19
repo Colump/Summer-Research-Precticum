@@ -440,7 +440,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
 
         return stop
 
-    print('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
+    log.debug('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
 
     stoptimes_whole_trip = []
     if (route_shortname is None) or (jrny_time is None) \
@@ -450,7 +450,8 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         # ALERT the LERTS!!!!!
         pass
     else:
-        # Look up routes for supplied short name. Should always find some...
+        # Look up routes for supplied short name. Should always find some...  we
+        # don't cater for 'no routes found' scenario
         routes = db.session.query(Routes.route_id)
         routes = routes.filter(Routes.route_long_name == route_name)
         routes = routes.filter(Routes.route_short_name == route_shortname)
@@ -459,10 +460,10 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         routes_for_shortname = []
         for r in routes.all():
             routes_for_shortname.append(r.route_id)
-        print('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
+        log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
         
         # We now how a list of route_ids, we can use that list to get a list of trips
-        # for those routes...
+        # for those routes...  we don't cater for 'no trips found' scenario
         trips = db.session.query(Trips)
         trips = trips.filter(Trips.route_id.in_(routes_for_shortname))
 
@@ -470,16 +471,18 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trips_for_routes = []
         for t in trips.all():
             trips_for_routes.append(t.trip_id)
-        print('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
+        log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
 
         # Identify the departure stop (by name first, then by lat/lon)
         depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
-        print('\tIdentified departure stop -> ' + depstop.stop_name)
+        log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
 
         # Identify the arrival stop (by name first, then by lat/lon)
         arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-        print('\tIdentified arrival stop -> ' + arrstop.stop_name)
+        log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
 
+        # ***
+        # THIS IS THE MAGIC - WHERE ROUTES, STEPS... BECOME A SINGLE TRIP
         trip_from_stoptimes = db.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.trip_id.in_(trips_for_routes))
@@ -490,33 +493,40 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
             # ... so func.ltrim
             trip_from_stoptimes = trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
-        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time <= jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
-        print('\tMost likely trip query:', trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
+        #log.debug('\tMost likely trip query:', trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
         trip_query_result = trip_from_stoptimes.limit(1).all()
-        print('\tMost likely trip identified: ' + str(trip_query_result))
 
-        # At this point we've identified the * most likely * trip_id for the
-        # requested journey! Sweet - now we just return the list of stops for this
-        # trip_id!
-        stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
-        stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
-        stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_query_result[0][0])
-        stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
-        # All stops selected, omit stop_times detail
-        stoptimes_whole_trip = stepstops_info_for_trip.all()
+        trip_id = None
+        for row in trip_query_result:
+            trip_id = row[0]
+            log.debug('\tMost likely trip identified: ' + str(trip_id))
 
+        # At this point we've hopefully identified the * most likely * trip_id for
+        # the requested journey! Sweet - now we just return the list of stops for
+        # this trip_id!
         step_stops  = []
-        stops_in_step = False
-        # 'stoptimes_whole_trip' is in stop_sequence order remember...
-        for row in stoptimes_whole_trip:
-            stop = row[2]
-            if (stop.stop_id == depstop.stop_id) or (stops_in_step):
-                step_stops.append(StepStop(stop, row[0], row[1]))
-                stops_in_step = True
-            if (stop.stop_id == arrstop.stop_id):
-                stops_in_step = False
+        if trip_id:
+            stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
+            stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
+            stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id)
+            stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
+            # All stops selected, omit stop_times detail
+            stoptimes_whole_trip = stepstops_info_for_trip.all()
 
+            stops_in_step = False
+            # 'stoptimes_whole_trip' is in stop_sequence order remember...
+            for row in stoptimes_whole_trip:
+                stop = row[2]
+                if (stop.stop_id == depstop.stop_id) or (stops_in_step):
+                    step_stops.append(StepStop(stop, row[0], row[1]))
+                    stops_in_step = True
+                if (stop.stop_id == arrstop.stop_id):
+                    stops_in_step = False
+                    break
+
+    # NOTE step_stops may well be empty.  We can only do our best!!
     return step_stops
 
 
