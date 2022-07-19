@@ -7,6 +7,7 @@ import os, sys
 from models import Routes, Stop, StopTime, Trips
 from pathlib import Path
 from sqlalchemy import asc, desc, text, func
+from sqlalchemy.dialects import mysql
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound  # Exceptions
 import struct
 import time
@@ -491,6 +492,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
+        print('\tMost likely trip query:', trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
         trip_query_result = trip_from_stoptimes.limit(1).all()
         print('\tMost likely trip identified: ' + str(trip_query_result))
 
