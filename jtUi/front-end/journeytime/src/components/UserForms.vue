@@ -2,13 +2,13 @@
 <div >
     <el-form ref="form" :model="form" >
   <el-form-item >
-    <el-input v-model="form.startPlace" placeholder="origin tpying here!" id="autoComplete"></el-input>
+    <el-input v-model="form.startPlace" placeholder="Enter journey start location" id="autoComplete"></el-input>
   </el-form-item>
   <div class="swap">
     <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
   </div>
   <el-form-item >
-    <el-input v-model="form.endPlace" placeholder="Destination tpying here!" id="autoComplete2"></el-input>
+    <el-input v-model="form.endPlace" placeholder="Enter journey end location" id="autoComplete2"></el-input>
   </el-form-item>
   <el-form-item>
     <el-col :span="10">
