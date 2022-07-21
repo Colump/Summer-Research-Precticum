@@ -66,12 +66,23 @@ export default {
 </script>
 
 <style>
-.el-header, .el-footer {
+.el-header {
     /* background-color: #B3C0D1; */
     color: #333;
     text-align: center;
     line-height: 60px;
   }
+   .el-footer{
+ /* background-color: #B3C0D1; */
+    line-height: 60px;
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    background-color: rgb(0, 140, 255);
+    color: white;
+    text-align: center;
+   }
   
   .el-aside {
     /* background-color: #D3DCE6; */
