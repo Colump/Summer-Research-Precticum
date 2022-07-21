@@ -144,17 +144,17 @@ export default {
 
 
 
-          response.routes.forEach(function(element) {
-            const routeInfo = {}
-            this.form.journeyFromGoogle.route.push(routeInfo);
-            const steps = []
-            // const steps = element.legs[0].steps[1].transit.headsign;
-            steps.push
-            // console.log(index);
-            var info = {index:index};
-            console.log(info);
-            // this.form.journeyFromGoogle.push(info);
-          });
+          // response.routes.forEach(function(element) {
+          //   const routeInfo = {}
+          //   this.form.journeyFromGoogle.route.push(routeInfo);
+          //   const steps = []
+          //   // const steps = element.legs[0].steps[1].transit.headsign;
+          //   // steps.push
+          //   // console.log(index);
+          //   var info = {index:index};
+          //   console.log(info);
+          //   // this.form.journeyFromGoogle.push(info);
+          // });
 
           // console.log(this.journeyFromGoogle);
           // this.journeyFromGoogle.push();
