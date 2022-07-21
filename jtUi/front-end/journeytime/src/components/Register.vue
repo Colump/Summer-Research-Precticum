@@ -8,13 +8,13 @@
     class="register-container">
         <h3 class="login_title">
             Register new account
-            <el-button @click="toLogin()">LogIn</el-button>
+            <el-button @click="toLogin()">Log In</el-button>
         </h3>
         <el-form-item  prop="LoginName"  type="text">
             <el-input v-model="ruleForm.LoginName" placeholder="Account" prefix-icon="el-icon-user"></el-input>
         </el-form-item>
         <el-form-item  prop="name" type="text">
-            <el-input v-model="ruleForm.name" placeholder="NickName" prefix-icon="el-icon-user"></el-input>
+            <el-input v-model="ruleForm.name" placeholder="Nickname" prefix-icon="el-icon-user"></el-input>
         </el-form-item>
         <el-form-item label="" prop="password">
             <el-input 
@@ -32,7 +32,7 @@
         
         <el-form-item>
             <el-button type="primary" style="background:#505458 ;border:none" @click="submitForm(ruleForm)">Register</el-button>
-            <el-button @click="resetForm('ruleForm')">reset</el-button>
+            <el-button @click="resetForm('ruleForm')">Reset</el-button>
         </el-form-item>
     </el-form>
 </div>
