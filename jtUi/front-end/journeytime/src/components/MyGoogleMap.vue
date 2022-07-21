@@ -1,7 +1,9 @@
 <template>
-    <section class="map" ref="map"></section>
+    <div>
+      <!-- <el-button type="primary" @click="ShowRoute">getRoute!</el-button> -->
+      <section class="map" ref="map"></section>
     <!-- <div>map</div> -->
-
+    </div>
     <!-- <gmap-map
     :center="center"
     :zoom="13"
@@ -24,7 +26,8 @@ export default {
     data () {
       return {
         StartPlace:'',
-        distanation:''
+        distanation:'',
+        routeIndex:0
         // center: {lng: -6.24, lat: 53.34},
         // markers: [{
         //   position: {lat: 53.34, lng: -6.24}
@@ -32,6 +35,7 @@ export default {
       }
     },
     mounted(){
+
       // google.maps.event.addDomListener(window, 'load');
       const map = new google.maps.Map(this.$refs["map"],{
         center: new google.maps.LatLng(53.34,-6.24),
@@ -41,22 +45,18 @@ export default {
       const directionsService = new google.maps.DirectionsService();
       const directionsRenderer = new google.maps.DirectionsRenderer();
       this.$bus.$on('GutStartPlace',(data)=>{
-
-        // geocoder.geocode( { 'address': data}, function(results, status) {
-        //   if (status == 'OK') {
-        //     console.log(results[0].geometry.location);
-        //   } else {
-        //     alert('Geocode was not successful for the following reason: ' + status);
-        //   }
-        // });
         this.StartPlace = data
-        // console.log(data)
       })
 
       this.$bus.$on('GutEndPlace',(data)=>{
         this.distanation = data
         // console.log(data)
       })
+
+      this.$bus.$on('GetRouteIndex',(data)=>{
+        this.routeIndex = data
+      })
+
       const results = directionsService.route({
         origin: this.StartPlace,
         destination: this.distanation,
@@ -65,6 +65,9 @@ export default {
       (response,status) => {
         if(status === "OK"){
           directionsRenderer.setDirections(response);
+          // directionsRenderer.setRouteIndex(0);
+          // console.log("newThingssssssss")
+          console.log(directionsRenderer.getRouteIndex());
           directionsRenderer.setMap(map);
           console.log("111")
           // console.log(StartPlace);
@@ -74,10 +77,20 @@ export default {
         // console.log("222")
         console.log(this.StartPlace);
 
-      }
+        }
       )
 
       
+    },
+    methods:{
+      ShowRoute(){
+        console.log("这里是地图的getroute按钮")
+        this.$bus.$on('GetRouteIndex',(data)=>{
+        this.routeIndex = data
+        })
+        // console.log(this.routeIndex)
+      }
+
     },
     watch:{
       StartPlace(){
@@ -87,17 +100,31 @@ export default {
         mapTypeId: google.maps.MapTypeId.ROADMAP
       });
         const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer();
-        const results = directionsService.route({
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setRouteIndex(this.routeIndex);
+
+
+        // const directionsRenderer2 = new google.maps.DirectionsRenderer();
+        // directionsRenderer2.setRouteIndex(0);
+
+
+        directionsService.route({
         origin: this.StartPlace,
         destination: this.distanation,
-        travelMode: google.maps.TravelMode.TRANSIT
+        travelMode: google.maps.TravelMode.TRANSIT,
+        provideRouteAlternatives:true,
       },
       (response,status) => {
         if(status === "OK"){
-          directionsRenderer.setDirections(response);
           directionsRenderer.setMap(map);
-          console.log("111")
+          // directionsRenderer.setRouteIndex(0);
+          console.log("new thingsssss")
+          console.log(directionsRenderer.getRouteIndex());
+          directionsRenderer.setDirections(response);
+          // directionsRenderer2.setRouteIndex(1);
+          // directionsRenderer2.setDirections(response);
+          // console.log("response:")
+          // console.log(response)
           // console.log(StartPlace);
         }
         console.log(response);
@@ -105,8 +132,9 @@ export default {
         // console.log("222")
         console.log(this.StartPlace);
 
-      }
-      )
+          }
+        )
+      // console.log(results)
       },
       distanation(){
         const map = new google.maps.Map(this.$refs["map"],{
@@ -115,7 +143,12 @@ export default {
         mapTypeId: google.maps.MapTypeId.ROADMAP
       });
         const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setRouteIndex(this.routeIndex);
+
+        // const directionsRenderer2 = new google.maps.DirectionsRenderer();
+        // directionsRenderer2.setRouteIndex(0);
+
         const results = directionsService.route({
         origin: this.StartPlace,
         destination: this.distanation,
@@ -123,20 +156,100 @@ export default {
       },
       (response,status) => {
         if(status === "OK"){
+          // console.log(directionsRenderer.setDirections(response));
           directionsRenderer.setDirections(response);
+          // directionsRenderer2.setDirections(response);
+          // directionsRenderer.setRouteIndex(2);
           directionsRenderer.setMap(map);
-          console.log("111")
+          // console.log("111")
           // console.log(StartPlace);
         }
-        console.log(response);
-        console.log(status);
-        // console.log("222")
-        console.log(this.StartPlace);
+        // console.log("this is a new one");
+        // console.log('data: '+response.routes[0].legs[0].steps[0].travel_mode);
+        response.routes[0].legs[0].steps.forEach(function(step) {
+            if(step.travel_mode === 'TRANSIT'){
+              var travelJsonForBackEnd = {
+                busInfo : '',
+                // name : '',
+                arrivalStopInfo:'',
+                endStopInfo:'',
+                departureTimeInfo:'',
+                arriveTimeInfo:''
+                
+              }
+              travelJsonForBackEnd.busInfo = step.transit.line;
+              travelJsonForBackEnd.arrivalStopInfo =  step.transit.arrival_stop;
+              travelJsonForBackEnd.endStopInfo = step.transit.departure_stop;
+              travelJsonForBackEnd.departureTimeInfo = step.transit.departure_time;
+              travelJsonForBackEnd.arriveTimeInfo = step.transit.arrival_time;
+              console.log(travelJsonForBackEnd);
+
+            }
+        });
+      }
+      )
+        
+      },
+      routeIndex(){
+        const map = new google.maps.Map(this.$refs["map"],{
+        center: new google.maps.LatLng(53.34,-6.24),
+        zoom:13,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+      });
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        directionsRenderer.setRouteIndex(this.routeIndex);
+        console.log("这里路线改变看看是否信息改变")
+        console.log(this.routeIndex)
+
+
+        const results = directionsService.route({
+        origin: this.StartPlace,
+        destination: this.distanation,
+        travelMode: google.maps.TravelMode.TRANSIT,
+        provideRouteAlternatives:true
+      },
+      (response,status) => {
+        if(status === "OK"){
+          // console.log(directionsRenderer.setDirections(response));
+          directionsRenderer.setDirections(response);
+          directionsRenderer.setMap(map);
+          console.log("===========================")
+          console.log(response);
+          console.log("===========================")
+        }
+        // console.log("this is a new one");
+        // console.log('data: '+response.routes[0].legs[0].steps[0].travel_mode);
+        var travelJsonForBackEnd = {};
+        response.routes[0].legs[0].steps.forEach(function(step) {
+            if(step.travel_mode === 'TRANSIT'){
+              travelJsonForBackEnd = {
+                busInfo : '',
+                // name : '',
+                arrivalStopInfo:'',
+                endStopInfo:'',
+                departureTimeInfo:'',
+                arriveTimeInfo:''
+                
+              }
+              travelJsonForBackEnd.busInfo = step.transit.line;
+              travelJsonForBackEnd.arrivalStopInfo =  step.transit.arrival_stop;
+              travelJsonForBackEnd.endStopInfo = step.transit.departure_stop;
+              travelJsonForBackEnd.departureTimeInfo = step.transit.departure_time;
+              travelJsonForBackEnd.arriveTimeInfo = step.transit.arrival_time;
+              // console.log("这是给后端内容的测试！");
+              // console.log(JSON.stringify(travelJsonForBackEnd));
+            }
+        });
+
 
       }
       )
         
       }
+      
+
+      
     }
 }
 </script>

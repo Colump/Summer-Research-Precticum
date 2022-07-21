@@ -11,6 +11,7 @@ import MyGoogleMap from '../components/MyGoogleMap'
 import Register from '../components/Register'
 import MyAPI from '../components/MyAPI'
 import LogIn from '../components/LogIn'
+// import showMultpleRoute from '../components/showMultpleRoute'
 // 创建一个路由器，其中要些很多的配置对象
 // create a router
 const myrouter = new VueRouter({

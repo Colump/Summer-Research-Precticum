@@ -84,28 +84,17 @@ export default {
     },
     methods: {
       submitForm(ruleForm) {
-
+        var bcrypt = require('bcryptjs');    //引入bcryptjs库
+        var salt = bcrypt.genSaltSync(10);    //定义密码加密的计算强度,默认10
+        var hash = bcrypt.hashSync(ruleForm.password, salt);    //把自己的密码(this.registerForm.passWord)带进去,变量hash就是加密后的密码
+        var hash2 = bcrypt.hashSync(ruleForm.checkPass, salt);
+        this.ruleForm.password = hash;
+        this.ruleForm.checkPass = hash2;
         // 单独测试前端
-        this.ruleForm = {};
-                    this.$message({
-                        message: `Registration is successful, the login page will be displayed three seconds later`,
-                        type: 'success'
-                    });
-                    setTimeout(()=>{
-                        this.$router.push({
-                                    path:'/LogIn'
-                                })
-                        
-                    },3000)
-                    this.$bus.$emit('ToOtherPage',5)
-        // 测试结束删掉
-
-
-        // this.axios.post('后端路径',this.ruleForm).then(
-        //     (resp) => {
-        //         let data = resp.data
-        //         if(data.success){
-        //             this.ruleForm = {};
+        // this.ruleForm = {};
+        // console.log(this.ruleForm)
+        // console.log(this.ruleForm.password === this.ruleForm.checkPass)
+        // console.log(this.ruleForm.password.length)
         //             this.$message({
         //                 message: `Registration is successful, the login page will be displayed three seconds later`,
         //                 type: 'success'
@@ -114,11 +103,35 @@ export default {
         //                 this.$router.push({
         //                             path:'/LogIn'
         //                         })
-        //                 this.$bus.$emit('ToOtherPage',1)
+                        
         //             },3000)
-        //         }
-        //     }
-        // )
+        //             this.$bus.$emit('ToOtherPage',5)
+        // 测试结束删掉
+
+        var ruleFormToBackEnd={
+          username:this.ruleForm.LoginName,
+          password_hash:this.ruleForm.password
+        }
+        // console.log(ruleFormToBackEnd);
+        this.axios.post('/api/register.do',ruleFormToBackEnd).then(
+            (resp) => {
+                let data = resp.data
+                // console.log(data);
+                if(data.success){
+                    this.ruleForm = {};
+                    this.$message({
+                        message: `Registration is successful, the login page will be displayed three seconds later`,
+                        type: 'success'
+                    });
+                    setTimeout(()=>{
+                        this.$router.push({
+                                    path:'/LogIn'
+                                })
+                        this.$bus.$emit('ToOtherPage',5)
+                    },3000)
+                }
+            }
+        )
 
         
       },

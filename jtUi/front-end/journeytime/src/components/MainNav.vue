@@ -84,7 +84,17 @@ export default {
       //   })
       // }
       
-    }
+    },
+    watch:{
+      activeIndex(){
+
+        this.$bus.$on('ToOtherPage',(data)=>{
+        this.activeIndex=data+''
+        console.log(data)
+      })
+      }
+
+    },
 
 }
 </script>

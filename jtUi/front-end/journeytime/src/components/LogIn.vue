@@ -34,14 +34,15 @@ export default {
 
         // 测试代码
         this.loginForm = {};
-                    this.$message({
-                    message: 'LogIn successful',
-                    type: 'success'
-                    });
+        this.$bus.$emit('ToOtherPage',1)
+        this.$message({
+            message: 'LogIn successful',
+            type: 'success'
+            });
                     this.$router.push({
                         path:'/Map'
                     })
-                    this.$bus.$emit('ToOtherPage',1)
+                    
                     // 传递用户名
                     this.$bus.$emit('UserName',this.loginform.loginName)
 

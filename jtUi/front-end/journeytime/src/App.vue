@@ -10,7 +10,8 @@
         </div>
         <div>
           <UserForms></UserForms>
-          <ShowRouteButtom></ShowRouteButtom>
+          <!-- <ShowRouteButtom></ShowRouteButtom> -->
+          <!-- <showMultpleRouteVue></showMultpleRouteVue> -->
         </div>
         
         <!-- <StopsData></StopsData> -->
@@ -39,6 +40,7 @@ import MainNav from './components/MainNav'
 import AsideShowRoute from './components/AsideShowRoute'
 import ShowRouteButtom from './components/ShowRouteButtom.vue'
 import MyGoogleMap from './components/MyGoogleMap.vue'
+// import showMultpleRoute from './components/showMultpleRoute.vue'
 
 // 测试axios获取数据组件：test axios compoent
 import StopsData from './components/StopsData.vue'
@@ -53,7 +55,8 @@ export default {
     ShowRouteButtom,
     MyGoogleMap,
     UserForms,
-    StopsData
+    StopsData,
+    // showMultpleRouteVue
   },
   methods:{
     

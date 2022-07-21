@@ -4,6 +4,9 @@
   <el-form-item >
     <el-input v-model="form.startPlace" placeholder="origin tpying here!" id="autoComplete"></el-input>
   </el-form-item>
+  <div class="swap">
+    <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
+  </div>
   <el-form-item >
     <el-input v-model="form.endPlace" placeholder="Destination tpying here!" id="autoComplete2"></el-input>
   </el-form-item>
@@ -18,16 +21,22 @@
   </el-form-item>
   <el-form-item>
     <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
-    <el-button type="primary" @click="clearAll">Clear All</el-button>
-    <el-button type="primary" @click="swapEndStart">Swap</el-button>
-  </el-form-item>
-  <el-form-item>
-    <el-button type="primary" @click="onSubmit">Go!</el-button>
-    <!-- <el-button type="primary" @click="onSubmit">Clear All!</el-button> -->
+    <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
+    <el-button type="success" icon="el-icon-check" round @click="onSubmit">Go!</el-button>
+    
   </el-form-item>
 </el-form>
-
+  <div class="showUserChoiseRoute">
+    <ul v-if="form.show">
+                <!-- 注意每个key要唯一 -->
+            <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
+                {{item.legs[0].steps[1].transit.headsign}}
+                <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
+            </li>
+    </ul>
+  </div>
 </div>
+
 </template>
 
 <script>
@@ -44,6 +53,13 @@ export default {
           date1: new Date(),
           date2: new Date(),
           delivery: false,
+          journeyFromGoogle: {
+              description: "Journeyti.me Step Journey Time Prediction Request",
+              title: "Journeyti.me Prediction Request",
+              routes:[]
+          },
+          show : false,
+          flag : 0,
         //   type: [],
         //   resource: '',
         //   desc: ''
@@ -84,17 +100,79 @@ export default {
         }
       );
       desAuto.addListener("place_changed",()=>{
+        // console.log(desAuto.getPlace());
         this.form.endPlace=desAuto.getPlace().formatted_address;
         this.form.endPlaceLatLng = desAuto.getPlace().geometry.location.lat()+','+originAuto.getPlace().geometry.location.lng()
         // console.log(desAuto.getPlace());
       });
 
+      this.$bus.$emit('GetRouteIndex',this.form.flag);
+
     },
     methods: {
+      showInMap(index,item){
+        console.log('++++++++++++++++++++++++++++++++++');
+        this.form.flag = index;
+        console.log(this.form.flag)
+        this.$bus.$emit('GetRouteIndex',this.form.flag);
+        console.log('++++++++++++++++++++++++++++++++++++');
+        
+      },
       onSubmit() {
-        console.log('submit!');
+        // console.log('submit!');
         this.$bus.$emit('GutStartPlace',this.form.startPlaceLatLng);
         this.$bus.$emit('GutEndPlace',this.form.endPlaceLatLng);
+        
+
+        this.form.show = !this.form.show;
+
+//      在这里当点击go的时候我们需要获得directionService的数据
+        const directionsService = new google.maps.DirectionsService();
+        const directionsRenderer = new google.maps.DirectionsRenderer();
+        const results = directionsService.route({
+        origin: this.form.startPlaceLatLng,
+        destination: this.form.endPlaceLatLng,
+        travelMode: google.maps.TravelMode.TRANSIT,
+        provideRouteAlternatives:true
+      },
+      (response,status) => {
+        // console.log(this.form)
+        if(status === "OK"){
+          directionsRenderer.setDirections(response);
+          console.log("这是go下面的数据");
+          // console.log(response.routes);
+
+
+
+          response.routes.forEach(function(element) {
+            const routeInfo = {}
+            this.form.journeyFromGoogle.route.push(routeInfo);
+            const steps = []
+            // const steps = element.legs[0].steps[1].transit.headsign;
+            steps.push
+            // console.log(index);
+            var info = {index:index};
+            console.log(info);
+            // this.form.journeyFromGoogle.push(info);
+          });
+
+          // console.log(this.journeyFromGoogle);
+          // this.journeyFromGoogle.push();
+          this.form.journeyFromGoogle = response.routes
+          console.log("=============================+++++");
+          console.log(this.form.journeyFromGoogle);
+          console.log("=============================++++");
+          // this.$bus.$emit('GetAlljourney',response.routes);
+          // console.log(len);
+            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.journeyFromGoogle)).then(
+              (resp) => {
+                  let data = resp.data
+                  console.log(data)
+                  }
+            )
+          }
+        }
+      )
       },
       clearAll(){
         this.form.endPlace ="",
@@ -111,9 +189,35 @@ export default {
         this.form.startPlaceLatLng = temp2;
       }
     },
+    watch:{
+      flag(){
+        this.$bus.$emit('GetRoute',this.form.flag);
+      }
+    }
 }
 </script>
 
 <style>
+.showUserChoiseRoute{
+  width: 100%;
+  height: 100px;
+  display: block;
+}
+.RouteShow{
+  display: block;
+  font-size: 10px;
+  line-height: 50px;
+  height: 50px;
+  border-bottom: 1px solid black;
+  background-color: pink;
 
+}
+.swap{
+  display: inline-block;
+  height: 30px;
+  width: 30px;
+  position: absolute;
+  left: 239px;
+  top: 41px;
+}
 </style>
