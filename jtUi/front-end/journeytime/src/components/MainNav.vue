@@ -5,9 +5,9 @@
           <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect">
             <el-menu-item index="1" >Map</el-menu-item>
             <el-menu-item index="2" >Register</el-menu-item>
-            <el-menu-item index="5" >LogIn</el-menu-item>
-            <el-menu-item index="3" >AboutUs</el-menu-item>
-            <el-menu-item index="4" >API provide</el-menu-item>
+            <el-menu-item index="5" >Log In</el-menu-item>
+            <el-menu-item index="3" >About Us</el-menu-item>
+            <el-menu-item index="4" >API</el-menu-item>
           </el-menu>
         </div>
       </el-col>
