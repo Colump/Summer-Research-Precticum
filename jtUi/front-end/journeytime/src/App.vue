@@ -82,6 +82,7 @@ export default {
     background-color: rgb(0, 140, 255);
     color: white;
     text-align: center;
+    font-family: element-icons!important;
    }
   
   .el-aside {
