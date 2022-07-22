@@ -14,7 +14,7 @@ from jt_utils import get_available_end_to_end_models, get_stops_by_route, predic
 import logging
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
 import os, os.path
-from pickle import NONE
+import pickle
 from sqlalchemy import text, func
 
 # Imports for Model/Pickle Libs
@@ -542,17 +542,21 @@ def get_journey_time():
         prediction_request_json = request.json
         print("get_journey_time.do: request.json type is -> ", type(request.json))
 
+        # pickles_dir='pickles'
+        # TEMP_pickle_path= os.path.join(jtFlaskModDir, pickles_dir)
+
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
         log.debug('looping over routes')
-        for route in prediction_request_json['routes']:
+        for route_idx, route in enumerate(prediction_request_json['routes']):
              # def JourneyPrediction():
             no_of_steps_this_route = len(route['steps'])
-            print("\tno_of_steps_this_route -> " + str(no_of_steps_this_route))
+            log.debug('\tProcessing route ' + str(route_idx) + ', no_of_steps_this_route -> ' + str(no_of_steps_this_route))
 
-            print('\tlooping over steps')
-            for step in route['steps']:
+            log.debug('\tlooping over steps')
+            for step_idx, step in enumerate(route['steps']):
+                log.debug('\tProcessing step ' + str(step_idx) + '.')
                 
                 planned_time_s  = step['duration']['value']
                 route_shortname = step['transit_details']['line']['short_name']
@@ -563,7 +567,7 @@ def get_journey_time():
                 # Using datetime to construct our date seems to nicely cater
                 # for daylight savings times, differences from UTC etc. ...
                 planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
-                print("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
+                log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
                 # Extend the json to contain stop-by-stop route information...
                 # NOTE The mappings between Googles supplied data and the GTFSR
@@ -583,13 +587,17 @@ def get_journey_time():
                 step_stops = get_stops_by_route(db, route_name, route_short_name, stop_headsign, departure_time, \
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-                print("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
+                log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
 
                 # Bundle everything we need to make a prediction into a convenient
                 # object. We can then pass this object to the prediction routine
                 journey_pred = JourneyPrediction( \
                     route_shortname, route_shortname_pickle_exists, \
                     planned_time_s, planned_departure_datetime, step_stops)
+
+                # # Pickle the JourneyPrediction object - handy for testing!!
+                # with open(os.path.join(TEMP_pickle_path, 'JourneyPrediction-r' + str(route_idx) + '-s' + str(step_idx) + '.pickle'), 'wb+') as handle:
+                #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                 # Call a function to get the predicted journey time for this step.
                 journey_pred = predict_journey_time(journey_pred)
@@ -789,4 +797,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

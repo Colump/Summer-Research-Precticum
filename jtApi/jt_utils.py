@@ -571,36 +571,38 @@ def predict_journey_time(journey_prediction):
     Uses the stop-to-stop model when...
     """
   
-    # Pull the required information from the JourneyPrediction object.
-    duration = journey_prediction.get_planned_duration_s()
-    time = journey_prediction.get_planned_departure_datetime()
-    hour=time.hour
-    week=time.isoweekday()
-    month=time.month
-    lineid=journey_prediction.get_route_shortname()
-    temperature=weather_information(hour)
+    # # Pull the required information from the JourneyPrediction object.
+    # duration = journey_prediction.get_planned_duration_s()
+    # time = journey_prediction.get_planned_departure_datetime()
+    # hour=time.hour
+    # week=time.isoweekday()
+    # month=time.month
+    # lineid=journey_prediction.get_route_shortname()
+    # temperature=weather_information(hour)
 
-    week_sin= np.sin(2 * np.pi * week/6.0)
-    week_cos = np.cos(2 * np.pi * week/6.0)
-    hour_sin = np.sin(2 * np.pi * hour/23.0)
-    hour_cos  = np.cos(2 * np.pi * hour/23.0)
-    month_sin = np.sin(2 * np.pi * month/12.0)
-    month_cos  = np.cos(2 * np.pi * month/12.0)
+    # week_sin= np.sin(2 * np.pi * week/6.0)
+    # week_cos = np.cos(2 * np.pi * week/6.0)
+    # hour_sin = np.sin(2 * np.pi * hour/23.0)
+    # hour_cos  = np.cos(2 * np.pi * hour/23.0)
+    # month_sin = np.sin(2 * np.pi * month/12.0)
+    # month_cos  = np.cos(2 * np.pi * month/12.0)
 
-    # load the prediction model
-    end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
-    #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
-    usepickle = pickle.load(f)
-    f.close()
+    # # load the prediction model
+    # end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
+    # #  f = open('test_rfc.pickle','rb')
+    # f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
+    # usepickle = pickle.load(f)
+    # f.close()
 
-    # create a pandas dataframe
-    #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
-    input_to_pickle_data_frame = pd.DataFrame(dic_list)
-    # Pass the dataframe into model and predict time 
-    predict_result=usepickle.predict(input_to_pickle_data_frame)
-    journey_prediction.set_predicted_duration_s(predict_result)  
+    # # create a pandas dataframe
+    # #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
+    # dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
+    # input_to_pickle_data_frame = pd.DataFrame(dic_list)
+    # # Pass the dataframe into model and predict time 
+    # predict_result=usepickle.predict(input_to_pickle_data_frame)
+    # journey_prediction.set_predicted_duration_s(predict_result)  
+
+    journey_prediction.set_predicted_duration_s(600)
 
     return journey_prediction  # Return the updated prediction_request
 
@@ -633,13 +635,13 @@ def main():
     """
 
     print('JT_Utils: Main Method')
-    # @YC - why not build a temporary JourneyPrediction object here - so you can test?
-    # journey_pred = JourneyPrediction( \
-    #     route_shortname, route_shortname_pickle_exists, \
-    #     planned_time_s, planned_departure_datetime, step_stops)
+    pickles_dir='pickles'
+    pickle_path= os.path.join(jt_utils_dir, pickles_dir)
 
-    # # Call a function to get the predicted journey time for this step.
-    # journey_pred = predict_journey_time(journey_pred)
+    with (open(os.path.join(pickle_path, 'JourneyPrediction-r0-s0.pickle'), "rb")) as jp_pickle:
+        journey_pred = pickle.load(jp_pickle)
+        # # Call a function to get the predicted journey time for this step.
+        journey_pred = predict_journey_time(journey_pred)
 
     sys.exit()
 
