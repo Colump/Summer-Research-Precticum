@@ -142,21 +142,51 @@ export default {
           console.log("这是go下面的数据");
           // console.log(response.routes);
 
+          // var routesCollection = []
+          // response.routes.forEach(function(route) {
+          //   console.log(route)
+          //   var routesInfo ={
+          //     steps,
+          //   }
+          //   route.legs[0].steps.forEach(function(step){
+              
+          //     var steps = []
+          //     if(step.travel_mode === 'TRANSIT'){
+          //       var stepForBackEnd = {
+          //         distance : '',
+          //         duration:'',
+          //         transit_details:''
+          //       }
+          //         stepForBackEnd.distance = step.distance;  // this is a dictionary
+          //         stepForBackEnd.duration =  step.duration  // this is a dictionary
+          //         stepForBackEnd.transit_details = step.transit_details;  // this is a dictionary
+          //         steps.push(stepForBackEnd)
+          //     }
+          //   })
+          //   var routesInfo = []
+          //   route.forEach(function(leg) {
+          //       leg.steps.forEach(function(step) {
+          //           var steps = []
+          //           if(step.travel_mode === 'TRANSIT'){
+          //             var stepForBackEnd = {
+          //                 distance : '',
+          //                 duration:'',
+          //                 transit_details:''
+          //             }
+          //             stepForBackEnd.distance = step.distance;  // this is a dictionary
+          //             stepForBackEnd.duration =  step.duration  // this is a dictionary
+          //             stepForBackEnd.transit_details = step.transit_details;  // this is a dictionary
+          //             steps.push(stepForBackEnd)
+          //           }
+          //           routesInfo.push(steps)
+          //       },
+          //   )},
+          //   // this.form.journeyFromGoogle.routes.push(routesInfo) 
+          // )},
+          
+        // });
 
-
-          // response.routes.forEach(function(element) {
-          //   const routeInfo = {}
-          //   this.form.journeyFromGoogle.route.push(routeInfo);
-          //   const steps = []
-          //   // const steps = element.legs[0].steps[1].transit.headsign;
-          //   // steps.push
-          //   // console.log(index);
-          //   var info = {index:index};
-          //   console.log(info);
-          //   // this.form.journeyFromGoogle.push(info);
-          // });
-
-          // console.log(this.journeyFromGoogle);
+          
           // this.journeyFromGoogle.push();
           this.form.journeyFromGoogle = response.routes
           console.log("=============================+++++");
