@@ -2,17 +2,17 @@
   <div id="poster">
     <el-form class="login-container" lable-position="left" label-width="0px">
     <h3 class="login_title">
-        LogIn
-        <el-button @click="toRegister">Log Up Now</el-button>
+        Log In
+        <el-button @click="toRegister">Sign Up Now</el-button>
     </h3>
     <el-form-item >
-        <el-input type="text" v-model="loginform.loginName" autocomplete="off" placeholder="account"></el-input>
+        <el-input type="text" v-model="loginform.loginName" autocomplete="off" placeholder="Account"></el-input>
     </el-form-item>
     <el-form-item >
-        <el-input type="password" v-model="loginform.password" autocomplete="off" placeholder="password"></el-input>
+        <el-input type="password" v-model="loginform.password" autocomplete="off" placeholder="Password"></el-input>
     </el-form-item>
     <el-form-item style="width: 100%;">
-        <el-button type="primary" style="width: 100%;background:#505458;border:none ;" @click="login()">LogIn</el-button>
+        <el-button type="primary" style="width: 100%;background:#505458;border:none ;" @click="login()">Log In</el-button>
     </el-form-item>
     </el-form>
 </div>

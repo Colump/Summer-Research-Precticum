@@ -21,3 +21,7 @@ pnpm-debug.log*
 *.njsproj
 *.sln
 *.sw?
+
+# from https://stackoverflow.com/questions/49638204/the-following-paths-are-ignored-by-one-of-your-gitignore-files
+!iceberg/static/icon
+

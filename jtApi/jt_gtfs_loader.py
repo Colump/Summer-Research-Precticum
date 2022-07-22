@@ -25,10 +25,10 @@ import traceback
 import zipfile
 from zipfile import ZipFile
 
-
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
 # Dublin City Center...
-CONST_DUBLIN_CC = (53.347269, -6.259107)
+credentials = load_credentials()
+CONST_DUBLIN_CC = (credentials['DUBLIN_CC']['lat'], credentials['DUBLIN_CC']['lon'])
 
 
 def download_gtfs_schedule_data(credentials, import_dir):
@@ -89,7 +89,7 @@ def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI)
     return
 
 
-def import_gtfs_txt_files_to_db(import_dir, Session):
+def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
     """Iterate Over the GTFS Txt Files, Import them to the db
 
     """
@@ -231,7 +231,7 @@ def import_gtfs_txt_files_to_db(import_dir, Session):
                                 #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position) FROM stops
 
                                 # Calculate distance to city center using haversine (in km) ...
-                                dist_from_cc = haversine(CONST_DUBLIN_CC, (float(row[2]), float(row[3])))
+                                dist_from_cc = haversine(DUBLIN_CC, (float(row[2]), float(row[3])))
                             )
                             session.add(stop)
 
@@ -410,7 +410,7 @@ def main():
 
             # With the CSV files (bizarrely, with a .txt extension) extracted to disk,
             # we import the content to the db.
-            import_gtfs_txt_files_to_db(import_dir, Session)
+            import_gtfs_txt_files_to_db(import_dir, credentials, Session)
 
         # Make sure to close the connection - a memory leak on this would kill
         # us...

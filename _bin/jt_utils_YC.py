@@ -1,17 +1,12 @@
 # -*- coding: utf-8 -*-
-from datetime import datetime, timedelta
+from datetime import timedelta
 from flask import Response, stream_with_context
 import json
 import logging
 import os, sys
 from models import Routes, Stop, StopTime, Trips
-import numpy as np
-import pandas as pd
 from pathlib import Path
-import pickle
-import requests as rq
 from sqlalchemy import asc, desc, text, func
-from sqlalchemy.dialects import mysql
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound  # Exceptions
 import struct
 import time
@@ -46,10 +41,6 @@ def load_credentials():
     return credentials
 
 
-# Each point is represented by a tuple, (lat, lon). Define a fixed point for
-# Dublin City Center...
-credentials = load_credentials()
-CONST_DUBLIN_CC = (credentials['DUBLIN_CC']['lat'], credentials['DUBLIN_CC']['lon'])
 
 
 ##########################################################################################
@@ -63,7 +54,7 @@ def _get_next_chunk_size(rows_remain):
 
     Based on the remaining rows and the paramaterised optimimum chunk size
     """
-    CHUNK_SIZE = int(credentials['DOWNLOAD_CHUNK_SIZE'])
+    CHUNK_SIZE = int(load_credentials()['DOWNLOAD_CHUNK_SIZE'])
     rows_chunk = 0
     if rows_remain > 0:
         if rows_remain >= CHUNK_SIZE:
@@ -125,16 +116,8 @@ def query_results_as_compressed_csv(query, name):
         row_count      = 0
         row_list       = []
         first_chunk_tf = True
-        lastRowPK      = None
-        # query.yield_per(rows_chunk)
-        # while True:
-        #     rows = query.filter(Thing.id < lastThingID).limit(rows_chunk).all()
-        #     if not rows or len(rows) == 0: 
-        #         break
-        #     for row in rows:
-        #         lastRowPK = row.??????
-        #         analyze(thing)
         for row in query:
+
             # If we build up the string we plan to send by repeatedly appending,
             # we're creating a new string each time. This is quite memory expensive
             # and inefficient.
@@ -155,7 +138,6 @@ def query_results_as_compressed_csv(query, name):
                 chunk, first_chunk_tf = get_chunk(row_list, first_chunk_tf, query)
                 chunk_compressed = compressor.compress(chunk)
                 if chunk_compressed:
-                    print("yielding a chunk...")
                     yield chunk_compressed
                 crc = zlib.crc32(chunk, crc) & 0xFFFFFFFF  # Keep the CRC up to date...
                 length += len(chunk)
@@ -176,31 +158,15 @@ def query_results_as_compressed_csv(query, name):
     return response
 
 
-def query_results_as_json(query, name, **kwargs):
+def query_results_as_json(query, name):
     """
 
     Returns a JSON List with one object per record in the query result set.
     """
-    incl_limit_exceeded_warning = False
-    if 'limit_exceeded' in kwargs:
-        if kwargs['limit_exceeded'] == True:
-            incl_limit_exceeded_warning = True
-    
+
     def get_chunk(json_list, first_chunk, name):
         if first_chunk:
-            chunk = '{\n'
-            if incl_limit_exceeded_warning:
-                dl_lim_json        = credentials['DOWNLOAD_ROW_LIMIT_JSON']
-                dl_lim_json_attach = credentials['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
-
-                chunk += '\"filesize_warning\": {\n'
-                chunk += '\"warning\": \"WARNING\",\n'
-                chunk += '\"description\": \"The number of records in this extract exceeds the current streamed .json file limit\",\n'
-                chunk += '\"limits1\": \"A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer\",\n'
-                chunk += '\"limits2\": \"A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment\",\n'
-                chunk += '\"limits3\": \"There is currently no limit on filesizes downloaded as compressed .csv.gz\"\n'
-                chunk += '},\n'
-            chunk += '\"' + name + '\": [\n'
+            chunk = '{\n\"' + name + '\": [\n'
             first_chunk = False
         else:
             chunk = ',\n'
@@ -238,9 +204,9 @@ def query_results_as_json(query, name, **kwargs):
             if row_count >= rows_chunk:
                 rows_remain -= rows_chunk  # we've jusr competed a chunk
                 rows_chunk = _get_next_chunk_size(rows_remain)
-                log.debug("Completed a chunk:")
-                log.debug("\tRows Remaining ->", rows_remain)
-                log.debug("\tRows This Chunk ->", rows_chunk)
+                print("Completed a chunk:")
+                print("\tRows Remaining ->", rows_remain)
+                print("\tRows This Chunk ->", rows_chunk)
 
                 buffer, first_chunk = get_chunk(json_list, first_chunk, name)
                 if buffer:
@@ -459,8 +425,7 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         # ALERT the LERTS!!!!!
         pass
     else:
-        # Look up routes for supplied short name. Should always find some...  we
-        # don't cater for 'no routes found' scenario
+        # Look up routes for supplied short name. Should always find some...
         routes = db.session.query(Routes.route_id)
         routes = routes.filter(Routes.route_long_name == route_name)
         routes = routes.filter(Routes.route_short_name == route_shortname)
@@ -469,10 +434,10 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         routes_for_shortname = []
         for r in routes.all():
             routes_for_shortname.append(r.route_id)
-        log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
+        # log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
         
         # We now how a list of route_ids, we can use that list to get a list of trips
-        # for those routes...  we don't cater for 'no trips found' scenario
+        # for those routes...
         trips = db.session.query(Trips)
         trips = trips.filter(Trips.route_id.in_(routes_for_shortname))
 
@@ -480,18 +445,16 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
         trips_for_routes = []
         for t in trips.all():
             trips_for_routes.append(t.trip_id)
-        log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
+        # log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
 
         # Identify the departure stop (by name first, then by lat/lon)
         depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
-        log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
+        # log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
 
         # Identify the arrival stop (by name first, then by lat/lon)
         arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-        log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
+        # log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
 
-        # ***
-        # THIS IS THE MAGIC - WHERE ROUTES, STEPS... BECOME A SINGLE TRIP
         trip_from_stoptimes = db.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.trip_id.in_(trips_for_routes))
@@ -502,107 +465,99 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
             # ... so func.ltrim
             trip_from_stoptimes = trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
-        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time <= jrny_time)
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time < jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
-        #log.debug('\tMost likely trip query:', trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
-        trip_query_result = trip_from_stoptimes.limit(1).all()
+        trip_id = trip_from_stoptimes.limit(1).all()
+        log.debug('\tMost likely trip identified: ' + str(trip_id))
 
-        trip_id = None
-        for row in trip_query_result:
-            trip_id = row[0]
-            log.debug('\tMost likely trip identified: ' + str(trip_id))
+        # At this point we've identified the * most likely * trip_id for the
+        # requested journey! Sweet - now we just return the list of stops for this
+        # trip_id!
+        stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
+        stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
+        stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id[0][0])
+        stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
+        # All stops selected, omit stop_times detail
+        stoptimes_whole_trip = stepstops_info_for_trip.all()
 
-        # At this point we've hopefully identified the * most likely * trip_id for
-        # the requested journey! Sweet - now we just return the list of stops for
-        # this trip_id!
         step_stops  = []
-        if trip_id:
-            stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
-            stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
-            stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id)
-            stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
-            # All stops selected, omit stop_times detail
-            stoptimes_whole_trip = stepstops_info_for_trip.all()
+        stops_in_step = False
+        # 'stoptimes_whole_trip' is in stop_sequence order remember...
+        for row in stoptimes_whole_trip:
+            stop = row[2]
+            if (stop.stop_id == depstop.stop_id) or (stops_in_step):
+                step_stops.append(StepStop(stop, row[0], row[1]))
+                stops_in_step = True
+            if (stop.stop_id == arrstop.stop_id):
+                stops_in_step = False
 
-            stops_in_step = False
-            # 'stoptimes_whole_trip' is in stop_sequence order remember...
-            for row in stoptimes_whole_trip:
-                stop = row[2]
-                if (stop.stop_id == depstop.stop_id) or (stops_in_step):
-                    step_stops.append(StepStop(stop, row[0], row[1]))
-                    stops_in_step = True
-                if (stop.stop_id == arrstop.stop_id):
-                    stops_in_step = False
-                    break
-
-    # NOTE step_stops may well be empty.  We can only do our best!!
     return step_stops
 
 
-def weather_information(inputtime):
-    """
-    """
-    # Call the weather prediction service
-    # This returns hourly weather predictions for four days from now
-    url=credentials['open-weather']['url'] \
-        + '?lat=' + str(CONST_DUBLIN_CC[0]) \
-        + '&lon=' + str(CONST_DUBLIN_CC[1]) \
-        + '&appid=' + credentials['open-weather']['api-key']
-    weather_json = rq.get(url).json()
-    log.debug(weather_json)
-    #weatherforecast_json = request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
-    
-    # Loop over the hourly data - find the first hour??? @YC - What about date??
-    predicted_temp = None
-    for each_hour_data in weather_json['list']:
-        forecast_datetime = datetime.fromtimestamp(each_hour_data['dt'])
-        hour=forecast_datetime.hour
-        if hour==inputtime:
-            predicted_temp = each_hour_data['main']['temp']
 
-    return predicted_temp
+
+
+
+
+import requests as rq
+
+def weather_information(inputtime):
+    url='https://pro.openweathermap.org/data/2.5/forecast/hourly?lat=53.3374&lon=-6.2732&appid=f68d42db4825fd344dd408b4fac20dc3'
+    request_response = rq.get(url)
+    json_text = request_response.json()
+#    print(json_text)
+#weatherforecast_json = request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
+    for each_hour_data in json_text['list']:
+            forecast_time_dt = each_hour_data['dt']
+            datetime = datetime.fromtimestamp(forecast_time_dt)
+            hour=datetime.hour
+            if hour==inputtime:
+                 temp = each_hour_data['main']['temp']
+                 return temp
+#def predict_journey_time_stop():
 
 
 def predict_journey_time(journey_prediction):
     """Predict the journey time(s) for journeys listed in 'prediction_requests' list
 
-    Returns an updated JourneyPrediction model.
+    Returns a List with one JourneyPrediction object per record in the query result set.
     Uses the end-to-end model when...
     Uses the stop-to-stop model when...
     """
   
-    # Pull the required information from the JourneyPrediction object.
+    # Tom has guessed that all trips in Dublin will take... 10 minutes! Let's see
+    # if a masters course in DA and using some of the most advanced machine
+    # learning techniques available can improve on my 'model'!
+  #  predict_journey_time_stop
+  #  if 
+  #      return 
     duration = journey_prediction.get_planned_duration_s()
     time = journey_prediction.get_planned_departure_datetime()
     hour=time.hour
+    temperature=weather_information(hour)
     week=time.isoweekday()
     month=time.month
     lineid=journey_prediction.get_route_shortname()
-    temperature=weather_information(hour)
-
+    filepath='/pickles/end_to_end/'+lineid+".pickle"
     week_sin= np.sin(2 * np.pi * week/6.0)
     week_cos = np.cos(2 * np.pi * week/6.0)
     hour_sin = np.sin(2 * np.pi * hour/23.0)
     hour_cos  = np.cos(2 * np.pi * hour/23.0)
     month_sin = np.sin(2 * np.pi * month/12.0)
     month_cos  = np.cos(2 * np.pi * month/12.0)
-
-    # load the prediction model
-    end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
-    #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
+    #load model
+  #  f = open('test_rfc.pickle','rb')
+    f= open(os.path.join(jt_utils_dir, filepath), 'r')
     usepickle = pickle.load(f)
     f.close()
-
-    # create a pandas dataframe
+    # create a dataframe
     #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
     dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
     input_to_pickle_data_frame = pd.DataFrame(dic_list)
-    # Pass the dataframe into model and predict time 
-    predict_result=usepickle.predict(input_to_pickle_data_frame)
-    journey_prediction.set_predicted_duration_s(predict_result)  
-
-    return journey_prediction  # Return the updated prediction_request
+# throw the dataframe into model and predict time 
+    predict_resilt=usepickle.predict(input_to_pickle_data_frame)
+    journey_prediction.set_predicted_duration_s(predict_resilt)   
+    return journey_prediction  # Return the updated rediction_request
 
 
 def time_rounded_to_hrs_mins_as_string(seconds):
@@ -622,26 +577,3 @@ def time_rounded_to_hrs_mins_as_string(seconds):
     time_string += str(mins) + ' mins'  # Rounded to nearest minute...
 
     return time_string
-
-#===============================================================================
-#===============================================================================
-#===============================================================================
-
-def main():
-    """Only Used for Testing
-
-    """
-
-    print('JT_Utils: Main Method')
-    # @YC - why not build a temporary JourneyPrediction object here - so you can test?
-    # journey_pred = JourneyPrediction( \
-    #     route_shortname, route_shortname_pickle_exists, \
-    #     planned_time_s, planned_departure_datetime, step_stops)
-
-    # # Call a function to get the predicted journey time for this step.
-    # journey_pred = predict_journey_time(journey_pred)
-
-    sys.exit()
-
-if __name__ == '__main__':
-    main()
