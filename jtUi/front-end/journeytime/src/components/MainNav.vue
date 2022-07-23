@@ -104,4 +104,8 @@ export default {
     border-radius: 50%;
     padding: 4px;
 }
+.el-menu {
+  font-family: element-icons!important;
+
+}
 </style>
