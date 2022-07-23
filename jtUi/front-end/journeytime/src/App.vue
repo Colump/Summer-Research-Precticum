@@ -90,6 +90,7 @@ export default {
     color: #333;
     text-align: center;
     line-height: 200px;
+    margin-left: 10px;
   }
   
   .el-main {
