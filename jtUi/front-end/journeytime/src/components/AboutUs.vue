@@ -1,10 +1,6 @@
 <template>
 <div>
-        <el-button type="primary" @click="showAllRoute">show</el-button>
-        <ul v-if="form.show">
-            <!-- 注意每个key要唯一 -->
-            <li v-for="(item,index) in form.journeyFromGoogle" :key = "index">{{item}}</li>
-        </ul>
+       
 </div>
 </template>
 
