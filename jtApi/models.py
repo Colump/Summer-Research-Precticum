@@ -53,7 +53,7 @@ class Agency(Base):
            'agency_timezone': self.agency_timezone,
            'agency_lang': self.agency_lang,
            'agency_phone': self.agency_phone,
-           'agencycol': self.agencycol,
+           'agencycol': self.agencycol
        }
 
     def __repr__(self):
@@ -70,8 +70,8 @@ class Calendar(Base):
     friday = Column(Integer,nullable=False)
     saturday = Column(Integer,nullable=False)
     sunday = Column(Integer,nullable=False)
-    start_date = Column(DateTime, primary_key=True, nullable=False) 
-    end_date = Column(DateTime, primary_key=True, nullable=False)
+    start_date = Column(DateTime, nullable=False) 
+    end_date = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_calendar', 'service_id', 'start_date', 'end_date'), )  # <- A Tuple!
 
     def serialize(self):
@@ -85,9 +85,10 @@ class Calendar(Base):
             'friday': self.friday,
             'saturday': self.saturday,
             'sunday': self.sunday,
-            'start_date': self.start_date,
-            'end_date': self.end_date,
+            'start_date': str(self.start_date),
+            'end_date': str(self.end_date)
         }
+
     def __repr__(self):
         return '<Calendar %r>' % (self.service_id, self.start_date, self.end_date)
 
@@ -95,7 +96,7 @@ class CalendarDates(Base):
     __tablename__ = 'calendar_dates'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
     service_id = Column(String(32), nullable=False)
-    date = Column(DateTime, primary_key=True, nullable=False)
+    date = Column(DateTime, nullable=False)
     exception_type = Column(Integer, nullable=True)
     __table_args__ = (Index('idx_calendar_date', 'service_id', 'date'), )
 
@@ -104,7 +105,7 @@ class CalendarDates(Base):
         return{
             'service_id': self.service_id,
             'date': str(self.date),
-            'exception_type': self.exception_type,
+            'exception_type': self.exception_type
         }
     def __repr__(self):
         return '<CalendarDates %r>' % (self.service_id, self.date)
@@ -126,7 +127,7 @@ class Routes(Base):
             'agency_id': self.agency_id,
             'route_short_name': self.route_short_name,
             'route_long_name': self.route_long_name,
-            'route_type': self.route_type,
+            'route_type': self.route_type
         }
 
     def __repr__(self):
@@ -148,7 +149,7 @@ class Shapes(Base):
             'shape_pt_lat': self.shape_pt_lat,
             'shape_pt_lon': self.shape_pt_lon,
             'shape_pt_sequence': self.shape_pt_sequence,
-            'shape_dist_traveled': self.shape_dist_traveled,
+            'shape_dist_traveled': self.shape_dist_traveled
         }
 
     def __repr__(self):
@@ -202,7 +203,7 @@ class StopTime(Base):
     trip_id = Column(String(32), nullable=False)
     arrival_time = Column(DateTime, nullable=False)
     departure_time = Column(DateTime, nullable=False)
-    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), primary_key=True, nullable=False)
+    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), nullable=False)
     stop_id = Column(String(12), nullable=False)
     stop_sequence = Column(SmallInteger, nullable=False)
     stop_headsign = Column(String(64), nullable=False)
@@ -270,7 +271,7 @@ class Trips(Base):
             'trip_id': self.trip_id,
             'shape_id': self.shape_id,
             'trip_headsign': self.trip_headsign,
-            'direction_id': self.direction_id,
+            'direction_id': self.direction_id
         }
 
     def __repr__(self):
