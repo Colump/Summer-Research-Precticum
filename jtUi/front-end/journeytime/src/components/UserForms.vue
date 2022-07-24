@@ -2,13 +2,13 @@
 <div >
     <el-form ref="form" :model="form" >
   <el-form-item >
-    <el-input v-model="form.startPlace" placeholder="Enter journey start location" id="autoComplete"></el-input>
+    <el-input v-model="form.startPlace" placeholder="origin tpying here!" id="autoComplete"></el-input>
   </el-form-item>
   <div class="swap">
     <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
   </div>
   <el-form-item >
-    <el-input v-model="form.endPlace" placeholder="Enter journey end location" id="autoComplete2"></el-input>
+    <el-input v-model="form.endPlace" placeholder="Destination tpying here!" id="autoComplete2"></el-input>
   </el-form-item>
   <el-form-item>
     <el-col :span="10">
@@ -30,7 +30,7 @@
     <ul v-if="form.show">
                 <!-- 注意每个key要唯一 -->
             <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
-                {{item.legs[0].steps[1].transit.headsign}}
+                you will take {{item.legs[0].steps[1].transit.line.short_name}} bus
                 <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
             </li>
     </ul>
@@ -57,6 +57,11 @@ export default {
               description: "Journeyti.me Step Journey Time Prediction Request",
               title: "Journeyti.me Prediction Request",
               routes:[]
+          },
+          toBackendInfo: {
+            description: "Journeyti.me Step Journey Time Prediction Request",
+            title: "Journeyti.me Prediction Request",
+            routes:[]
           },
           show : false,
           flag : 0,
@@ -129,7 +134,7 @@ export default {
 //      在这里当点击go的时候我们需要获得directionService的数据
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
-        const results = directionsService.route({
+        directionsService.route({
         origin: this.form.startPlaceLatLng,
         destination: this.form.endPlaceLatLng,
         travelMode: google.maps.TravelMode.TRANSIT,
@@ -140,61 +145,35 @@ export default {
         if(status === "OK"){
           directionsRenderer.setDirections(response);
           console.log("这是go下面的数据");
-          // console.log(response.routes);
-
-          // var routesCollection = []
-          // response.routes.forEach(function(route) {
-          //   console.log(route)
-          //   var routesInfo ={
-          //     steps,
-          //   }
-          //   route.legs[0].steps.forEach(function(step){
-              
-          //     var steps = []
-          //     if(step.travel_mode === 'TRANSIT'){
-          //       var stepForBackEnd = {
-          //         distance : '',
-          //         duration:'',
-          //         transit_details:''
-          //       }
-          //         stepForBackEnd.distance = step.distance;  // this is a dictionary
-          //         stepForBackEnd.duration =  step.duration  // this is a dictionary
-          //         stepForBackEnd.transit_details = step.transit_details;  // this is a dictionary
-          //         steps.push(stepForBackEnd)
-          //     }
-          //   })
-          //   var routesInfo = []
-          //   route.forEach(function(leg) {
-          //       leg.steps.forEach(function(step) {
-          //           var steps = []
-          //           if(step.travel_mode === 'TRANSIT'){
-          //             var stepForBackEnd = {
-          //                 distance : '',
-          //                 duration:'',
-          //                 transit_details:''
-          //             }
-          //             stepForBackEnd.distance = step.distance;  // this is a dictionary
-          //             stepForBackEnd.duration =  step.duration  // this is a dictionary
-          //             stepForBackEnd.transit_details = step.transit_details;  // this is a dictionary
-          //             steps.push(stepForBackEnd)
-          //           }
-          //           routesInfo.push(steps)
-          //       },
-          //   )},
-          //   // this.form.journeyFromGoogle.routes.push(routesInfo) 
-          // )},
-          
-        // });
-
-          
-          // this.journeyFromGoogle.push();
+          var routeArr = [];
+          response.routes.forEach(function(route){
+            var stepArr = [];
+            route.legs[0].steps.forEach(function(step){
+              if(step.travel_mode === 'TRANSIT'){
+                var stepForBackEnd = {
+                  distance : '',
+                  duration:'',
+                  transit:''
+                }
+                stepForBackEnd.distance = step.distance;  // this is a dictionary
+                stepForBackEnd.duration =  step.duration  // this is a dictionary
+                stepForBackEnd.transit = step.transit;  // this is a dictionary
+              }
+              stepArr.push(stepForBackEnd)
+            })
+            routeArr.push(stepArr)
+          })
+          this.form.toBackendInfo.routes = routeArr;
+          console.log("=============================+++++new");
+          console.log(JSON.stringify(this.form.toBackendInfo.routes));
+          console.log("=============================++++new");
           this.form.journeyFromGoogle = response.routes
           console.log("=============================+++++");
           console.log(this.form.journeyFromGoogle);
           console.log("=============================++++");
           // this.$bus.$emit('GetAlljourney',response.routes);
           // console.log(len);
-            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.journeyFromGoogle)).then(
+            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo.routes)).then(
               (resp) => {
                   let data = resp.data
                   console.log(data)
