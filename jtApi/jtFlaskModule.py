@@ -14,7 +14,7 @@ from jt_utils import get_available_end_to_end_models, get_stops_by_route, predic
 import logging
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
 import os, os.path
-from pickle import NONE
+import pickle
 from sqlalchemy import text, func
 
 # Imports for Model/Pickle Libs
@@ -194,14 +194,14 @@ def downloads():
 #  GROUP 3: STRAIGHTFORWARD DATASET EXTRACTS
 ##########################################################################################
 
-def get_dataset_in_format_requested(request, query, filename):
+def get_dataset_in_format_requested(request, model, query):
     args = request.args
     download_type = args.get(CONST_DLTYPE)  # will be blank sometimes...
 
     if download_type == CONST_CSVFILE:
         # User requested everything as a .csv file. This is our preferred
         # option (minimum bandwidth), serve the user a compressed .csv file
-        response = query_results_as_compressed_csv(query, filename)
+        response = query_results_as_compressed_csv(model, query)
     else:
         # User requested everything as EITHER straighforward json or the json
         # returned as an attachement. Some of the tables are large, so we do
@@ -222,9 +222,9 @@ def get_dataset_in_format_requested(request, query, filename):
                 #======================================================================================
                 # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
                 #======================================================================================
-                return query_results_as_json(query.limit(dl_row_limit_json_attach), filename, limit_exceeded=True)
+                return query_results_as_json(model, query.limit(dl_row_limit_json_attach), limit_exceeded=True)
             else:
-                return query_results_as_json(query, filename)
+                return query_results_as_json(model, query)
         else:
             # User wants JSON direct to the screen (not as an attached file)
             if total_records > dl_row_limit_json:
@@ -236,11 +236,11 @@ def get_dataset_in_format_requested(request, query, filename):
                 dl_lim_json_attach = jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
                 warning = {}
                 warning['filesize_warning'] = {}
-                warning['filesize_warning']['warning'] = 'WARNING'
-                warning['filesize_warning']['description'] = 'The number of records in this extract exceeds the current streamed .json file limit'
-                warning['filesize_warning']['limits1'] = 'A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer'
-                warning['filesize_warning']['limits2'] = 'A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment'
-                warning['filesize_warning']['limits3'] = 'There is currently no limit on filesizes downloaded as compressed .csv.gz'
+                warning['filesize_warning']['1_warning'] = 'WARNING'
+                warning['filesize_warning']['2_description'] = 'The number of records in this extract exceeds the current streamed .json file limit'
+                warning['filesize_warning']['3_limits1'] = 'A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer'
+                warning['filesize_warning']['4_limits2'] = 'A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment'
+                warning['filesize_warning']['5_limits3'] = 'There is currently no limit on filesizes downloaded as compressed .csv.gz'
                 list.append(warning)
 
                 list.append([row.serialize() for row in query.limit(dl_row_limit_json).all()])
@@ -273,7 +273,7 @@ def get_agency(agency_name):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, agencyQuery, 'agency')
+        response = get_dataset_in_format_requested(request, Agency, agencyQuery)
 
     return response
 
@@ -295,7 +295,7 @@ def get_calendar(service_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, calendarQuery, 'calendar')
+        response = get_dataset_in_format_requested(request, Calendar, calendarQuery)
 
     return response
 
@@ -317,7 +317,7 @@ def get_calendar_dates(date):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, calendardatesQuery, 'calendar_dates')
+        response = get_dataset_in_format_requested(request, CalendarDates, calendardatesQuery)
 
     return response
 
@@ -338,7 +338,7 @@ def get_routes(route_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, routeQuery, 'routes')
+        response = get_dataset_in_format_requested(request, Routes, routeQuery)
 
     return response
 
@@ -360,7 +360,7 @@ def get_shape(shape_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, shapeQuery, 'shapes')
+        response = get_dataset_in_format_requested(request, Shapes, shapeQuery)
 
     return response
 
@@ -393,7 +393,7 @@ def get_stops(stop_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, stopQuery, 'stops')
+        response = get_dataset_in_format_requested(request, Stop, stopQuery)
 
     return response
 
@@ -416,7 +416,7 @@ def get_stop_times(trip_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, stoptimeQuery, 'stoptimes')
+        response = get_dataset_in_format_requested(request, StopTime, stoptimeQuery)
 
     return response
     
@@ -438,7 +438,7 @@ def get_transfers(from_stop_id):
     else:
         # No specific agency requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, transferQuery, 'transfers')
+        response = get_dataset_in_format_requested(request, Transfers, transferQuery)
 
     return response
 
@@ -461,7 +461,7 @@ def get_trips(trip_id):
     else:
         # No specific trip requested - decide how (and exactly what) to return
         # to the user...
-        response = get_dataset_in_format_requested(request, tripsQuery, 'trips')
+        response = get_dataset_in_format_requested(request, Trips, tripsQuery)
 
     return response
 
@@ -542,17 +542,21 @@ def get_journey_time():
         prediction_request_json = request.json
         print("get_journey_time.do: request.json type is -> ", type(request.json))
 
+        # pickles_dir='pickles'
+        # TEMP_pickle_path= os.path.join(jtFlaskModDir, pickles_dir)
+
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
         log.debug('looping over routes')
-        for route in prediction_request_json['routes']:
+        for route_idx, route in enumerate(prediction_request_json['routes']):
              # def JourneyPrediction():
             no_of_steps_this_route = len(route['steps'])
-            print("\tno_of_steps_this_route -> " + str(no_of_steps_this_route))
+            log.debug('\tProcessing route ' + str(route_idx) + ', no_of_steps_this_route -> ' + str(no_of_steps_this_route))
 
-            print('\tlooping over steps')
-            for step in route['steps']:
+            log.debug('\tlooping over steps')
+            for step_idx, step in enumerate(route['steps']):
+                log.debug('\tProcessing step ' + str(step_idx) + '.')
                 
                 planned_time_s  = step['duration']['value']
                 route_shortname = step['transit_details']['line']['short_name']
@@ -563,7 +567,7 @@ def get_journey_time():
                 # Using datetime to construct our date seems to nicely cater
                 # for daylight savings times, differences from UTC etc. ...
                 planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
-                print("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
+                log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
                 # Extend the json to contain stop-by-stop route information...
                 # NOTE The mappings between Googles supplied data and the GTFSR
@@ -583,13 +587,17 @@ def get_journey_time():
                 step_stops = get_stops_by_route(db, route_name, route_short_name, stop_headsign, departure_time, \
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-                print("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
+                log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
 
                 # Bundle everything we need to make a prediction into a convenient
                 # object. We can then pass this object to the prediction routine
                 journey_pred = JourneyPrediction( \
                     route_shortname, route_shortname_pickle_exists, \
                     planned_time_s, planned_departure_datetime, step_stops)
+
+                # # Pickle the JourneyPrediction object - handy for testing!!
+                # with open(os.path.join(TEMP_pickle_path, 'JourneyPrediction-r' + str(route_idx) + '-s' + str(step_idx) + '.pickle'), 'wb+') as handle:
+                #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                 # Call a function to get the predicted journey time for this step.
                 journey_pred = predict_journey_time(journey_pred)
@@ -789,4 +797,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

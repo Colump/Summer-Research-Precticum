@@ -257,7 +257,8 @@ export default {
 <style>
 .map{
   width: 100%;
-  height: 500px;
+  height: 100vh;
+  margin-bottom: 10%;
 }
 
 </style>

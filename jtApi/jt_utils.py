@@ -74,7 +74,7 @@ def _get_next_chunk_size(rows_remain):
     return rows_chunk
 
 
-def query_results_as_compressed_csv(query, name):
+def query_results_as_compressed_csv(model, query):
     """
 
     Returns a CSV File with one row per record in the query result set.
@@ -125,43 +125,49 @@ def query_results_as_compressed_csv(query, name):
         row_count      = 0
         row_list       = []
         first_chunk_tf = True
-        lastRowPK      = None
+        lastRowPK      = 0
+
+        # I still got memory overruns trying to use query.yield_per()... which
+        # looked almost tailor made for our objective.  So perhaps I was doing
+        # something wrong...
         # query.yield_per(rows_chunk)
-        # while True:
-        #     rows = query.filter(Thing.id < lastThingID).limit(rows_chunk).all()
-        #     if not rows or len(rows) == 0: 
-        #         break
-        #     for row in rows:
-        #         lastRowPK = row.??????
-        #         analyze(thing)
-        for row in query:
-            # If we build up the string we plan to send by repeatedly appending,
-            # we're creating a new string each time. This is quite memory expensive
-            # and inefficient.
-            # Instead we build a list of strings - which we will later convert to
-            # a single string.
-            # 'row_list' will be a list of strings...
-            row_list.append( '"' + '","'.join([str(value) for value in row.serialize().values()]) + '"')
-            row_count += 1
 
-            if row_count >= rows_chunk:
-                rows_remain -= rows_chunk  # we've just competed a chunk
-                                           # this condition finally exits the loop
-                rows_chunk = _get_next_chunk_size(rows_remain)
-                # print("Completed a chunk:")
-                # print("\tRows Remaining ->", rows_remain)
-                # print("\tRows This Chunk ->", rows_chunk)
+        # Instead I did an old fashioned loop to let me use smaller queries, to
+        # keep the memory footprint down...
+        while True:
+            rows_this_chunk = query.filter(model.id > lastRowPK).limit(rows_chunk).all()
+            if not rows_this_chunk or len(rows_this_chunk) == 0: 
+                break
+            for row in rows_this_chunk:
+                lastRowPK = row.id
+ 
+                # If we build up the string we plan to send by repeatedly appending,
+                # we're creating a new string each time. This is quite memory expensive
+                # and inefficient.
+                # Instead we build a list of strings - which we will later convert to
+                # a single string.
+                # 'row_list' will be a list of strings...
+                row_list.append( '"' + '","'.join([str(value) for value in row.serialize().values()]) + '"')
+                row_count += 1
 
-                chunk, first_chunk_tf = get_chunk(row_list, first_chunk_tf, query)
-                chunk_compressed = compressor.compress(chunk)
-                if chunk_compressed:
-                    print("yielding a chunk...")
-                    yield chunk_compressed
-                crc = zlib.crc32(chunk, crc) & 0xFFFFFFFF  # Keep the CRC up to date...
-                length += len(chunk)
+                if row_count >= rows_chunk:
+                    rows_remain -= rows_chunk  # we've just competed a chunk
+                                            # this condition finally exits the loop
+                    rows_chunk = _get_next_chunk_size(rows_remain)
+                    # print("Completed a chunk:")
+                    # print("\tRows Remaining ->", rows_remain)
+                    # print("\tRows This Chunk ->", rows_chunk)
 
-                row_list = []
-                row_count = 0
+                    chunk, first_chunk_tf = get_chunk(row_list, first_chunk_tf, query)
+                    chunk_compressed = compressor.compress(chunk)
+                    if chunk_compressed:
+                        log.debug("yielding a chunk...")
+                        yield chunk_compressed
+                    crc = zlib.crc32(chunk, crc) & 0xFFFFFFFF  # Keep the CRC up to date...
+                    length += len(chunk)
+
+                    row_list = []
+                    row_count = 0
 
         # Finishing off, send remainder of the compressed data, and CRC and length
         yield compressor.flush()
@@ -172,11 +178,11 @@ def query_results_as_compressed_csv(query, name):
     # streaming).  But time/testing will tell...
     #response = Response(stream_with_context(generate(query, name)), mimetype='application/gzip')
     response = Response(generate(query), mimetype='application/gzip')
-    response.headers['Content-Disposition'] = 'attachment; filename=' + name + '.csv.gz'
+    response.headers['Content-Disposition'] = 'attachment; filename=' + model.__table__.name + '.csv.gz'
     return response
 
 
-def query_results_as_json(query, name, **kwargs):
+def query_results_as_json(model, query, **kwargs):
     """
 
     Returns a JSON List with one object per record in the query result set.
@@ -194,11 +200,11 @@ def query_results_as_json(query, name, **kwargs):
                 dl_lim_json_attach = credentials['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
 
                 chunk += '\"filesize_warning\": {\n'
-                chunk += '\"warning\": \"WARNING\",\n'
-                chunk += '\"description\": \"The number of records in this extract exceeds the current streamed .json file limit\",\n'
-                chunk += '\"limits1\": \"A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer\",\n'
-                chunk += '\"limits2\": \"A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment\",\n'
-                chunk += '\"limits3\": \"There is currently no limit on filesizes downloaded as compressed .csv.gz\"\n'
+                chunk += '\"1_warning\": \"WARNING\",\n'
+                chunk += '\"2_description\": \"The number of records in this extract exceeds the current streamed .json file limit\",\n'
+                chunk += '\"3_limits1\": \"A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer\",\n'
+                chunk += '\"4_limits2\": \"A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment\",\n'
+                chunk += '\"5_limits3\": \"There is currently no limit on filesizes downloaded as compressed .csv.gz\"\n'
                 chunk += '},\n'
             chunk += '\"' + name + '\": [\n'
             first_chunk = False
@@ -212,7 +218,7 @@ def query_results_as_json(query, name, **kwargs):
     # ... for some benchmarking on a number of approaches to concatenating lots of strings...
     # json_list=[i.serialize() for i in tripsQuery.all()]
     # return jsonify(json_list)
-    def generate(query, name):
+    def generate(model, query):
         row_count = 0
 
         # "tripsQuery.all()" is a python list of results
@@ -242,7 +248,7 @@ def query_results_as_json(query, name, **kwargs):
                 log.debug("\tRows Remaining ->", rows_remain)
                 log.debug("\tRows This Chunk ->", rows_chunk)
 
-                buffer, first_chunk = get_chunk(json_list, first_chunk, name)
+                buffer, first_chunk = get_chunk(json_list, first_chunk, model.__table__.name)
                 if buffer:
                     yield buffer
                 
@@ -252,8 +258,8 @@ def query_results_as_json(query, name, **kwargs):
         # Finishing off, send remainder of the compressed data, and CRC and length
         yield "\n]\n}"  # <- We close the list after the last buffer yield
 
-    return Response(generate(query, name), mimetype='application/json', \
-        headers={'Content-disposition': 'attachment; filename=' + name + '.json'})
+    return Response(generate(model, query), mimetype='application/json', \
+        headers={'Content-disposition': 'attachment; filename=' + model.__table__.name + '.json'})
 
 
 ##########################################################################################
@@ -357,9 +363,6 @@ def get_available_end_to_end_models():
     return AVAILABLE_MODEL_ROUTE_SHORTNAMES
 
 
-# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
-# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
-# UPDATE UPDATE UPDATE UPDATE - ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING ERROR HANDLING
 def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time, \
     departure_stop_name, departure_stop_lat, departure_stop_lon, \
     arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
@@ -571,36 +574,38 @@ def predict_journey_time(journey_prediction):
     Uses the stop-to-stop model when...
     """
   
-    # Pull the required information from the JourneyPrediction object.
-    duration = journey_prediction.get_planned_duration_s()
-    time = journey_prediction.get_planned_departure_datetime()
-    hour=time.hour
-    week=time.isoweekday()
-    month=time.month
-    lineid=journey_prediction.get_route_shortname()
-    temperature=weather_information(hour)
+    # # Pull the required information from the JourneyPrediction object.
+    # duration = journey_prediction.get_planned_duration_s()
+    # time = journey_prediction.get_planned_departure_datetime()
+    # hour=time.hour
+    # week=time.isoweekday()
+    # month=time.month
+    # lineid=journey_prediction.get_route_shortname()
+    # temperature=weather_information(hour)
 
-    week_sin= np.sin(2 * np.pi * week/6.0)
-    week_cos = np.cos(2 * np.pi * week/6.0)
-    hour_sin = np.sin(2 * np.pi * hour/23.0)
-    hour_cos  = np.cos(2 * np.pi * hour/23.0)
-    month_sin = np.sin(2 * np.pi * month/12.0)
-    month_cos  = np.cos(2 * np.pi * month/12.0)
+    # week_sin= np.sin(2 * np.pi * week/6.0)
+    # week_cos = np.cos(2 * np.pi * week/6.0)
+    # hour_sin = np.sin(2 * np.pi * hour/23.0)
+    # hour_cos  = np.cos(2 * np.pi * hour/23.0)
+    # month_sin = np.sin(2 * np.pi * month/12.0)
+    # month_cos  = np.cos(2 * np.pi * month/12.0)
 
-    # load the prediction model
-    end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
-    #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
-    usepickle = pickle.load(f)
-    f.close()
+    # # load the prediction model
+    # end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
+    # #  f = open('test_rfc.pickle','rb')
+    # f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
+    # usepickle = pickle.load(f)
+    # f.close()
 
-    # create a pandas dataframe
-    #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
-    input_to_pickle_data_frame = pd.DataFrame(dic_list)
-    # Pass the dataframe into model and predict time 
-    predict_result=usepickle.predict(input_to_pickle_data_frame)
-    journey_prediction.set_predicted_duration_s(predict_result)  
+    # # create a pandas dataframe
+    # #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
+    # dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
+    # input_to_pickle_data_frame = pd.DataFrame(dic_list)
+    # # Pass the dataframe into model and predict time 
+    # predict_result=usepickle.predict(input_to_pickle_data_frame)
+    # journey_prediction.set_predicted_duration_s(predict_result)  
+
+    journey_prediction.set_predicted_duration_s(600)
 
     return journey_prediction  # Return the updated prediction_request
 
@@ -633,13 +638,13 @@ def main():
     """
 
     print('JT_Utils: Main Method')
-    # @YC - why not build a temporary JourneyPrediction object here - so you can test?
-    # journey_pred = JourneyPrediction( \
-    #     route_shortname, route_shortname_pickle_exists, \
-    #     planned_time_s, planned_departure_datetime, step_stops)
+    pickles_dir='pickles'
+    pickle_path= os.path.join(jt_utils_dir, pickles_dir)
 
-    # # Call a function to get the predicted journey time for this step.
-    # journey_pred = predict_journey_time(journey_pred)
+    with (open(os.path.join(pickle_path, 'JourneyPrediction-r0-s0.pickle'), "rb")) as jp_pickle:
+        journey_pred = pickle.load(jp_pickle)
+        # # Call a function to get the predicted journey time for this step.
+        journey_pred = predict_journey_time(journey_pred)
 
     sys.exit()
 

@@ -26,7 +26,13 @@
           <!-- 在这里展示我们的四个页面 -->
           <router-view></router-view>
         </el-main>
-        <el-footer>Footer</el-footer>
+        <el-footer>
+        <p> Legal Stuff </p>
+        <p> Privacy Policy </p>
+        <p> Security </p>
+       <!-- <p>Copyright @ 2022 Raduno Technologies</p>-->
+
+          </el-footer>
       </el-container>
     </el-container>
    
@@ -82,6 +88,10 @@ export default {
     background-color: rgb(0, 140, 255);
     color: white;
     text-align: center;
+    font-family: element-icons!important;
+    display: flex;
+    justify-content: space-between;
+    line-height: 1px;
    }
   
   .el-aside {
@@ -89,6 +99,7 @@ export default {
     color: #333;
     text-align: center;
     line-height: 200px;
+    margin-left: 10px;
   }
   
   .el-main {

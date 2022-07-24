@@ -125,7 +125,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
 
                     # Instantiate a session *per file* so we can talk to the database!
                     session = Session()
-                    objects_this_session = 0
+                    objects_this_session = []  # We build a list of objects for bulk insert...
 
                     # Process the files line-by-line...
                     # -> Some files are small (e.g. agency - 1 record). We process
@@ -139,6 +139,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                     if filename == "agency.txt":
                         truncate_table(session, Agency)
 
+                        print('          -> ', end='')
                         for row in data:
                             agency = Agency(
                                 agency_id=row[0],
@@ -149,11 +150,12 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 agency_phone=row[5]
                                 #db has field "agencycol" - what for??
                             )
-                            session.add(agency)
+                            objects_this_session.append(agency)
                     
                     elif filename == "calendar.txt":
                         truncate_table(session, Calendar)
 
+                        print('          -> ', end='')
                         for row in data:
                             calendar = Calendar(
                                 service_id=row[0],
@@ -167,22 +169,24 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 start_date=row[8],
                                 end_date=row[9]
                             )
-                            session.add(calendar)
+                            objects_this_session.append(calendar)
                     
                     elif filename == "calendar_dates.txt":
                         truncate_table(session, CalendarDates)
 
+                        print('          -> ', end='')
                         for row in data:
                             calendar_date = CalendarDates(
                                 service_id=row[0],
                                 date=row[1],
                                 exception_type=row[2]
                             )
-                            session.add(calendar_date)
+                            objects_this_session.append(calendar_date)
                     
                     elif filename == "routes.txt":
                         truncate_table(session, Routes)
 
+                        print('          -> ', end='')
                         for row in data:
                             route = Routes(
                                 route_id=row[0],
@@ -191,13 +195,13 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 route_long_name=row[3],
                                 route_type=row[4]
                             )
-                            session.add(route)
+                            objects_this_session.append(route)
                     
                     elif filename == "shapes.txt":
                         truncate_table(session, Shapes)
 
-                        print('           Processing records in batches of', objects_per_session_max)
-                        print('             -> ', end='')
+                        print('        Processing records in batches of', objects_per_session_max)
+                        print('          -> ', end='')
                         for row in data:
                             shape = Shapes(
                                 shape_id=row[0],
@@ -206,16 +210,16 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 shape_pt_sequence=row[3],
                                 shape_dist_traveled=row[4]
                             )
-                            objects_this_session += 1  # Count objects we're tracking
-                            session.add(shape)
+                            objects_this_session.append(shape)
 
-                            if objects_this_session >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session(session, Session)
-                                objects_this_session = 0
-                    
+                            if len(objects_this_session) >= objects_per_session_max:
+                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                objects_this_session = []  # Resume with an empty list...
+
                     elif filename == "stops.txt":
                         truncate_table(session, Stop)
 
+                        print('          -> ', end='')
                         for row in data:
                             stop = Stop(
                                 stop_id=row[0],
@@ -231,15 +235,15 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position) FROM stops
 
                                 # Calculate distance to city center using haversine (in km) ...
-                                dist_from_cc = haversine(DUBLIN_CC, (float(row[2]), float(row[3])))
+                                dist_from_cc = haversine(CONST_DUBLIN_CC, (float(row[2]), float(row[3])))
                             )
-                            session.add(stop)
-
+                            objects_this_session.append(stop)
+                        
                     elif filename == "stop_times.txt":
                         truncate_table(session, StopTime)
 
-                        print('           Processing records in batches of', objects_per_session_max)
-                        print('             -> ', end='')
+                        print('        Processing records in batches of', objects_per_session_max)
+                        print('          -> ', end='')
                         for row in data:
                             stop_time = StopTime(
                                 trip_id=row[0],
@@ -252,16 +256,16 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 drop_off_type=row[7],
                                 shape_dist_traveled=row[8]
                             )
-                            objects_this_session += 1  # Count objects we're tracking
-                            session.add(stop_time)
+                            objects_this_session.append(stop_time)
 
-                            if objects_this_session >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session(session, Session)
-                                objects_this_session = 0
-                    
+                            if len(objects_this_session) >= objects_per_session_max:
+                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                objects_this_session = []  # Resume with an empty list...
+
                     elif filename == "transfers.txt":
                         truncate_table(session, Transfers)
 
+                        print('          -> ', end='')
                         for row in data:
                             transfer = Transfers(
                                 from_stop_id=row[0],
@@ -269,11 +273,13 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 transfer_type=row[2],
                                 min_transfer_time=row[3] if row[3] != '' else None
                             )
-                            session.add(transfer)
+                            objects_this_session.append(transfer)
 
                     elif filename == "trips.txt":
                         truncate_table(session, Trips)
 
+                        print('        Processing records in batches of', objects_per_session_max)
+                        print('          -> ', end='')
                         for row in data:
                             trip = Trips(
                                 route_id=row[0],
@@ -283,7 +289,12 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 trip_headsign=row[4],
                                 direction_id=row[5]
                             )
-                            session.add(trip)
+                            objects_this_session.append(trip)
+
+                            if len(objects_this_session) >= objects_per_session_max:
+                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                objects_this_session = []  # Resume with an empty list...
+
                     else:
                         print('WARNING: Unexpected .txt file encountered -> ' + str(filename))
                         print('         Ignoring...')
@@ -294,7 +305,10 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                     #   -> print('session.new -> ', session.new)
 
                     # Save outstanding insertions to the db...
-                    session.commit()                        
+                    if len(objects_this_session) > 0:
+                        print('#', end='')
+                        session.bulk_save_objects(objects_this_session)
+                        session.commit()
             else:
                 print('WARNING: Unexpected file encountered -> ' + str(filename))
                 print('         Ignoring...')
@@ -302,7 +316,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
             print('')
 
 
-def commit_batch_and_start_new_session(session, Session):
+def commit_batch_and_start_new_session(list_of_objects, session, Session):
     """Commit the session once the object session limit is reached.
 
     Also prints a '# to the console as a type of 'chunk progress indicator' for the logs...
@@ -310,6 +324,7 @@ def commit_batch_and_start_new_session(session, Session):
     # Once our session is holding a fair chunk of data we commit and begin a new session...
     # We print a '#' to the console as a type of 'chunk progress indicator' for the logs...
     print('#', end='')
+    session.bulk_save_objects(list_of_objects)
     session.commit()
     session = Session()
 
@@ -321,9 +336,11 @@ def truncate_table(session, model):
 
     Prints a nicely formattted message for the module logs
     """
-    print('           Truncating Table...', end = '')
+    print('        Truncating Table...')
     num_rows_deleted = session.query(model).delete()
-    print(' ' + str(num_rows_deleted) + ' Rows Deleted.')
+    print('        Resetting auto-increement id...' )
+    session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
+    print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
 
     return
 

@@ -35,7 +35,8 @@ class Point(UserDefinedType):
 
 class Agency(Base):
     __tablename__ = 'agency'
-    agency_id = Column(String(3), primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(3), index=True, unique=True, nullable=False)
     agency_name = Column(String(32), nullable=False)
     agency_url = Column(String(45), nullable=False)
     agency_timezone = Column(String(32), nullable=False)
@@ -52,7 +53,7 @@ class Agency(Base):
            'agency_timezone': self.agency_timezone,
            'agency_lang': self.agency_lang,
            'agency_phone': self.agency_phone,
-           'agencycol': self.agencycol,
+           'agencycol': self.agencycol
        }
 
     def __repr__(self):
@@ -60,7 +61,8 @@ class Agency(Base):
 
 class Calendar(Base):
     __tablename__ = 'calendar'
-    service_id = Column(String(32), primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    service_id = Column(String(32), nullable=False)
     monday = Column(Integer, nullable=False)
     tuesday = Column(Integer,nullable=False)
     wednesday = Column(Integer,nullable=False)
@@ -68,8 +70,9 @@ class Calendar(Base):
     friday = Column(Integer,nullable=False)
     saturday = Column(Integer,nullable=False)
     sunday = Column(Integer,nullable=False)
-    start_date = Column(DateTime, primary_key=True, nullable=False) 
-    end_date = Column(DateTime, primary_key=True, nullable=False)
+    start_date = Column(DateTime, nullable=False) 
+    end_date = Column(DateTime, nullable=False)
+    __table_args__ = (Index('idx_calendar', 'service_id', 'start_date', 'end_date'), )  # <- A Tuple!
 
     def serialize(self):
         """Return object data in easily serializeable format"""
@@ -82,24 +85,27 @@ class Calendar(Base):
             'friday': self.friday,
             'saturday': self.saturday,
             'sunday': self.sunday,
-            'start_date': self.start_date,
-            'end_date': self.end_date,
+            'start_date': str(self.start_date),
+            'end_date': str(self.end_date)
         }
+
     def __repr__(self):
         return '<Calendar %r>' % (self.service_id, self.start_date, self.end_date)
 
 class CalendarDates(Base):
     __tablename__ = 'calendar_dates'
-    service_id = Column(String(32), primary_key=True, nullable=False)
-    date = Column(DateTime, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    service_id = Column(String(32), nullable=False)
+    date = Column(DateTime, nullable=False)
     exception_type = Column(Integer, nullable=True)
+    __table_args__ = (Index('idx_calendar_date', 'service_id', 'date'), )
 
     def serialize(self):
         """Return object data in easily serializeable format"""
         return{
             'service_id': self.service_id,
             'date': str(self.date),
-            'exception_type': self.exception_type,
+            'exception_type': self.exception_type
         }
     def __repr__(self):
         return '<CalendarDates %r>' % (self.service_id, self.date)
@@ -107,8 +113,9 @@ class CalendarDates(Base):
 
 class Routes(Base):
     __tablename__ = 'routes'
-    route_id = Column(String(32), ForeignKey("trips.route_id"), primary_key=True, nullable=False)
-    agency_id = Column(String(3), ForeignKey("agency.agency_id"), nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    route_id = Column(String(32), index=True, unique=True, nullable=False)
+    agency_id = Column(String(3), nullable=False)
     route_short_name = Column(String(16), nullable=False)
     route_long_name = Column(String(72), nullable=False)
     route_type = Column(Integer, nullable=False)
@@ -120,7 +127,7 @@ class Routes(Base):
             'agency_id': self.agency_id,
             'route_short_name': self.route_short_name,
             'route_long_name': self.route_long_name,
-            'route_type': self.route_type,
+            'route_type': self.route_type
         }
 
     def __repr__(self):
@@ -128,11 +135,13 @@ class Routes(Base):
 
 class Shapes(Base):
     __tablename__ = 'shapes'
-    shape_id = Column(String(32), primary_key=True, nullable=False)
-    shape_pt_lat = Column(Float, primary_key=True, nullable=False)
-    shape_pt_lon = Column(Float, primary_key=True, nullable=False)
-    shape_pt_sequence = Column(Float, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    shape_id = Column(String(32), nullable=False)
+    shape_pt_lat = Column(Float, nullable=False)
+    shape_pt_lon = Column(Float, nullable=False)
+    shape_pt_sequence = Column(Float, nullable=False)
     shape_dist_traveled = Column(Float, nullable=False)
+    __table_args__ = (Index('idx_shape', 'shape_id', 'shape_pt_lat', 'shape_pt_lon', 'shape_pt_sequence'), )
 
     def serialize(self):
         return{
@@ -140,7 +149,7 @@ class Shapes(Base):
             'shape_pt_lat': self.shape_pt_lat,
             'shape_pt_lon': self.shape_pt_lon,
             'shape_pt_sequence': self.shape_pt_sequence,
-            'shape_dist_traveled': self.shape_dist_traveled,
+            'shape_dist_traveled': self.shape_dist_traveled
         }
 
     def __repr__(self):
@@ -155,11 +164,12 @@ class Stop(Base):
     # decide to override the constructor for any reason, make sure to keep accepting
     # **kwargs and call the super constructor with those **kwargs to preserve this
     # behavior.
-    stop_id = Column(String(12), primary_key=True)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    stop_id = Column(String(12), index=True, unique=False, nullable=False)
     stop_name = Column(String(64), unique=False, nullable=False)
     stop_lat = Column(Float, unique=False, nullable=False)
     stop_lon = Column(Float, unique=False, nullable=False)
-    stop_position = Column(Point, unique=False, nullable=False)
+    stop_position = Column(Point, index=True, unique=False, nullable=False)
     dist_from_cc = Column(Float, unique=False, nullable=False)
 
     # Notes on SQLAlchemy relationship definitions here:
@@ -189,18 +199,20 @@ class Stop(Base):
 
 class StopTime(Base):
     __tablename__ = 'stop_times'
-    trip_id = Column(String(32), primary_key=True, nullable=False)
-    arrival_time = Column(DateTime, primary_key=True, nullable=False)
-    departure_time = Column(DateTime, primary_key=True, nullable=False)
-    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), primary_key=True, nullable=False)
-    stop_id = Column(String(12), primary_key=True, nullable=False)
-    stop_sequence = Column(SmallInteger, primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    trip_id = Column(String(32), nullable=False)
+    arrival_time = Column(DateTime, nullable=False)
+    departure_time = Column(DateTime, nullable=False)
+    #stop_id = Column(String(12), ForeignKey("stops.stop_id"), nullable=False)
+    stop_id = Column(String(12), nullable=False)
+    stop_sequence = Column(SmallInteger, nullable=False)
     stop_headsign = Column(String(64), nullable=False)
     pickup_type = Column(SmallInteger, nullable=False)
     drop_off_type = Column(SmallInteger, nullable=False)
     # Note the American spelling of traveled - it caught me out - but thats what
     # is used in GTFS...
     shape_dist_traveled = Column(Float, nullable=False)
+    __table_args__ = (Index('idx_stop_time', 'trip_id', 'arrival_time', 'departure_time', 'stop_id', 'stop_sequence'), )
 
     def serialize(self):
        """Return object data in easily serializeable format"""
@@ -221,35 +233,14 @@ class StopTime(Base):
         #return '<StopTime %r>' % (self.trip_id, self.arrival_time, self.departure_time, self.stop_id, self.stop_sequence)
 
 
-class Trips(Base):
-    __tablename__ = 'trips'
-    route_id = Column(String(32), primary_key=True, nullable=False)
-    service_id = Column(String(32), nullable=False)
-    trip_id = Column(String(32), primary_key=True, nullable=False)
-    shape_id = Column(String(32), primary_key=True, nullable=False)
-    trip_headsign = Column(String(73), nullable=False)
-    direction_id = Column(SmallInteger, nullable=False)
-
-    def serialize(self):
-        return {
-            'route_id': self.route_id,
-            'service_id': self.service_id,
-            'trip_id': self.trip_id,
-            'shape_id': self.shape_id,
-            'trip_headsign': self.trip_headsign,
-            'direction_id': self.direction_id,
-        }
-
-    def __repr__(self):
-        return '<Trips %r>' % (self.route_id, self.service_id, self.trip_id, self.shape_id, self.trip_headsign)
-
-
 class Transfers(Base):
     __tablename__ = 'transfers'
-    from_stop_id = Column(String(12), primary_key=True, nullable=False)
-    to_stop_id = Column(String(12), primary_key=True, nullable=False)
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    from_stop_id = Column(String(12), nullable=False)
+    to_stop_id = Column(String(12), nullable=False)
     transfer_type = Column(SmallInteger, nullable=False)
-    min_transfer_time = Column(Integer, nullable=False)
+    min_transfer_time = Column(Integer, nullable=True)
+    __table_args__ = (Index('idx_transfer', 'from_stop_id', 'to_stop_id'), )
 
     def serialize(self):
        return{
@@ -261,10 +252,36 @@ class Transfers(Base):
     def __repr__(self):
         return '<Transfers %r>' % (self.from_stop_id, self.to_stop_id, self.transfer_type, self.min_transfer_time)
 
+
+class Trips(Base):
+    __tablename__ = 'trips'
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    route_id = Column(String(32), nullable=False)
+    service_id = Column(String(32), nullable=False)
+    trip_id = Column(String(32), nullable=False)
+    shape_id = Column(String(32), nullable=False)
+    trip_headsign = Column(String(73), nullable=False)
+    direction_id = Column(SmallInteger, nullable=False)
+    __table_args__ = (Index('idx_trip', 'route_id', 'trip_id', 'shape_id'), )
+
+    def serialize(self):
+        return {
+            'route_id': self.route_id,
+            'service_id': self.service_id,
+            'trip_id': self.trip_id,
+            'shape_id': self.shape_id,
+            'trip_headsign': self.trip_headsign,
+            'direction_id': self.direction_id
+        }
+
+    def __repr__(self):
+        return '<Trips %r>' % (self.route_id, self.service_id, self.trip_id, self.shape_id, self.trip_headsign)
+
+
 class JT_User(Base):
     __tablename__ = 'jt_user'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)  # Auto-increment should be default
-    username = Column(String(256), primary_key=True, nullable=False)
+    username = Column(String(256), index=True, unique=True, nullable=False)
     password_hash = Column(String(60), nullable=False)
     nickname = Column(String(256), nullable=True)
     colour = Column(String(6), nullable=True)

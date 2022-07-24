@@ -127,13 +127,13 @@ export default {
         // console.log('submit!');
         this.$bus.$emit('GutStartPlace',this.form.startPlaceLatLng);
         this.$bus.$emit('GutEndPlace',this.form.endPlaceLatLng);
-        
 
         this.form.show = !this.form.show;
 
 //      在这里当点击go的时候我们需要获得directionService的数据
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
+<<<<<<< HEAD
         directionsService.route({
         origin: this.form.startPlaceLatLng,
         destination: this.form.endPlaceLatLng,
@@ -179,9 +179,97 @@ export default {
                   console.log(data)
                   }
             )
+=======
+        const results = directionsService.route(
+          {
+            origin: this.form.startPlaceLatLng,
+            destination: this.form.endPlaceLatLng,
+            travelMode: google.maps.TravelMode.TRANSIT,
+            provideRouteAlternatives:true
+          },
+          (response,status) => {
+            // console.log(this.form)
+            if(status === "OK") {
+              directionsRenderer.setDirections(response);
+              console.log("这是go下面的数据");
+              console.log("These are the response routes:", response.routes);
+
+              console.log("Building json package for transmit to prediction server");
+
+              const routes_array = [];
+              response.routes.forEach(
+                function(route, route_index) {
+                  console.log("\tProcessing route:", route_index);
+                  // Each route dictionary contains a single key-value pair
+                  // The key is 'steps' and the value is a list of step objects.
+                  var current_route={};
+
+                  const steps_for_this_route = [];
+
+                  // Loop over all the legs (there should only ever be one...)
+                  route.legs.forEach(
+                    function(leg, leg_index) {
+                      console.log("\t\tProcessing leg:", leg_index);
+
+                      // Loop over all the steps for this leg...
+                      // There might be lots - but we're only ever interested in 'TRANSIT steps...
+                      leg.steps.forEach(
+                        function(step, step_index) {
+                          console.log("\t\t\tProcessing step:", step_index);
+
+                          // If this step is a 'TRANSIT' step then we grab the details
+                          // ... else we simply ignore it.
+                          if(step.travel_mode === 'TRANSIT'){
+                            console.log("\t\t\tTransit Step Located - Selecting");
+                            var stepForBackEnd = {
+                              distance : '',
+                              duration:'',
+                              transit_details:''
+                            };
+                            stepForBackEnd.distance = step.distance;  // this is a dictionary
+                            stepForBackEnd.duration =  step.duration;  // this is a dictionary
+                            stepForBackEnd.transit_details = step.transit;  // this is a dictionary
+                            steps_for_this_route.push(stepForBackEnd);
+                          }
+                        }
+                      )  // end of 'for each step'
+                    }
+                  )  // end of 'for each leg'
+
+                  // Populate the single required key-value pair for a route...
+                  current_route['steps'] = steps_for_this_route;
+                  // ... and then add that route object to the overall list of routes...
+                  console.log("\tFinished processing this route, identified " + steps_for_this_route.length + " TRANSIT steps.");
+                  routes_array.push(current_route);
+                }
+              )  // end of 'for each route'
+              // At this point - we should have built all our routes required for
+              // our json (the routes_array is the bulk of the work).  Prepare the
+              // final object for sending to the prediction engine:
+              const prediction_request = {};
+              prediction_request["title"] = "Journeyti.me Prediction Request";
+              prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request";
+              prediction_request["routes"] = routes_array;
+              console.log("Completed Prediction Requeset Objeect: ", prediction_request);
+              //this.form.journeyFromGoogle.routes.push(routesInfo) 
+            }
           }
-        }
-      )
+        )
+          
+        // this.journeyFromGoogle.push();
+        this.form.journeyFromGoogle = response.routes;
+        console.log("=============================+++++");
+        console.log(this.form.journeyFromGoogle);
+        console.log("=============================++++");
+        // this.$bus.$emit('GetAlljourney',response.routes);
+        // console.log(len);
+        this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.journeyFromGoogle)).then(
+          (resp) => {
+            let data = resp.data
+            console.log(data)
+>>>>>>> aa9d42d3bc4dd3cc2945c3ee17d7a2f04f2f751f
+          }
+        )
       },
       clearAll(){
         this.form.endPlace ="",
