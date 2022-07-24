@@ -338,7 +338,7 @@ def truncate_table(session, model):
     """
     print('        Truncating Table...')
     num_rows_deleted = session.query(model).delete()
-    print('        Resetting auto-increement id...' )
+    print('        Resetting auto-increment id...' )
     session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
     print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
 

@@ -86,7 +86,7 @@
         var myModal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
         myModal.hide();
 
-        await delay(500);
+        await delay(100);
 
         window.location = document.getElementById('downloadTarget').value;
       };
@@ -99,7 +99,7 @@
     <!-- Page content -->
     <div id="top" class="section-anchor"></div>
 
-    <h1>Journeyti.me API Reference</h1>
+    <h1 id="documentation_heading1">Journeyti.me API Reference</h1>
     <p>
       The journeyti.me prediction engine is free and available for anyone to use.
       Predicting journey times on public transport is a complex task.
@@ -268,13 +268,13 @@
             Original information on the various data sets taken from:
             https://developers.google.com/transit/gtfs/reference#agencytxt
         -->
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency')">Agency</a></h3>
+    <h3><a href="javascript:void(0);" id='agency_json' onclick="setDownloadTargetValueAndOpenModal('/agency')">Agency</a></h3>
     <p>
       Transit agencies with service represented in this dataset.
       Download the latest Agency dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='agency_dljson' onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='agency_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -338,14 +338,14 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar')">Calendar</a></h3>
+    <h3><a href="javascript:void(0);" id='calendar_json' onclick="setDownloadTargetValueAndOpenModal('/calendar')">Calendar</a></h3>
     <p>
       Service dates specified using a weekly schedule with start and end dates.
       This file is required unless all dates of service are defined in calendar_dates.txt
       Download the latest Calendar dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='calendar_dljson' onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='calendar_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -410,16 +410,16 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates')">Calendar Dates</a>
+    <h3><a href="javascript:void(0);" id='calendardates_json' onclick="setDownloadTargetValueAndOpenModal('/calendardates')">Calendar Dates</a>
     </h3>
     <p>
       Exceptions for the services defined in the calendar.txt. If calendar.txt
       is omitted, then calendar_dates.txt is required and must contain all dates
       of service.
       Download the latest Calendar Dates dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='calendardates_dljson' onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=csv')">.csv</a>
+      <a href="javascript:void(0);" id='calendardates_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=csv')">.csv</a>
       file.
     </p>
     <table class="table table-hover">
@@ -444,14 +444,14 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes')">Routes</a></h3>
+    <h3><a href="javascript:void(0);" id='routes_json' onclick="setDownloadTargetValueAndOpenModal('/routes')">Routes</a></h3>
     <p>
       Transit routes. A route is a group of trips that are displayed to riders
       as a single service.
       Download the latest Routes dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='routes_dljson' onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='routes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -493,14 +493,14 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes')">Shapes</a></h3>
+    <h3><a href="javascript:void(0);" id='shapes_json' onclick="setDownloadTargetValueAndOpenModal('/shapes')">Shapes</a></h3>
     <p>
       Rules for mapping vehicle travel paths, sometimes referred to as route
       alignments.
       Download the latest Shapes dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='shapes_dljson' onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='shapes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -543,14 +543,14 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops')">Stops</a></h3>
+    <h3><a href="javascript:void(0);" id='stops_json' onclick="setDownloadTargetValueAndOpenModal('/stops')">Stops</a></h3>
     <p>
       Stops where vehicles pick up or drop off riders. Also defines stations
       and station entrances.
       Download the latest Stops dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='stops_dljson' onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='stops_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -592,13 +592,13 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes')">Stop Times</a></h3>
+    <h3><a href="javascript:void(0);" id='stoptimes_json' onclick="setDownloadTargetValueAndOpenModal('/stoptimes')">Stop Times</a></h3>
     <p>
       Times that a vehicle arrives at and departs from stops for each trip.
       Download the latest Stop Times dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='stoptimes_dljson' onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='stoptimes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -665,13 +665,13 @@
     </table>
     <br />
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers')">Transfers</a></h3>
+    <h3><a href="javascript:void(0);" id='transfers_json' onclick="setDownloadTargetValueAndOpenModal('/transfers')">Transfers</a></h3>
     <p>
       Rules for making connections at transfer points between routes.
       Download the latest Transfers dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='transfers_dljson' onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='transfers_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
@@ -707,14 +707,14 @@
       </tr>
     </table>
     <hr>
-    <h3><a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips')">Trips</a></h3>
+    <h3><a href="javascript:void(0);" id='trips_json' onclick="setDownloadTargetValueAndOpenModal('/trips')">Trips</a></h3>
     <p>
       Trips for each route. A trip is a sequence of two or more stops that
       occur during a specific time period.
       Download the latest Trips dataset for Dublin as
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=json')">.json</a>
+      <a href="javascript:void(0);" id='trips_dljson' onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=json')">.json</a>
       or as a
-      <a href="javascript:void(0);" onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=csv')">.csv</a> file.
+      <a href="javascript:void(0);" id='trips_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=csv')">.csv</a> file.
     </p>
     <table class="table table-hover">
       <tr>
