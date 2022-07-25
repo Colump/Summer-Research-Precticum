@@ -559,6 +559,11 @@ def get_journey_time():
                 log.debug('\tProcessing step ' + str(step_idx) + '.')
                 
                 planned_time_s  = step['duration']['value']
+                # Extend the json to contain stop-by-stop route information...
+                # NOTE The mappings between Googles supplied data and the GTFSR
+                #      fields are *inferred* - I could not find documentation
+                #      guaranteeing the mappings.
+                route_name = step['transit_details']['line']['name']
                 if 'short_name' in step['transit_details']['line'].keys():
                     # Dublin Bus use route shortname to list the line id's...
                     route_shortname = step['transit_details']['line']['short_name']
@@ -587,12 +592,6 @@ def get_journey_time():
                     planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
                 log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
-                # Extend the json to contain stop-by-stop route information...
-                # NOTE The mappings between Googles supplied data and the GTFSR
-                #      fields are *inferred* - I could not find documentation
-                #      guaranteeing the mappings.
-                route_name = step['transit_details']['line']['name']
-                route_short_name = step['transit_details']['line']['short_name']
                 stop_headsign = step['transit_details']['headsign']
                 departure_time = datetime.now().time()
                 if isinstance(step['transit_details']['departure_time']['value'], str):
