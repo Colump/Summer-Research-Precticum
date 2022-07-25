@@ -31,6 +31,7 @@
                 <!-- 注意每个key要唯一 -->
             <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
                 you will take {{item.legs[0].steps[1].transit.line.short_name}} bus
+                total journey will spend {{}} time
                 <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
             </li>
     </ul>
@@ -62,6 +63,9 @@ export default {
             description: "Journeyti.me Step Journey Time Prediction Request",
             title: "Journeyti.me Prediction Request",
             routes:[]
+          },
+          backEndRespond:{
+
           },
           show : false,
           flag : 0,
@@ -127,59 +131,13 @@ export default {
         // console.log('submit!');
         this.$bus.$emit('GutStartPlace',this.form.startPlaceLatLng);
         this.$bus.$emit('GutEndPlace',this.form.endPlaceLatLng);
+        
 
         this.form.show = !this.form.show;
 
 //      在这里当点击go的时候我们需要获得directionService的数据
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
-<<<<<<< HEAD
-        directionsService.route({
-        origin: this.form.startPlaceLatLng,
-        destination: this.form.endPlaceLatLng,
-        travelMode: google.maps.TravelMode.TRANSIT,
-        provideRouteAlternatives:true
-      },
-      (response,status) => {
-        // console.log(this.form)
-        if(status === "OK"){
-          directionsRenderer.setDirections(response);
-          console.log("这是go下面的数据");
-          var routeArr = [];
-          response.routes.forEach(function(route){
-            var stepArr = [];
-            route.legs[0].steps.forEach(function(step){
-              if(step.travel_mode === 'TRANSIT'){
-                var stepForBackEnd = {
-                  distance : '',
-                  duration:'',
-                  transit:''
-                }
-                stepForBackEnd.distance = step.distance;  // this is a dictionary
-                stepForBackEnd.duration =  step.duration  // this is a dictionary
-                stepForBackEnd.transit = step.transit;  // this is a dictionary
-              }
-              stepArr.push(stepForBackEnd)
-            })
-            routeArr.push(stepArr)
-          })
-          this.form.toBackendInfo.routes = routeArr;
-          console.log("=============================+++++new");
-          console.log(JSON.stringify(this.form.toBackendInfo.routes));
-          console.log("=============================++++new");
-          this.form.journeyFromGoogle = response.routes
-          console.log("=============================+++++");
-          console.log(this.form.journeyFromGoogle);
-          console.log("=============================++++");
-          // this.$bus.$emit('GetAlljourney',response.routes);
-          // console.log(len);
-            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo.routes)).then(
-              (resp) => {
-                  let data = resp.data
-                  console.log(data)
-                  }
-            )
-=======
         const results = directionsService.route(
           {
             origin: this.form.startPlaceLatLng,
@@ -252,25 +210,38 @@ export default {
               prediction_request["routes"] = routes_array;
               console.log("Completed Prediction Requeset Objeect: ", prediction_request);
               //this.form.journeyFromGoogle.routes.push(routesInfo) 
+              this.form.toBackendInfo = prediction_request;
             }
+            this.form.journeyFromGoogle = response.routes;
+            console.log("=============================+++++");
+            console.log(this.form.journeyFromGoogle);
+            console.log("=============================++++");
+            console.log("---------------------------------")
+            console.log(JSON.stringify(this.form.toBackendInfo))
+            console.log("---------------------------------")
+            
+            this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
+
+            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
+            { headers: {'Content-Type': 'application/json',}}).then(
+                (resp) => {
+                  let data = resp.data
+                  console.log("---------------------------------****")
+                  console.log(data)
+                  this.form.backEndRespond = data;
+                  console.log("---------------------------------****")
+              }
+            )
+            
           }
         )
           
         // this.journeyFromGoogle.push();
-        this.form.journeyFromGoogle = response.routes;
-        console.log("=============================+++++");
-        console.log(this.form.journeyFromGoogle);
-        console.log("=============================++++");
+        
         // this.$bus.$emit('GetAlljourney',response.routes);
         // console.log(len);
-        this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.journeyFromGoogle)).then(
-          (resp) => {
-            let data = resp.data
-            console.log(data)
->>>>>>> aa9d42d3bc4dd3cc2945c3ee17d7a2f04f2f751f
-          }
-        )
-      },
+        
+    },
       clearAll(){
         this.form.endPlace ="",
         this.form.endPlaceLatLng ="",
@@ -289,7 +260,13 @@ export default {
     watch:{
       flag(){
         this.$bus.$emit('GetRoute',this.form.flag);
+      },
+      journeyFromGoogle(){
+        // 先将toBackendInfo传入站到站展示组件（尝试总线是否可以联通）如果这个ok等axios好了之后再去连接data数据
+        this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
       }
+      
+            
     }
 }
 </script>
