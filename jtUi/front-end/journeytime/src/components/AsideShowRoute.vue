@@ -39,6 +39,13 @@ export default {
           // timestamp: '2018-04-03 20:46'
         }]
       };
+    },
+    mounted(){
+      this.$bus.$on('stopBystopInfo',(data)=>{
+        this.activities = data
+        console.log("stop by stop model ======")
+        console.log(data)
+      })
     }
 }
     
