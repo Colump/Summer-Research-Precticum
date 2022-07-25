@@ -564,6 +564,7 @@ def get_journey_time():
                 #      fields are *inferred* - I could not find documentation
                 #      guaranteeing the mappings.
                 route_name = step['transit_details']['line']['name']
+                route_shortname = ''
                 if 'short_name' in step['transit_details']['line'].keys():
                     # Dublin Bus use route shortname to list the line id's...
                     route_shortname = step['transit_details']['line']['short_name']
