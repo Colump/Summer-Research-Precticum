@@ -106,6 +106,7 @@ export default {
 }
 .el-menu {
   font-family: element-icons!important;
+  background-color: rgb(0, 140, 255);
 
 }
 </style>
