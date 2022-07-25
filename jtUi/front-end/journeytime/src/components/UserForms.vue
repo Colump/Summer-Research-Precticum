@@ -133,53 +133,6 @@ export default {
 //      在这里当点击go的时候我们需要获得directionService的数据
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer();
-<<<<<<< HEAD
-        directionsService.route({
-        origin: this.form.startPlaceLatLng,
-        destination: this.form.endPlaceLatLng,
-        travelMode: google.maps.TravelMode.TRANSIT,
-        provideRouteAlternatives:true
-      },
-      (response,status) => {
-        // console.log(this.form)
-        if(status === "OK"){
-          directionsRenderer.setDirections(response);
-          console.log("这是go下面的数据");
-          var routeArr = [];
-          response.routes.forEach(function(route){
-            var stepArr = [];
-            route.legs[0].steps.forEach(function(step){
-              if(step.travel_mode === 'TRANSIT'){
-                var stepForBackEnd = {
-                  distance : '',
-                  duration:'',
-                  transit:''
-                }
-                stepForBackEnd.distance = step.distance;  // this is a dictionary
-                stepForBackEnd.duration =  step.duration  // this is a dictionary
-                stepForBackEnd.transit = step.transit;  // this is a dictionary
-              }
-              stepArr.push(stepForBackEnd)
-            })
-            routeArr.push(stepArr)
-          })
-          this.form.toBackendInfo.routes = routeArr;
-          console.log("=============================+++++new");
-          console.log(JSON.stringify(this.form.toBackendInfo.routes));
-          console.log("=============================++++new");
-          this.form.journeyFromGoogle = response.routes
-          console.log("=============================+++++");
-          console.log(this.form.journeyFromGoogle);
-          console.log("=============================++++");
-          // this.$bus.$emit('GetAlljourney',response.routes);
-          // console.log(len);
-            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo.routes)).then(
-              (resp) => {
-                  let data = resp.data
-                  console.log(data)
-                  }
-            )
-=======
         const results = directionsService.route(
           {
             origin: this.form.startPlaceLatLng,
@@ -267,7 +220,6 @@ export default {
           (resp) => {
             let data = resp.data
             console.log(data)
->>>>>>> aa9d42d3bc4dd3cc2945c3ee17d7a2f04f2f751f
           }
         )
       },
