@@ -15,6 +15,7 @@ sys.path.insert(0, jt_testing_module_dir)
 from datetime import datetime
 from jt_utils import load_credentials
 import logging
+import requests
 import traceback
 
 # For python testing without specifying chrome driver location:
@@ -213,8 +214,12 @@ def test_file_download_links(driver, **kwargs):
 
 
 def test_restful_services(driver, **kwargs):
-    
-    docs_url = TEST_JTAPI_URL + '/documentation.html'
+    """Test the restful services exposed by the jtApi back end.
+
+    None of the tests here require selenium as they simply post JSON
+    to the endpoint exposed by the back end and then inspect the JSON
+    response, looking for key artifacts.
+    """
 
     # Set a default wait of 10 seconds... this means we wait a 'maximum' of
     # ten seconds before throwing an exception...
@@ -227,18 +232,20 @@ def test_restful_services(driver, **kwargs):
         if kwargs[TEST_MODE] == TEST_MODE_FULL:
             filenames.append(CONST_LRG_FILENAMES)
 
-    # Simple endpoint to submission of json and return it to the user...
-    # '/update_model_list.do', methods=['GET'])
-    # '/get_journey_time.do', methods=['POST'])
+    # Update the list of models installed on the server
+    # '/update_model_list.do', methods=['GET']
 
-    # "/check_username_available.do", methods=['POST'])
-    # "/register.do", methods=['POST'])
-    # "/login.do", methods=['POST'])
-    # "/update_user.do", methods=['POST'])
-    # "/get_profile_picture.do", methods=['GET'])
 
-    time.sleep(10)  # We do a hard wait here to let ?most' file downloads finish...
-    driver.close()  # Close the browser window that the driver has focus of
+    # '/get_journey_time.do', methods=['POST']
+    print('\tTesting Prediction Request')
+    prediction_request_dict = create_prediction_request_dict()
+    prediction_response = requests.post( \
+        TEST_JTAPI_URL + '/get_journey_time.do', json=prediction_request_dict \
+            )
+    print('\tPrediction Response Status Code ->', prediction_response.status_code)
+    ## LOOK OR TEST VALUES HERE!!!!!!
+    prediction_json = prediction_response.json()
+    print('\tPrediction Request Tests Passed.')
 
     return
 
@@ -293,6 +300,239 @@ def empty_download_dir():
     
     return
 
+def create_prediction_request_dict():
+    """Return a valid journey prediction request dictionary
+
+    Manually coded so we can alter values as needed.
+    """
+
+    # Perhaps would have been better to pickle a real prediction request - but then we
+    # wouldn't have been able to alter values as needed when testing.
+    prediction_request = {}
+    prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request"
+    prediction_request["title"]       = "Journeyti.me Prediction Request"
+    prediction_request["routes"]      = []
+    
+    route          = {}
+    route["steps"] = []
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "6.0 km"
+    step["distance"]["value"] = 5979
+    step["duration"] = {}
+    step["duration"]["text"]  = "22 mins"
+    step["duration"]["value"] = 1295
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.347221
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.25517
+    step["transit_details"]["arrival_stop"]["name"] = "Tara Street"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "4:38pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657899485
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3094124
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.218878399999999
+    step["transit_details"]["departure_stop"]["name"] = "UCD Belfield"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:16pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Maynooth"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "University College Dublin - Kingsbury Estate"
+    step["transit_details"]["line"]["short_name"] = "X25"
+    step["transit_details"]["num_stops"] = 16
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "12.5 km"
+    step["distance"]["value"] = 12458
+    step["duration"] = {}
+    step["duration"]["text"]  = "40 mins"
+    step["duration"]["value"] = 2386
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.4406702
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.1763775
+    step["transit_details"]["arrival_stop"]["name"] = "Auburn House, stop 3579"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "5:29pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657902586
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.35076979999999
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.253899199999999
+    step["transit_details"]["departure_stop"]["name"] = "Moland Street, stop 1184"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:50pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Portmarnock"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "Talbot Street (opp Bank of Ireland) - Coast Road"
+    step["transit_details"]["line"]["short_name"] = "42"
+    step["transit_details"]["num_stops"] = 35
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    prediction_request["routes"].append(route)
+    route          = {}
+    route["steps"] = []
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "6.7 km"
+    step["distance"]["value"] = 6673
+    step["duration"] = {}
+    step["duration"]["text"]  = "24 mins"
+    step["duration"]["value"] = 1413
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.3456456
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.2593052
+    step["transit_details"]["arrival_stop"]["name"] = "Westmoreland Street, stop 320"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "4:30pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657899032
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3094124
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.218878399999999
+    step["transit_details"]["departure_stop"]["name"] = "UCD Belfield"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:06pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Phoenix Pk"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "Phoenix Park Gate - University College Dublin"
+    step["transit_details"]["line"]["short_name"] = "46A"
+    step["transit_details"]["num_stops"] = 16
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "0.5 km"
+    step["distance"]["value"] = 537
+    step["duration"] = {}
+    step["duration"]["text"]  = "2 mins"
+    step["duration"]["value"] = 102
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.3505441
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.2507091
+    step["transit_details"]["arrival_stop"]["name"] = "Connolly"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "4:44pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657899866
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3482354
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.2561569
+    step["transit_details"]["departure_stop"]["name"] = "Eden Quay, stop 299"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:42pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Clongriffin"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "Main Street - Ballycullen Road (Hunter's Avenue)"
+    step["transit_details"]["line"]["short_name"] = "15"
+    step["transit_details"]["num_stops"] = 1
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "12.0 km"
+    step["distance"]["value"] = 12001
+    step["duration"] = {}
+    step["duration"]["text"]  = "37 mins"
+    step["duration"]["value"] = 2226
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.4406702
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.1763775
+    step["transit_details"]["arrival_stop"]["name"] = "Auburn House, stop 3579"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "5:29pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657902586
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3505441
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.2507091
+    step["transit_details"]["departure_stop"]["name"] = "Connolly"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:52pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Portmarnock"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "Talbot Street (opp Bank of Ireland) - Coast Road"
+    step["transit_details"]["line"]["short_name"] = "42"
+    step["transit_details"]["num_stops"] = 34
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    prediction_request["routes"].append(route)
+    route          = {}
+    route["steps"] = []
+
+    step = {}
+    step["distance"] = {}
+    step["distance"]["text"]  = "29 km"
+    step["distance"]["value"] = 28968
+    step["duration"] = {}
+    step["duration"]["text"]  = "1 hour 19 mins"
+    step["duration"]["value"] = 4737
+    step["transit_details"] = {}
+    step["transit_details"]["arrival_stop"] = {}
+    step["transit_details"]["arrival_stop"]["location"] = {}
+    step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.4442457
+    step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.152287299999999
+    step["transit_details"]["arrival_stop"]["name"] = "The Hill Malahide, stop 3626"
+    step["transit_details"]["arrival_time"] = {}
+    step["transit_details"]["arrival_time"]["text"] = "5:53pm"
+    step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["arrival_time"]["value"] = 1657904037
+    step["transit_details"]["departure_stop"] = {}
+    step["transit_details"]["departure_stop"]["location"] = {}
+    step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3081813
+    step["transit_details"]["departure_stop"]["location"]["lng"] = -6.230057400000001
+    step["transit_details"]["departure_stop"]["name"] = "Ucd Sports Centre, stop 877"
+    step["transit_details"]["departure_time"] = {}
+    step["transit_details"]["departure_time"]["text"] = "4:35pm"
+    step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+    step["transit_details"]["departure_time"]["value"] = 1657899843
+    step["transit_details"]["headsign"] = "Coast Road"
+    step["transit_details"]["line"] = {}
+    step["transit_details"]["line"]["name"] = "Wendell Avenue - University College of Dublin UCD"
+    step["transit_details"]["line"]["short_name"] = "142"
+    step["transit_details"]["num_stops"] = 41
+    step["travel_mode"] = "TRANSIT"
+    route["steps"].append(step)
+
+    prediction_request["routes"].append(route)
+
+    return prediction_request
+
+
 #===============================================================================
 #===============================================================================
 #===============================================================================
@@ -308,13 +548,18 @@ def test_jtapi(driver, **kwargs):
     test_file_download_links(driver, **kwargs)
 
     # Most complex case - test the restful services.
-    #test_restful_services(driver, **kwargs)
+    test_restful_services(driver, **kwargs)
 
 def test_jtui(driver, **kwargs):
-    """Test all the endpoints on the UI server
+    """Test the UI software
 
+    There is a focus on functionality that calls the back-end (RESTful) services.
     """
-
+    # "/check_username_available.do", methods=['POST'])
+    # "/register.do", methods=['POST'])
+    # "/login.do", methods=['POST'])
+    # "/update_user.do", methods=['POST'])
+    # "/get_profile_picture.do", methods=['GET'])
     pass
 
 def test_using_chrome(download_dir, **kwargs):
