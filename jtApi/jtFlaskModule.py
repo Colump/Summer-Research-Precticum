@@ -559,14 +559,32 @@ def get_journey_time():
                 log.debug('\tProcessing step ' + str(step_idx) + '.')
                 
                 planned_time_s  = step['duration']['value']
-                route_shortname = step['transit_details']['line']['short_name']
+                if 'short_name' in step['transit_details']['line'].keys():
+                    # Dublin Bus use route shortname to list the line id's...
+                    route_shortname = step['transit_details']['line']['short_name']
+                else:
+                    # Other operators like Aircoach seem to use the name...
+                    route_shortname = step['transit_details']['line']['name']
                 route_shortname_pickle_exists = True if route_shortname in AVAILABLE_MODEL_ROUTE_SHORTNAMES else False
 
-                # Google Directions API times are 'timestamp' expressed in seconds
+                # Dublin Bus times are 'timestamp' expressed in seconds
                 # elapsed since the Unix epoch, 1970-01-01 00:00:00 UTC
                 # Using datetime to construct our date seems to nicely cater
                 # for daylight savings times, differences from UTC etc. ...
-                planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
+                # -
+                # Aircoach on the other hand appear to publish their times as strings
+                # So... we just fudge around it...
+                planned_departure_datetime = datetime.now()
+                if isinstance(step['transit_details']['departure_time']['value'], str):
+                    dep_datetime_str = step['transit_details']['departure_time']['value']
+                    # We strip off the trailing 'GMT+0100' etc from the string before processing...
+                    last_period = dep_datetime_str.rfind('.')
+                    dep_datetime_str = dep_datetime_str[:last_period]
+                    planned_departure_datetime = \
+                        datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S')
+                else:
+                    # Dublin bus scenario...
+                    planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
                 log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
                 # Extend the json to contain stop-by-stop route information...
@@ -576,7 +594,17 @@ def get_journey_time():
                 route_name = step['transit_details']['line']['name']
                 route_short_name = step['transit_details']['line']['short_name']
                 stop_headsign = step['transit_details']['headsign']
-                departure_time = datetime.fromtimestamp(step['transit_details']['departure_time']['value']).time()
+                departure_time = datetime.now().time()
+                if isinstance(step['transit_details']['departure_time']['value'], str):
+                    dep_datetime_str = step['transit_details']['departure_time']['value']
+                    # We strip off the trailing 'GMT+0100' etc from the string before processing...
+                    last_period = dep_datetime_str.rfind('.')
+                    dep_datetime_str = dep_datetime_str[:last_period]
+                    departure_time = \
+                        datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S').time()
+                else:
+                    # Dublin bus scenario...
+                    departure_time = datetime.fromtimestamp(step['transit_details']['departure_time']['value']).time()
                 departure_stop_name = step['transit_details']['departure_stop']['name']
                 departure_stop_lat = step['transit_details']['departure_stop']['location']['lat']
                 departure_stop_lon = step['transit_details']['departure_stop']['location']['lng']
@@ -797,4 +825,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

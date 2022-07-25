@@ -205,23 +205,32 @@ export default {
               prediction_request["routes"] = routes_array;
               console.log("Completed Prediction Requeset Objeect: ", prediction_request);
               //this.form.journeyFromGoogle.routes.push(routesInfo) 
-            }
+              this.form.toBackendInfo = prediction_request;
+            } // End of Status OK
+
+            // this.journeyFromGoogle.push();
+            this.form.journeyFromGoogle = response.routes;
+            console.log("=============================+++++");
+            console.log(this.form.journeyFromGoogle);
+            console.log("=============================++++");
+            // this.$bus.$emit('GetAlljourney',response.routes);
+            // console.log(len);
+            this.axios.post('/api/get_journey_time.do',
+              JSON.stringify(this.form.toBackendInfo),
+              { headers: {'Content-Type': 'application/json',} }
+              ).then
+            (
+              (resp) => {
+                let data = resp.data
+                console.log("#########################################");
+                console.log(data)
+                console.log("#########################################");
+              }
+            )
           }
         )
-          
-        // this.journeyFromGoogle.push();
-        this.form.journeyFromGoogle = response.routes;
-        console.log("=============================+++++");
-        console.log(this.form.journeyFromGoogle);
-        console.log("=============================++++");
-        // this.$bus.$emit('GetAlljourney',response.routes);
-        // console.log(len);
-        this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.journeyFromGoogle)).then(
-          (resp) => {
-            let data = resp.data
-            console.log(data)
-          }
-        )
+  
+
       },
       clearAll(){
         this.form.endPlace ="",
