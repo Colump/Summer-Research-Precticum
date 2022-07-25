@@ -3,11 +3,11 @@
       <el-col :span="20">
         <div class="grid-content bg-purple">
           <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect">
-            <el-menu-item index="1" >Map</el-menu-item>
-            <el-menu-item index="2" >Register</el-menu-item>
-            <el-menu-item index="5" >Log In</el-menu-item>
-            <el-menu-item index="3" >About Us</el-menu-item>
-            <el-menu-item index="4" >API</el-menu-item>
+            <el-menu-item index="1" id="mainnav-map">Map</el-menu-item>
+            <el-menu-item index="2" id="mainnav-register" >Register</el-menu-item>
+            <el-menu-item index="5" id="mainnav-log-in">Log In</el-menu-item>
+            <el-menu-item index="3" id="mainnav-about-us">About Us</el-menu-item>
+            <el-menu-item index="4" id="mainnav-API">API</el-menu-item>
           </el-menu>
         </div>
       </el-col>

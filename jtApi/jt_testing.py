@@ -15,7 +15,11 @@ sys.path.insert(0, jt_testing_module_dir)
 from datetime import datetime
 from jt_utils import load_credentials
 import logging
+from models import JT_User
 import requests
+import sqlalchemy as db
+from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker
 import traceback
 
 # For python testing without specifying chrome driver location:
@@ -76,7 +80,7 @@ TEST_MODE      = 'test_mode'
 TEST_MODE_FULL = 'Full'
 
 #===============================================================================
-#===============================================================================
+#===   jtApi   =================================================================
 #===============================================================================
 
 
@@ -221,6 +225,8 @@ def test_restful_services(driver, **kwargs):
     response, looking for key artifacts.
     """
 
+    print('Testing RESTful services')
+
     # Set a default wait of 10 seconds... this means we wait a 'maximum' of
     # ten seconds before throwing an exception...
     wait = WebDriverWait(driver, 10)
@@ -232,8 +238,17 @@ def test_restful_services(driver, **kwargs):
         if kwargs[TEST_MODE] == TEST_MODE_FULL:
             filenames.append(CONST_LRG_FILENAMES)
 
-    # Update the list of models installed on the server
     # '/update_model_list.do', methods=['GET']
+    print('\tTesting Forced Update of stored model list')
+    model_update_response = requests.get(TEST_JTAPI_URL + '/update_model_list.do')
+    print('\tModel Update Response Status Code (expect \'200\') ->', model_update_response.status_code)
+    # The JSON response for the model update should be a non-empty list.
+    model_update_json = model_update_response.json()
+    if type(model_update_json) == list and len(model_update_json) > 0:
+        print('\tModel Update Request Tests Passed.')
+    else:
+        print('\tModel Update Request Tests FAILED!')
+    print('\t-')
 
 
     # '/get_journey_time.do', methods=['POST']
@@ -242,10 +257,260 @@ def test_restful_services(driver, **kwargs):
     prediction_response = requests.post( \
         TEST_JTAPI_URL + '/get_journey_time.do', json=prediction_request_dict \
             )
-    print('\tPrediction Response Status Code ->', prediction_response.status_code)
-    ## LOOK OR TEST VALUES HERE!!!!!!
+    print('\tPrediction Response Status Code (expect \'200\') ->', prediction_response.status_code)
+    # The following long statement essentially validates the structure of the
+    # start of the response - and ensures the values are sane.
     prediction_json = prediction_response.json()
-    print('\tPrediction Request Tests Passed.')
+    if 'title' in prediction_json.keys() \
+        and prediction_json['title'] == 'Journeyti.me Prediction Response' \
+        and 'description' in prediction_json.keys() \
+        and prediction_json['description'] == 'Journeyti.me Step-by-Step Prediction Response' \
+        and 'routes' in prediction_json.keys() \
+        and type(prediction_json['routes']) == list \
+        and len(prediction_json['routes']) > 0 \
+        and type(prediction_json['routes'][0]) == dict \
+        and 'steps' in prediction_json['routes'][0].keys() \
+        and type(prediction_json['routes'][0]['steps']) == list \
+        and len(prediction_json['routes'][0]['steps']) > 0 \
+        and type(prediction_json['routes'][0]['steps'][0]) == dict \
+        and 'predicted_duration' in prediction_json['routes'][0]['steps'][0].keys() \
+        and type(prediction_json['routes'][0]['steps'][0]['predicted_duration']) == dict \
+        and 'text' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
+        and len(prediction_json['routes'][0]['steps'][0]['predicted_duration']['text']) > 0 \
+        and 'value' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
+        and prediction_json['routes'][0]['steps'][0]['predicted_duration']['value'] >= 0:
+
+        # Only if we pass the 'the start of the message looks sane at least' test
+        # do we bother to iterate over the message, looking for predicted durations...
+        # -
+        # If any of the above tests fail - even once - then we consider the test
+        # a failure.  This way the entire message is parsed per test
+        valid = True
+        if 'routes' in prediction_json.keys():
+            for route in prediction_json['routes']:
+                if 'steps' in route.keys():
+                    for step in route['steps']:
+                        if 'predicted_duration' in step.keys():
+                            if 'text' in step['predicted_duration'].keys():
+                                if len(step['predicted_duration']['text']) > 0:
+                                    pass
+                                else:
+                                    valid = False
+                            else:
+                                valid = False
+                            if 'value' in step['predicted_duration'].keys():
+                                if step['predicted_duration']['value'] > 0:
+                                    pass
+                                else:
+                                    valid = False
+                            else:
+                                valid = False
+                        else:
+                            valid = False
+                else:
+                    valid = False
+        else:
+            valid = False
+
+        if valid:
+            print('\tPrediction Request Tests Passed.')
+        else:
+            print('\tPrediction Request Tests FAILED!')
+    print('\t-')
+
+    # "/check_username_available.do", methods=['POST'])
+    print('\tTesting username availability function (we test for a username we know exists)')
+    username_availability_response = requests.post(TEST_JTAPI_URL + '/check_username_available.do?Username=flintdk')
+    print('\tUsername Availability Response Status Code (expect \'401\') ->', username_availability_response.status_code)
+    # The JSON response for the userename availability should be a non-empty list.
+    username_availability_json = username_availability_response.json()
+    valid = True
+    if 'success' in username_availability_json.keys():
+        if username_availability_json['success'] in (True, False):
+            pass
+        else:
+            valid = False
+    else:
+        valid = False
+    
+    if valid:
+        print('\tModel Update Request Tests Passed.')
+    else:
+        print('\tModel Update Request Tests FAILED!')
+    print('\t-')
+
+    # "/get_profile_picture.do", methods=['GET'])
+    print('\tTesting profile picture retrieval function (for user \'flintdk\')')
+    # We don't want to actually get the image - what would we do with it anyway? 
+    # - it's enough to get the headers...
+    #profile_pic_response = requests.get(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
+    profile_pic_response = requests.head(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
+    header = profile_pic_response.headers
+    print('\tProfile Picture Retrieval Response Status Code (expect \'200\') ->', profile_pic_response.status_code)
+    # The JSON response for the userename availability should be a non-empty list.
+    content_type = header.get('content-type')
+    if content_type.startswith('image/'):
+        print('\tProfile Picture Retrieval Request Tests Passed.')
+    else:
+        print('\tProfile Picture Retrieval Request Tests FAILED!')
+    print('\t-')
+
+    return
+
+#===============================================================================
+#===   jtUi   ==================================================================
+#===============================================================================
+
+def test_register(driver):
+    """Test the static pages on the API site are available
+
+    We don't expect these to ever break - but we test them nonetheless
+    """
+    print('JT_Testing: Validating jtUi Register page')
+
+    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
+    # ten seconds before throwing an exception...
+    wait = WebDriverWait(driver, 10)
+
+    home_url = TEST_JTUI_URL
+    testing_username = 'flintdk99'
+    testing_password = 'ferrocerium-muirecorref'
+    driver.get(home_url)
+    try:
+        print('\tMoving to Registration page')
+        # Wait until the register is in the dom before clicking...
+        nav_register_element = wait.until(
+            EC.presence_of_element_located((By.ID, "mainnav-register"))
+        )
+        nav_register_element.click()
+        print('\tPopulating form fields')
+        # Again... wait until the account input is in the dom before populating...
+        account_input = driver.find_element(By.ID, 'register-loginname')
+        account_input.send_keys(testing_username)
+        # If the first input field is available... we just assume the rest are too!
+        nickname_input = driver.find_element(By.ID, 'register-nickname')
+        nickname_input.send_keys('Ferrocerium')
+        password_input = driver.find_element(By.ID, 'register-password')
+        password_input.send_keys(testing_password)
+        conf_password_input = driver.find_element(By.ID, 'register-confirm-password')
+        conf_password_input.send_keys(testing_password)
+        register_submit = driver.find_element(By.ID, 'register-register')
+        print('\tSubmitting registration')
+        register_submit.click()
+
+        ## ADD MORE CHECKS ONCE THE PROCESS IS COMPLETE!!!!
+    except:
+        print(traceback.format_exc())
+        print('\tERROR during registration process.')
+    else:
+        print('\tRegistration Function Test passed.')
+        # Delete the user we created ("flintdk99") here...
+        print('\t\tRemoving temporary user (' + testing_username + ')...')
+        # Load our private credentials from a JSON file
+        credentials = load_credentials()
+        try:
+            # We only want to initialise the engine and create a db connection once
+            # as its expensive (i.e. time consuming)
+            connectionString = "mysql+mysqlconnector://" \
+                + credentials['DB_USER'] + ":" + credentials['DB_PASS'] \
+                + "@" \
+                + credentials['DB_SRVR'] + ":" + credentials['DB_PORT']\
+                + "/" + credentials['DB_NAME'] + "?charset=utf8mb4"
+            #print('Connection String: ' + connectionString + '\n')
+            engine = db.create_engine(connectionString)
+            # engine.begin() runs a transaction
+            with engine.begin() as connection:
+                Session = sessionmaker(bind=engine)
+                session = Session()
+                result = session.execute(
+                    select(JT_User).where(JT_User.username == testing_username)
+                    )
+                user = result.fetchone()[0]
+                session.delete(user)
+            # Make sure to close the connection - a memory leak on this would kill us...
+            connection.close()
+            print('\t\tTemporary user (' + testing_username + ') removed.')
+        except:
+            # if there is any problem, print the traceback
+            print(traceback.format_exc())
+
+    return
+
+def test_login(driver):
+    print('JT_Testing: Validating jtUi Login page')
+
+    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
+    # ten seconds before throwing an exception...
+    wait = WebDriverWait(driver, 10)
+
+    home_url = TEST_JTUI_URL
+    testing_username = 'flintdk'
+    testing_password = 'ferrocerium-muirecorref'
+    driver.get(home_url)
+    try:
+        print('\tMoving to Login page')
+        # Wait until the register is in the dom before clicking...
+        nav_register_element = wait.until(
+            EC.presence_of_element_located((By.ID, "mainnav-log-in"))
+        )
+        nav_register_element.click()
+        print('\tPopulating form fields')
+        # Again... wait until the loginname input is in the dom before populating...
+        account_input = wait.until(
+            EC.presence_of_element_located((By.ID, "login-loginname"))
+        )
+        account_input.send_keys(testing_username)
+        password_input = driver.find_element(By.ID, 'login-password')
+        password_input.send_keys(testing_password)
+        register_submit = driver.find_element(By.ID, 'login-login')
+        print('\tAttempting to Log In...')
+        register_submit.click()
+
+        ## ADD MORE CHECKS ONCE THE PROCESS IS COMPLETE!!!!
+    except:
+        print(traceback.format_exc())
+        print('\tERROR during registration process.')
+    else:
+        print('\tLog In Function Test passed.')
+
+    return
+
+def test_update_user(driver):
+    print('JT_Testing: Validating jtUi Update User page')
+
+    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
+    # ten seconds before throwing an exception...
+    wait = WebDriverWait(driver, 10)
+
+    # home_url = TEST_JTUI_URL
+    # testing_username = 'flintdk'
+    # testing_password = 'ferrocerium-muirecorref'
+    # driver.get(home_url)
+    # try:
+    #     print('\tMoving to Login page')
+    #     # Wait until the register is in the dom before clicking...
+    #     nav_register_element = wait.until(
+    #         EC.presence_of_element_located((By.ID, "mainnav-log-in"))
+    #     )
+    #     nav_register_element.click()
+    #     print('\tPopulating form fields')
+    #     # Again... wait until the loginname input is in the dom before populating...
+    #     account_input = wait.until(
+    #         EC.presence_of_element_located((By.ID, "login-loginname"))
+    #     )
+    #     account_input.send_keys(testing_username)
+    #     password_input = driver.find_element(By.ID, 'login-password')
+    #     password_input.send_keys(testing_password)
+    #     register_submit = driver.find_element(By.ID, 'login-login')
+    #     print('\tAttempting to Log In...')
+    #     register_submit.click()
+
+    #     ## ADD MORE CHECKS ONCE THE PROCESS IS COMPLETE!!!!
+    # except:
+    #     print(traceback.format_exc())
+    #     print('\tERROR during registration process.')
+    # else:
+    #     print('\tLog In Function Test passed.')
 
     return
 
@@ -268,7 +533,7 @@ def center_element_on_screen_by_id(element_id, driver):
     scroll_y_by = desired_y - current_y
     driver.execute_script("window.scrollBy(0, arguments[0]);", scroll_y_by)
     log.debug('scroll complete, scrolled by: ', scroll_y_by)
-    time.sleep(1)
+    time.sleep(1.5)  # This seems like a looong wait... but... it's also required!
 
     element = wait.until(
         EC.visibility_of_element_located((By.ID, element_id))
@@ -550,17 +815,21 @@ def test_jtapi(driver, **kwargs):
     # Most complex case - test the restful services.
     test_restful_services(driver, **kwargs)
 
+    return
+
 def test_jtui(driver, **kwargs):
     """Test the UI software
 
     There is a focus on functionality that calls the back-end (RESTful) services.
     """
-    # "/check_username_available.do", methods=['POST'])
     # "/register.do", methods=['POST'])
+    test_register(driver)
     # "/login.do", methods=['POST'])
+    test_login(driver)
     # "/update_user.do", methods=['POST'])
-    # "/get_profile_picture.do", methods=['GET'])
-    pass
+    test_update_user(driver)
+
+    return
 
 def test_using_chrome(download_dir, **kwargs):
     # (ALTERNATIVE TO BELOW: Add driver location to path - always only one driver at a time!)
@@ -607,7 +876,7 @@ def test_using_chrome(download_dir, **kwargs):
     # Request element information
     # value = search_box.get_attribute("value")
 
-    test_jtapi(driver, **kwargs)
+    #test_jtapi(driver, **kwargs)
 
     test_jtui(driver, **kwargs)
 

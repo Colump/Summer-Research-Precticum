@@ -7,14 +7,14 @@
     label-position="left"
     class="register-container">
         <h3 class="login_title">
-            Register new account
+            Register&nbsp;
             <el-button @click="toLogin()">Log In</el-button>
         </h3>
         <el-form-item  prop="LoginName"  type="text">
-            <el-input v-model="ruleForm.LoginName" placeholder="Account" prefix-icon="el-icon-user"></el-input>
+            <el-input v-model="ruleForm.LoginName" placeholder="Account" prefix-icon="el-icon-user" id="register-loginname"></el-input>
         </el-form-item>
         <el-form-item  prop="name" type="text">
-            <el-input v-model="ruleForm.name" placeholder="Nickname" prefix-icon="el-icon-user"></el-input>
+            <el-input v-model="ruleForm.name" placeholder="Nickname" prefix-icon="el-icon-user" id="register-nickname"></el-input>
         </el-form-item>
         <el-form-item label="" prop="password">
             <el-input 
@@ -23,16 +23,16 @@
             autocomplete="off"
             placeholder="Password"
             prefix-icon="el-icon-lock"
-            >
+            id="register-password">
             </el-input>
         </el-form-item>
         <el-form-item  prop="checkPass">
-            <el-input placeholder="Confirm Password" type="password" v-model="ruleForm.checkPass" autocomplete="off" prefix-icon="el-icon-lock"></el-input>
+            <el-input placeholder="Confirm Password" type="password" v-model="ruleForm.checkPass" autocomplete="off" prefix-icon="el-icon-lock" id="register-confirm-password"></el-input>
         </el-form-item>
         
         <el-form-item>
-            <el-button type="primary" style="background:#505458 ;border:none" @click="submitForm(ruleForm)">Register</el-button>
-            <el-button @click="resetForm('ruleForm')">Reset</el-button>
+            <el-button type="primary" style="background:#505458 ;border:none" @click="submitForm(ruleForm)" id="register-register">Register</el-button>
+            <el-button @click="resetForm('ruleForm')" id="register-reset">Reset</el-button>
         </el-form-item>
     </el-form>
 </div>
@@ -44,7 +44,7 @@ export default {
     data() {
       var validatePass = (rule, value, callback) => {
         if (value === '') {
-          callback(new Error('enter you password place!'));
+          callback(new Error('Enter your password please!'));
         } else {
           if (this.ruleForm.checkPass !== '') {
             this.$refs.ruleForm.validateField('checkPass');
@@ -54,7 +54,7 @@ export default {
       };
       var validatePass2 = (rule, value, callback) => {
         if (value === '') {
-          callback(new Error('enter you password again place!'));
+          callback(new Error('Enter your password again please!'));
         } else if (value !== this.ruleForm.password) {
           callback(new Error('The two passwords are inconsistent!'));
         } else {

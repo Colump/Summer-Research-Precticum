@@ -651,6 +651,11 @@ def get_journey_time():
                         step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
                         step['stop_sequence']['stops'].append(step_stop_dict)
 
+        # Hard code an updated title and description for the response so that
+        # it's easier to understand at the client end.
+        prediction_request_json['title'] = 'Journeyti.me Prediction Response'
+        prediction_request_json['description'] = 'Journeyti.me Step-by-Step Prediction Response'
+
         resp = jsonify(prediction_request_json)
 
     return resp
@@ -825,4 +830,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
