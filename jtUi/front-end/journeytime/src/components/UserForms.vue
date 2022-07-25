@@ -211,18 +211,13 @@ export default {
               console.log("Completed Prediction Requeset Objeect: ", prediction_request);
               //this.form.journeyFromGoogle.routes.push(routesInfo) 
               this.form.toBackendInfo = prediction_request;
-<<<<<<< HEAD
-            }
-=======
             } // End of Status OK
 
             // this.journeyFromGoogle.push();
->>>>>>> 1bd1886e444f3f3429b8970886459e4a6140eb40
             this.form.journeyFromGoogle = response.routes;
             console.log("=============================+++++");
             console.log(this.form.journeyFromGoogle);
             console.log("=============================++++");
-<<<<<<< HEAD
             console.log("---------------------------------")
             console.log(JSON.stringify(this.form.toBackendInfo))
             console.log("---------------------------------")
@@ -249,27 +244,6 @@ export default {
         // console.log(len);
         
     },
-=======
-            // this.$bus.$emit('GetAlljourney',response.routes);
-            // console.log(len);
-            this.axios.post('/api/get_journey_time.do',
-              JSON.stringify(this.form.toBackendInfo),
-              { headers: {'Content-Type': 'application/json',} }
-              ).then
-            (
-              (resp) => {
-                let data = resp.data
-                console.log("#########################################");
-                console.log(data)
-                console.log("#########################################");
-              }
-            )
-          }
-        )
-  
-
-      },
->>>>>>> 1bd1886e444f3f3429b8970886459e4a6140eb40
       clearAll(){
         this.form.endPlace ="",
         this.form.endPlaceLatLng ="",
