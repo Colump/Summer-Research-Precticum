@@ -612,7 +612,7 @@ def get_journey_time():
                 arrival_stop_lat = step['transit_details']['arrival_stop']['location']['lat']
                 arrival_stop_lon = step['transit_details']['arrival_stop']['location']['lng']
 
-                step_stops = get_stops_by_route(db, route_name, route_short_name, stop_headsign, departure_time, \
+                step_stops = get_stops_by_route(db, route_name, route_shortname, stop_headsign, departure_time, \
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
                 log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
