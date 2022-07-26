@@ -60,7 +60,10 @@ export default {
       const results = directionsService.route({
         origin: this.StartPlace,
         destination: this.distanation,
-        travelMode: google.maps.TravelMode.TRANSIT
+        travelMode: google.maps.TravelMode.TRANSIT,
+        transitOptions:{
+              modes: ['BUS'],
+        }
       },
       (response,status) => {
         if(status === "OK"){
@@ -113,6 +116,9 @@ export default {
         destination: this.distanation,
         travelMode: google.maps.TravelMode.TRANSIT,
         provideRouteAlternatives:true,
+        transitOptions:{
+              modes: ['BUS'],
+        }
       },
       (response,status) => {
         if(status === "OK"){
@@ -152,7 +158,10 @@ export default {
         const results = directionsService.route({
         origin: this.StartPlace,
         destination: this.distanation,
-        travelMode: google.maps.TravelMode.TRANSIT
+        travelMode: google.maps.TravelMode.TRANSIT,
+        transitOptions:{
+              modes: ['BUS'],
+        }
       },
       (response,status) => {
         if(status === "OK"){
@@ -207,7 +216,10 @@ export default {
         origin: this.StartPlace,
         destination: this.distanation,
         travelMode: google.maps.TravelMode.TRANSIT,
-        provideRouteAlternatives:true
+        provideRouteAlternatives:true,
+        transitOptions:{
+              modes: ['BUS'],
+            }
       },
       (response,status) => {
         if(status === "OK"){
