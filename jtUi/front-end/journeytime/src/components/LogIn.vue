@@ -86,10 +86,14 @@ export default {
     width: 100%; 
     background-size: cover; 
     position: fixed;
+    font-family: element-icons;
+
 }
 body{
     margin:0px;
     padding:0px;
+    font-family: element-icons;
+
 
 }
 .login-container{
@@ -98,6 +102,8 @@ body{
     margin-top:90px;
     margin-left: 320px;
     width: 350px;
+    font-family: element-icons;
+
 }
 
 </style>

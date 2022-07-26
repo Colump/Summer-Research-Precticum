@@ -277,6 +277,8 @@ export default {
   width: 100%;
   height: 100px;
   display: block;
+  font-family: element-icons;
+
 }
 .RouteShow{
   display: block;
