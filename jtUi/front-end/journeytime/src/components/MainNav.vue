@@ -3,7 +3,7 @@
       <!-- 24 Columns in Element Grid system -->
       <el-col :span="20">
         <div class="grid-content bg-purple">
-          <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect" text-color="#fff" active-text-color="#fff">
+          <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect" text-color="#fff" active-text-color="#fff" hover-text-color="#008CFF">
             <el-menu-item index="1" id="mainnav-map">Map</el-menu-item>
             <el-menu-item index="2" id="mainnav-register" >Register</el-menu-item>
             <el-menu-item index="5" id="mainnav-log-in">Log In</el-menu-item>
