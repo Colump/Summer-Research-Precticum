@@ -2,8 +2,7 @@
     <el-row :gutter="20">
       <el-col :span="20">
         <div class="grid-content bg-purple">
-          <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect">
-            <el-menu-item index="1" id="mainnav-map">Map</el-menu-item>
+            <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect" text-color="#fff" active-text-color="#fff">            <el-menu-item index="1" id="mainnav-map">Map</el-menu-item>
             <el-menu-item index="2" id="mainnav-register" >Register</el-menu-item>
             <el-menu-item index="5" id="mainnav-log-in">Log In</el-menu-item>
             <el-menu-item index="3" id="mainnav-about-us">About Us</el-menu-item>
