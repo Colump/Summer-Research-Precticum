@@ -79,6 +79,36 @@ CONST_DOWNLOAD_DIR = 'testing_downloads'
 TEST_MODE      = 'test_mode'
 TEST_MODE_FULL = 'Full'
 
+
+# NOTES:
+# Synchronizing the code with the current state of the browser is one of the
+# biggest challenges with Selenium, and doing it well is an advanced topic.
+# -
+# Essentially you want to make sure that the element is on the page before you
+# attempt to locate it and the element is in an interactable state before you
+# attempt to interact with it.
+# -
+# An implicit wait is rarely the best solution, but it’s the easiest to
+# demonstrate here, so we’ll use it as a placeholder.
+
+# Find an element 
+# These are the various ways the attributes are used to locate elements on a page:
+# find_element(By.ID, "id")
+# find_element(By.NAME, "name")
+# find_element(By.XPATH, "xpath")
+# find_element(By.LINK_TEXT, "link text")
+# find_element(By.PARTIAL_LINK_TEXT, "partial link text")
+# find_element(By.TAG_NAME, "tag name")
+# find_element(By.CLASS_NAME, "class name")
+# find_element(By.CSS_SELECTOR, "css selector")
+
+# Take action on element
+# search_box.send_keys("Selenium")
+# search_button.click()
+
+# Request element information
+# value = search_box.get_attribute("value")
+
 #===============================================================================
 #===   jtApi   =================================================================
 #===============================================================================
@@ -211,8 +241,7 @@ def test_file_download_links(driver, **kwargs):
             print("Well... dang...", e.__class__, "occurred.")
             print(traceback.format_exc())
 
-    time.sleep(10)  # We do a hard wait here to let ?most' file downloads finish...
-    driver.close()  # Close the browser window that the driver has focus of
+    time.sleep(4)  # We do a hard wait here to let ?most' file downloads finish...
 
     return
 
@@ -847,38 +876,16 @@ def test_using_chrome(download_dir, **kwargs):
     # An implicit wait tells WebDriver to poll the DOM for a certain amount
     # of time when trying to find any element (or elements) not immediately available
     driver.implicitly_wait(10) # seconds
+    test_jtapi(driver, **kwargs)
+    driver.close()  # Close the browser window that the driver has focus of
 
-    # Synchronizing the code with the current state of the browser is one of the
-    # biggest challenges with Selenium, and doing it well is an advanced topic.
-    # -
-    # Essentially you want to make sure that the element is on the page before you
-    # attempt to locate it and the element is in an interactable state before you
-    # attempt to interact with it.
-    # -
-    # An implicit wait is rarely the best solution, but it’s the easiest to
-    # demonstrate here, so we’ll use it as a placeholder.
-
-    # Find an element 
-    # These are the various ways the attributes are used to locate elements on a page:
-    # find_element(By.ID, "id")
-    # find_element(By.NAME, "name")
-    # find_element(By.XPATH, "xpath")
-    # find_element(By.LINK_TEXT, "link text")
-    # find_element(By.PARTIAL_LINK_TEXT, "partial link text")
-    # find_element(By.TAG_NAME, "tag name")
-    # find_element(By.CLASS_NAME, "class name")
-    # find_element(By.CSS_SELECTOR, "css selector")
-
-    # Take action on element
-    # search_box.send_keys("Selenium")
-    # search_button.click()
-
-    # Request element information
-    # value = search_box.get_attribute("value")
-
-    #test_jtapi(driver, **kwargs)
-
+    # jtUi is a different url/site - so open a new window for these tests.
+    driver = webdriver.Chrome(service=service, options=options)
+    # An implicit wait tells WebDriver to poll the DOM for a certain amount
+    # of time when trying to find any element (or elements) not immediately available
+    driver.implicitly_wait(10) # seconds
     test_jtui(driver, **kwargs)
+    driver.close()
 
     driver.quit()  # Closes all browser windows and safely ends the session
 
