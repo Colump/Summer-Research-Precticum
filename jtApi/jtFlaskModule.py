@@ -16,6 +16,7 @@ from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTi
 import os, os.path
 import pickle
 from sqlalchemy import text, func
+import traceback
 
 # Imports for Model/Pickle Libs
 #import pandas as pd
@@ -803,13 +804,25 @@ def update_user():
 @jtFlaskApp.route("/get_profile_picture.do", methods=['GET'])
 def get_profile_picture():
     args = request.args
-    gpp_username = args.get('username')
-    user = db.session.query(JT_User).filter_by(username=gpp_username).one()
+    user_loaded = False
 
-    response = make_response(user.profile_picture)
-    extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
-    response.headers.set('Content-Type', 'image/' + extension)
-    return response
+    gpp_username = args.get('username')
+    if gpp_username:
+        try:
+            user = db.session.query(JT_User).filter_by(username=gpp_username).one()
+            user_loaded = True
+        except:
+            #print(traceback.format_exc())
+            log.debug("ERROR No user found for username ->", gpp_username)
+        
+    if user_loaded and user.profile_picture:
+        response = make_response(user.profile_picture)
+        extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
+        response.headers.set('Content-Type', 'image/' + extension)
+        return response
+    else:
+        return '', 204  # 204 is the "No Content" status code
+    
 
 ##########################################################################################
 #  END: CLOSE APPLICATION
