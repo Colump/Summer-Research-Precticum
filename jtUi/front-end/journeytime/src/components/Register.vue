@@ -152,6 +152,7 @@ export default {
 </script>
 
 <style scoped>
+
 #poster{
     background-position: center;
     height: 100%;
@@ -160,6 +161,7 @@ export default {
     position: fixed;
     margin:0px;
     padding:0px;
+    font-family: element-icons!important; 
 }
 
 .register-container{
