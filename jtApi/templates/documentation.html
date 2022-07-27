@@ -20,15 +20,14 @@
               Home
             </a>
           </li>
+          <!-- 
           <li class="nav-item">
             <a class="nav-link" href="#">Link1</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#bottom">Link2</a>
+            <a class="nav-link disabled" href="#">Disabled</a>
           </li>
-          <!-- <li class="nav-item">
-                        <a class="nav-link disabled" href="#">Disabled</a>
-                    </li> -->
+          -->
         </ul>
       </nav>
     </div>
@@ -120,6 +119,57 @@
       *** IMPROVE THESE INSTRUCTIONS!!!
     </p>
     <h3>Prediction Engine</h3>
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-8">
+          <textarea name="samplePredictionRequest" id="samplePredictionRequest" cols="100" rows="30">
+            prediction_request = {}
+            prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request"
+            prediction_request["title"]       = "Journeyti.me Prediction Request"
+            prediction_request["routes"]      = []
+            
+            route          = {}
+            route["steps"] = []
+
+            step = {}
+            step["distance"] = {}
+            step["distance"]["text"]  = "6.0 km"
+            step["distance"]["value"] = 5979
+            step["duration"] = {}
+            step["duration"]["text"]  = "22 mins"
+            step["duration"]["value"] = 1295
+            step["transit_details"] = {}
+            step["transit_details"]["arrival_stop"] = {}
+            step["transit_details"]["arrival_stop"]["location"] = {}
+            step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.347221
+            step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.25517
+            step["transit_details"]["arrival_stop"]["name"] = "Tara Street"
+            step["transit_details"]["arrival_time"] = {}
+            step["transit_details"]["arrival_time"]["text"] = "4:38pm"
+            step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+            step["transit_details"]["arrival_time"]["value"] = 1657899485
+            step["transit_details"]["departure_stop"] = {}
+            step["transit_details"]["departure_stop"]["location"] = {}
+            step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3094124
+            step["transit_details"]["departure_stop"]["location"]["lng"] = -6.218878399999999
+            step["transit_details"]["departure_stop"]["name"] = "UCD Belfield"
+            step["transit_details"]["departure_time"] = {}
+            step["transit_details"]["departure_time"]["text"] = "4:16pm"
+            step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+            step["transit_details"]["departure_time"]["value"] = 1657899843
+            step["transit_details"]["headsign"] = "Maynooth"
+            step["transit_details"]["line"] = {}
+            step["transit_details"]["line"]["name"] = "University College Dublin - Kingsbury Estate"
+            step["transit_details"]["line"]["short_name"] = "X25"
+            step["transit_details"]["num_stops"] = 16
+            step["travel_mode"] = "TRANSIT"
+            route["steps"].append(step)
+          </textarea>
+          </script>
+        </div>
+      </div>
+    </div>
+    <br />
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-8">

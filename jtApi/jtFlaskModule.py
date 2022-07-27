@@ -8,8 +8,10 @@ from flask_sqlalchemy import SQLAlchemy
 from forms import *
 from jinja2 import Template
 import json
-from jt_utils import get_available_end_to_end_models, get_stops_by_route, predict_journey_time, \
-                     query_results_as_json, query_results_as_compressed_csv, time_rounded_to_hrs_mins_as_string, \
+from jt_utils import get_available_end_to_end_models, get_stops_by_route, \
+                     get_valid_route_shortnames, predict_journey_time, \
+                     query_results_as_json, query_results_as_compressed_csv, \
+                     time_rounded_to_hrs_mins_as_string, \
                      JourneyPrediction, StepStop
 import logging
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTime, Trips, Transfers, JT_User
@@ -28,6 +30,12 @@ CONST_CSVFILE  = 'csv'
 # In a fully configured environment, a scheduled job updates this list each morning
 # at 03:30. It can also be updated manually by calling the URL: /update_model_list.do
 AVAILABLE_MODEL_ROUTE_SHORTNAMES = []
+# There are bus operators in the Dublin Region not contained in the Transport For
+# Ireland GTFS data set (e.g. the Swords Express company that operates 9 bus routes
+# in the Dublin area).  We keep a list of 'valid' route shortnames in memory (updated
+# each morning after thee daily download).  This was we can easily identify routes
+# that our prediction service supports - and those it doesn't.
+VALID_ROUTE_SHORTNAMES = []
 
 logging.basicConfig(format='%(levelname)s: %(message)s', encoding='utf-8', level=os.environ.get("LOGLEVEL", "INFO"))
 log = logging.getLogger(__name__)  # Standard naming...
@@ -147,6 +155,8 @@ def about():
 
 @jtFlaskApp.route('/TKTESTING.do', methods=['GET'])
 def TKTESTING():
+    print('TKTESTING: AVAILABLE_MODEL_ROUTE_SHORTNAMES ->', AVAILABLE_MODEL_ROUTE_SHORTNAMES)
+    print('TKTESTING: VALID_ROUTE_SHORTNAMES ->', VALID_ROUTE_SHORTNAMES)
     # This route renders a template from the template folder
     return render_template('test_forms.html', form=UpdateUserForm())
 
@@ -525,9 +535,27 @@ def json_parrot():
 # request is processed (NOT on startup, just before the first request)
 @jtFlaskApp.before_first_request
 def update_model_list():
-    AVAILABLE_MODEL_ROUTE_SHORTNAMES = get_available_end_to_end_models()
+    # We're careful to keep our original list reference alive and just empty
+    # the list, then repopulate it.  To avoid referencing an object which only
+    # exists in the scope of this endpoint.
+    AVAILABLE_MODEL_ROUTE_SHORTNAMES.clear()
+    AVAILABLE_MODEL_ROUTE_SHORTNAMES.extend(get_available_end_to_end_models())
 
     return jsonify(AVAILABLE_MODEL_ROUTE_SHORTNAMES)
+
+# Simple endpoint to load list of valid route names
+@jtFlaskApp.route('/update_valid_route_shortnames.do', methods=['GET'])
+# The following decorator means this function will run once just before the first
+# request is processed (NOT on startup, just before the first request)
+@jtFlaskApp.before_first_request
+def update_valid_route_shortnames():
+    # We're careful to keep our original list reference alive and just empty
+    # the list, then repopulate it.  To avoid referencing an object which only
+    # exists in the scope of this endpoint.
+    VALID_ROUTE_SHORTNAMES.clear()
+    VALID_ROUTE_SHORTNAMES.extend(get_valid_route_shortnames(db))
+
+    return jsonify(VALID_ROUTE_SHORTNAMES)
 
 
 @jtFlaskApp.route('/get_journey_time.do', methods=['POST'])
@@ -572,85 +600,102 @@ def get_journey_time():
                 else:
                     # Other operators like Aircoach seem to use the name...
                     route_shortname = step['transit_details']['line']['name']
-                route_shortname_pickle_exists = True if route_shortname in AVAILABLE_MODEL_ROUTE_SHORTNAMES else False
 
-                # Dublin Bus times are 'timestamp' expressed in seconds
-                # elapsed since the Unix epoch, 1970-01-01 00:00:00 UTC
-                # Using datetime to construct our date seems to nicely cater
-                # for daylight savings times, differences from UTC etc. ...
-                # -
-                # Aircoach on the other hand appear to publish their times as strings
-                # So... we just fudge around it...
-                planned_departure_datetime = datetime.now()
-                if isinstance(step['transit_details']['departure_time']['value'], str):
-                    dep_datetime_str = step['transit_details']['departure_time']['value']
-                    # We strip off the trailing 'GMT+0100' etc from the string before processing...
-                    last_period = dep_datetime_str.rfind('.')
-                    dep_datetime_str = dep_datetime_str[:last_period]
-                    planned_departure_datetime = \
-                        datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S')
+                # Our best guess for line-id is now route-shortname. BUT there
+                # are some routes in Dublin not covered by agencies in the
+                # transportforireland data set.  If we encounter one of these
+                # routes there's nothing we can do (we have no information about
+                # the route at all).
+                if route_shortname in VALID_ROUTE_SHORTNAMES:
+                    step['prediction_status'] = 'Prediction Attempted'
+
+                    route_shortname_pickle_exists = True if route_shortname in AVAILABLE_MODEL_ROUTE_SHORTNAMES else False
+
+                    # Dublin Bus times are 'timestamp' expressed in seconds
+                    # elapsed since the Unix epoch, 1970-01-01 00:00:00 UTC
+                    # Using datetime to construct our date seems to nicely cater
+                    # for daylight savings times, differences from UTC etc. ...
+                    # -
+                    # Aircoach on the other hand appear to publish their times as strings
+                    # So... we just fudge around it...
+                    planned_departure_datetime = datetime.now()
+                    if isinstance(step['transit_details']['departure_time']['value'], str):
+                        dep_datetime_str = step['transit_details']['departure_time']['value']
+                        # We strip off the trailing 'GMT+0100' etc from the string before processing...
+                        last_period = dep_datetime_str.rfind('.')
+                        dep_datetime_str = dep_datetime_str[:last_period]
+                        planned_departure_datetime = \
+                            datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S')
+                    else:
+                        # Dublin bus scenario...
+                        planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
+                    log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
+
+                    stop_headsign = step['transit_details']['headsign']
+                    departure_time = datetime.now().time()
+                    if isinstance(step['transit_details']['departure_time']['value'], str):
+                        dep_datetime_str = step['transit_details']['departure_time']['value']
+                        # We strip off the trailing 'GMT+0100' etc from the string before processing...
+                        last_period = dep_datetime_str.rfind('.')
+                        dep_datetime_str = dep_datetime_str[:last_period]
+                        departure_time = \
+                            datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S').time()
+                    else:
+                        # Dublin bus scenario...
+                        departure_time = datetime.fromtimestamp(step['transit_details']['departure_time']['value']).time()
+                    departure_stop_name = step['transit_details']['departure_stop']['name']
+                    departure_stop_lat = step['transit_details']['departure_stop']['location']['lat']
+                    departure_stop_lon = step['transit_details']['departure_stop']['location']['lng']
+                    arrival_stop_name = step['transit_details']['arrival_stop']['name']
+                    arrival_stop_lat = step['transit_details']['arrival_stop']['location']['lat']
+                    arrival_stop_lon = step['transit_details']['arrival_stop']['location']['lng']
+
+                    step_stops = get_stops_by_route(db, route_name, route_shortname, \
+                        stop_headsign, departure_time, \
+                        departure_stop_name, departure_stop_lat, departure_stop_lon, \
+                        arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
+                    log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
+
+                    # Bundle everything we need to make a prediction into a convenient
+                    # object. We can then pass this object to the prediction routine
+                    journey_pred = JourneyPrediction( \
+                        route_shortname, route_shortname_pickle_exists, \
+                        planned_time_s, planned_departure_datetime, step_stops)
+
+                    # # Pickle the JourneyPrediction object - handy for testing!!
+                    # with open(os.path.join(TEMP_pickle_path, 'JourneyPrediction-r' + str(route_idx) + '-s' + str(step_idx) + '.pickle'), 'wb+') as handle:
+                    #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+                    # Call a function to get the predicted journey time for this step.
+                    journey_pred = predict_journey_time(journey_pred)
+
+                    # Extend the json to contain the prediction information...
+                    predicted_duration = journey_pred.get_predicted_duration_s()
+                    step['predicted_duration'] = {}
+                    step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
+                    step['predicted_duration']['value'] = predicted_duration
+
+                    # Where possible - extend the json to contain the step_stops information
+                    if len(step_stops) > 0:
+                        step['stop_sequence'] = {}
+                        step['stop_sequence']['stops'] = []
+                        for step_stop in step_stops:
+                            step_stop_dict = {}
+                            step_stop_dict['stop_id'] = step_stop.get_stop().stop_id
+                            step_stop_dict['name'] = step_stop.get_stop().stop_name
+                            step_stop_dict['location'] = {}
+                            step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
+                            step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
+                            step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
+                            step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
+                            step['stop_sequence']['stops'].append(step_stop_dict)
+                    else:
+                        # No stop information available
+                        step['prediction_status'] = 'Prediction Attempted - Stop-by-Stop information not available.'
                 else:
-                    # Dublin bus scenario...
-                    planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
-                log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
-
-                stop_headsign = step['transit_details']['headsign']
-                departure_time = datetime.now().time()
-                if isinstance(step['transit_details']['departure_time']['value'], str):
-                    dep_datetime_str = step['transit_details']['departure_time']['value']
-                    # We strip off the trailing 'GMT+0100' etc from the string before processing...
-                    last_period = dep_datetime_str.rfind('.')
-                    dep_datetime_str = dep_datetime_str[:last_period]
-                    departure_time = \
-                        datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S').time()
-                else:
-                    # Dublin bus scenario...
-                    departure_time = datetime.fromtimestamp(step['transit_details']['departure_time']['value']).time()
-                departure_stop_name = step['transit_details']['departure_stop']['name']
-                departure_stop_lat = step['transit_details']['departure_stop']['location']['lat']
-                departure_stop_lon = step['transit_details']['departure_stop']['location']['lng']
-                arrival_stop_name = step['transit_details']['arrival_stop']['name']
-                arrival_stop_lat = step['transit_details']['arrival_stop']['location']['lat']
-                arrival_stop_lon = step['transit_details']['arrival_stop']['location']['lng']
-
-                step_stops = get_stops_by_route(db, route_name, route_shortname, stop_headsign, departure_time, \
-                    departure_stop_name, departure_stop_lat, departure_stop_lon, \
-                    arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-                log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
-
-                # Bundle everything we need to make a prediction into a convenient
-                # object. We can then pass this object to the prediction routine
-                journey_pred = JourneyPrediction( \
-                    route_shortname, route_shortname_pickle_exists, \
-                    planned_time_s, planned_departure_datetime, step_stops)
-
-                # # Pickle the JourneyPrediction object - handy for testing!!
-                # with open(os.path.join(TEMP_pickle_path, 'JourneyPrediction-r' + str(route_idx) + '-s' + str(step_idx) + '.pickle'), 'wb+') as handle:
-                #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-                # Call a function to get the predicted journey time for this step.
-                journey_pred = predict_journey_time(journey_pred)
-
-                # Extend the json to contain the prediction information...
-                predicted_duration = journey_pred.get_predicted_duration_s()
-                step['predicted_duration'] = {}
-                step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
-                step['predicted_duration']['value'] = predicted_duration
-
-                # Where possible - extend the json to contain the step_stops information
-                if len(step_stops) > 0:
-                    step['stop_sequence'] = {}
-                    step['stop_sequence']['stops'] = []
-                    for step_stop in step_stops:
-                        step_stop_dict = {}
-                        step_stop_dict['stop_id'] = step_stop.get_stop().stop_id
-                        step_stop_dict['name'] = step_stop.get_stop().stop_name
-                        step_stop_dict['location'] = {}
-                        step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
-                        step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
-                        step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
-                        step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
-                        step['stop_sequence']['stops'].append(step_stop_dict)
+                    # We have encountered an invalid route shortname. We abort
+                    # with an error message...
+                    step['prediction_status'] = 'Prediction Service not available for route \'' + route_shortname + '\'.'
 
         # Hard code an updated title and description for the response so that
         # it's easier to understand at the client end.
@@ -843,4 +888,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

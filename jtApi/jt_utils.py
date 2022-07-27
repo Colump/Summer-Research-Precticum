@@ -369,7 +369,24 @@ def get_available_end_to_end_models():
     return AVAILABLE_MODEL_ROUTE_SHORTNAMES
 
 
-def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time, \
+def get_valid_route_shortnames(db):
+    """Return a list of all valid route shortnamees
+    """
+    VALID_ROUTE_SHORTNAMES = []
+    
+    route_shortname_query = db.session.query(Routes.route_short_name)
+    route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
+    route_shortnames = route_shortname_query.all()
+    if len(route_shortnames) > 0:
+        VALID_ROUTE_SHORTNAMES = [row[0] for row in route_shortnames]
+        log.debug('\tFound ' + str(len(VALID_ROUTE_SHORTNAMES)) + ' route-shortnames')
+        
+    return VALID_ROUTE_SHORTNAMES
+
+
+
+def get_stops_by_route(db, route_name, route_shortname, \
+    stop_headsign, jrny_time, \
     departure_stop_name, departure_stop_lat, departure_stop_lon, \
     arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
     """Returns an ordered list of stops for a selected LineId
@@ -491,11 +508,11 @@ def get_stops_by_route(db, route_name, route_shortname, stop_headsign, jrny_time
             trips_for_routes.append(t.trip_id)
         log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
 
-        # Identify the departure stop (by name first, then by lat/lon)
+        # Identify the departure stop (by name ideally, if that fails then by lat/lon)
         depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
         log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
 
-        # Identify the arrival stop (by name first, then by lat/lon)
+        # Identify the departure stop (by name ideally, if that fails then by lat/lon)
         arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
         log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
 
@@ -611,9 +628,9 @@ def _predict_jt_end_to_end(journey_prediction):
     month_cos  = np.cos(2 * np.pi * month/12.0)
 
     # load the prediction model
-    end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
+    end_to_end_filepath='pickles/end_to_end/'+lineid+".pickle"
     #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
+    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'rb')
     model_for_line = pickle.load(f)
     f.close()
 
@@ -622,7 +639,8 @@ def _predict_jt_end_to_end(journey_prediction):
     dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
     input_to_pickle_data_frame = pd.DataFrame(dic_list)
     # Pass the dataframe into model and predict time 
-    predict_result=model_for_line.predict(input_to_pickle_data_frame)
+    # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
+    predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
     journey_prediction.set_predicted_duration_s(predict_result)
 
     # With the end-to-end time predicted we need to split the journey time out
@@ -661,9 +679,10 @@ def _predict_jt_stop_to_stop(journey_prediction):
     """
 
     # load the prediction model
-    stop_to_stop_filepath='/pickles/stop_to_stop/stoptostop.pickle'
+    stop_to_stop_filepath='pickles/stop_to_stop/stoptostop.pickle'
     #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'r')
+    f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb')
+    # TODO:: Agree what action we should take if the pickle is invalid/not found.
     model_stop_to_stop = pickle.load(f)
     f.close()
 
@@ -712,7 +731,8 @@ def _predict_jt_stop_to_stop(journey_prediction):
 
             input_to_pickle_data_frame = pd.DataFrame(dic_list)
             # throw the dataframe into model and predict time 
-            predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)
+            # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
+            predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
             # Set the predicted journey time on the current 'StepStop' Object
             stepstop_now.set_shape_predicted_time_traveled_s(predict_result)
 

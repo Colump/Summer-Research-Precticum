@@ -307,6 +307,8 @@ def test_restful_services(driver, **kwargs):
         and 'text' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
         and len(prediction_json['routes'][0]['steps'][0]['predicted_duration']['text']) > 0 \
         and 'value' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
+        and 'prediction_status' in prediction_json['routes'][0]['steps'][0].keys() \
+        and len(prediction_json['routes'][0]['steps'][0]['prediction_status']) > 0 \
         and prediction_json['routes'][0]['steps'][0]['predicted_duration']['value'] >= 0:
 
         # Only if we pass the 'the start of the message looks sane at least' test
@@ -333,6 +335,12 @@ def test_restful_services(driver, **kwargs):
                                 else:
                                     valid = False
                             else:
+                                valid = False
+                        else:
+                            valid = False
+                        # -
+                        if 'prediction_status' in step.keys():
+                            if len(step['prediction_status']) == 0:
                                 valid = False
                         else:
                             valid = False
