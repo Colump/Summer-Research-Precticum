@@ -1,8 +1,8 @@
 <template>
   <div class="block">
-    <el-timeline style="height: 1000px; margin-top: 20px;">
+    <!-- <el-timeline style="height: 1000px; margin-top: 20px;">
       <el-timeline-item style="height: 50px" :hide-timestamp="true"
-        v-for="(activity, index) in activities"
+        v-for="(activity, index) in displayInfo.route"
         :key="index"
         :icon="activity.icon"
         :type="activity.type"
@@ -11,7 +11,14 @@
         :timestamp="activity.timestamp">
         {{activity.content}}
       </el-timeline-item>
-    </el-timeline>
+    </el-timeline> -->
+    <ul>
+                
+            <li v-for="(item,index) in displayInfo.routes" :key = "index">
+                {{item.steps[0].distance.value}}
+            </li>
+    </ul>
+    {{displayInfo.routes[0].steps[0].distance.value}}
   </div>
 </template>
 
@@ -20,25 +27,21 @@ export default {
     name:'AsideShowRoute',
     data() {
       return {
+        // displayInfo:{},
         activities: [{
           content: 'stop1',
-          // timestamp: '2018-04-12 20:46',
-          size: 'large',
-          type: 'primary',
-          icon: 'el-icon-more'
         }, {
           content: 'stop2',
-          // timestamp: '2018-04-03 20:46',
-          color: '#0bbd87'
         }, {
           content: 'stop3',
-          // timestamp: '2018-04-03 20:46',
-          size: 'large'
         }, {
           content: 'stop4',
-          // timestamp: '2018-04-03 20:46'
         }]
       };
+    },
+    props: {
+      displayInfo: Object,
+      required: true
     },
     mounted(){
       this.$bus.$on('stopBystopInfo',(data)=>{
@@ -46,7 +49,15 @@ export default {
         console.log("stop by stop model ======")
         console.log(data)
       })
-    }
+    },
+    created() {
+      // this.$bus.$on('stopBystopInfo',(data)=>{
+      //   console.log("信息传递组件方法启动")
+      //   this.displayInfo = data
+      // })
+
+      
+    },
 }
     
 

@@ -90,23 +90,6 @@ export default {
         var hash2 = bcrypt.hashSync(ruleForm.checkPass, salt);
         this.ruleForm.password = hash;
         this.ruleForm.checkPass = hash2;
-        // 单独测试前端
-        // this.ruleForm = {};
-        // console.log(this.ruleForm)
-        // console.log(this.ruleForm.password === this.ruleForm.checkPass)
-        // console.log(this.ruleForm.password.length)
-        //             this.$message({
-        //                 message: `Registration is successful, the login page will be displayed three seconds later`,
-        //                 type: 'success'
-        //             });
-        //             setTimeout(()=>{
-        //                 this.$router.push({
-        //                             path:'/LogIn'
-        //                         })
-                        
-        //             },3000)
-        //             this.$bus.$emit('ToOtherPage',5)
-        // 测试结束删掉
 
         var ruleFormToBackEnd={
           username:this.ruleForm.LoginName,
