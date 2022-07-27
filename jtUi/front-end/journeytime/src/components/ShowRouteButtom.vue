@@ -39,5 +39,8 @@ export default {
 </script>
 
 <style>
+.el-button{
+  font-family: element-icons;
 
+}
 </style>

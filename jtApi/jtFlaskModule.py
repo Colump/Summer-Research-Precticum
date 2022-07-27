@@ -16,6 +16,7 @@ from models import Agency, Calendar, CalendarDates, Routes, Shapes, Stop, StopTi
 import os, os.path
 import pickle
 from sqlalchemy import text, func
+import traceback
 
 # Imports for Model/Pickle Libs
 #import pandas as pd
@@ -559,6 +560,12 @@ def get_journey_time():
                 log.debug('\tProcessing step ' + str(step_idx) + '.')
                 
                 planned_time_s  = step['duration']['value']
+                # Extend the json to contain stop-by-stop route information...
+                # NOTE The mappings between Googles supplied data and the GTFSR
+                #      fields are *inferred* - I could not find documentation
+                #      guaranteeing the mappings.
+                route_name = step['transit_details']['line']['name']
+                route_shortname = ''
                 if 'short_name' in step['transit_details']['line'].keys():
                     # Dublin Bus use route shortname to list the line id's...
                     route_shortname = step['transit_details']['line']['short_name']
@@ -587,12 +594,6 @@ def get_journey_time():
                     planned_departure_datetime = datetime.fromtimestamp(step['transit_details']['departure_time']['value'])
                 log.debug("\t\tdatatime converted from google epoch based timestamp -> " + str(planned_departure_datetime))
 
-                # Extend the json to contain stop-by-stop route information...
-                # NOTE The mappings between Googles supplied data and the GTFSR
-                #      fields are *inferred* - I could not find documentation
-                #      guaranteeing the mappings.
-                route_name = step['transit_details']['line']['name']
-                route_short_name = step['transit_details']['line']['short_name']
                 stop_headsign = step['transit_details']['headsign']
                 departure_time = datetime.now().time()
                 if isinstance(step['transit_details']['departure_time']['value'], str):
@@ -612,7 +613,7 @@ def get_journey_time():
                 arrival_stop_lat = step['transit_details']['arrival_stop']['location']['lat']
                 arrival_stop_lon = step['transit_details']['arrival_stop']['location']['lng']
 
-                step_stops = get_stops_by_route(db, route_name, route_short_name, stop_headsign, departure_time, \
+                step_stops = get_stops_by_route(db, route_name, route_shortname, stop_headsign, departure_time, \
                     departure_stop_name, departure_stop_lat, departure_stop_lon, \
                     arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
                 log.debug("\t\twe found the following number of step_stops -> " + str(len(step_stops)))
@@ -650,6 +651,11 @@ def get_journey_time():
                         step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
                         step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
                         step['stop_sequence']['stops'].append(step_stop_dict)
+
+        # Hard code an updated title and description for the response so that
+        # it's easier to understand at the client end.
+        prediction_request_json['title'] = 'Journeyti.me Prediction Response'
+        prediction_request_json['description'] = 'Journeyti.me Step-by-Step Prediction Response'
 
         resp = jsonify(prediction_request_json)
 
@@ -798,13 +804,25 @@ def update_user():
 @jtFlaskApp.route("/get_profile_picture.do", methods=['GET'])
 def get_profile_picture():
     args = request.args
-    gpp_username = args.get('username')
-    user = db.session.query(JT_User).filter_by(username=gpp_username).one()
+    user_loaded = False
 
-    response = make_response(user.profile_picture)
-    extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
-    response.headers.set('Content-Type', 'image/' + extension)
-    return response
+    gpp_username = args.get('username')
+    if gpp_username:
+        try:
+            user = db.session.query(JT_User).filter_by(username=gpp_username).one()
+            user_loaded = True
+        except:
+            #print(traceback.format_exc())
+            log.debug("ERROR No user found for username ->", gpp_username)
+        
+    if user_loaded and user.profile_picture:
+        response = make_response(user.profile_picture)
+        extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
+        response.headers.set('Content-Type', 'image/' + extension)
+        return response
+    else:
+        return '', 204  # 204 is the "No Content" status code
+    
 
 ##########################################################################################
 #  END: CLOSE APPLICATION
@@ -825,4 +843,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jtFlaskApp.run(debug=True, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])

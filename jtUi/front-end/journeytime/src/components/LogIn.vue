@@ -2,20 +2,20 @@
   <div id="poster">
     <el-form class="login-container" lable-position="left" label-width="0px">
     <h3 class="login_title">
-        Log In
-        <el-button @click="toRegister">Sign Up Now</el-button>
+        Log In&nbsp;
+        <el-button @click="toRegister">Register</el-button>
     </h3>
     <el-form-item >
-        <el-input type="text" v-model="loginform.loginName" autocomplete="off" placeholder="Account"></el-input>
+        <el-input type="text" v-model="loginform.loginName" autocomplete="off" placeholder="Account" id="login-loginname"></el-input>
     </el-form-item>
     <el-form-item >
-        <el-input type="password" v-model="loginform.password" autocomplete="off" placeholder="Password"></el-input>
+        <el-input type="password" v-model="loginform.password" autocomplete="off" placeholder="Password" id="login-password"></el-input>
     </el-form-item>
     <el-form-item style="width: 100%;">
-        <el-button type="primary" style="width: 100%;background:#505458;border:none ;" @click="login()">Log In</el-button>
+        <el-button type="primary" style="width: 100%;background:#505458;border:none ;" @click="login()" id="login-login">Log In</el-button>
     </el-form-item>
     </el-form>
-</div>
+  </div>
 </template>
 
 <script>
@@ -86,10 +86,14 @@ export default {
     width: 100%; 
     background-size: cover; 
     position: fixed;
+    font-family: element-icons;
+
 }
 body{
     margin:0px;
     padding:0px;
+    font-family: element-icons;
+
 
 }
 .login-container{
@@ -98,6 +102,8 @@ body{
     margin-top:90px;
     margin-left: 320px;
     width: 350px;
+    font-family: element-icons;
+
 }
 
 </style>

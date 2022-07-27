@@ -6,7 +6,7 @@
     <el-container>
       <el-aside width="250px">
         <div class="iconOfWeb">
-          <img src="./assets/blueTheme_jt_journey_around_clock.png" width="50px" height="50px"/>
+          <img src="./assets/blueTheme_jt_plan_your_journey.png" height="75px"/>
         </div>
         <div>
           <UserForms></UserForms>

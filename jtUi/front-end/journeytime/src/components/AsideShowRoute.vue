@@ -69,4 +69,7 @@ export default {
     padding-left: 28px;
     top: -94px;
 }
+.el-timeline-item{
+  font-family: element-icons;
+}
 </style>

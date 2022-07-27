@@ -5,16 +5,16 @@
     ref="ruleForm" 
     label-width="0px" 
     label-position="left"
-    class="register-container">
+    class="user-profile-container">
         <h3 class="login_title">
             Register&nbsp;
             <el-button @click="toLogin()">Log In</el-button>
         </h3>
         <el-form-item  prop="LoginName"  type="text">
-            <el-input v-model="ruleForm.LoginName" placeholder="Account" prefix-icon="el-icon-user" id="register-loginname"></el-input>
+            <el-input v-model="ruleForm.LoginName" placeholder="Account" prefix-icon="el-icon-user" id="user-profile-loginname"></el-input>
         </el-form-item>
         <el-form-item  prop="name" type="text">
-            <el-input v-model="ruleForm.name" placeholder="Nickname" prefix-icon="el-icon-user" id="register-nickname"></el-input>
+            <el-input v-model="ruleForm.name" placeholder="Nickname" prefix-icon="el-icon-user" id="user-profile-nickname"></el-input>
         </el-form-item>
         <el-form-item label="" prop="password">
             <el-input 
@@ -23,16 +23,16 @@
             autocomplete="off"
             placeholder="Password"
             prefix-icon="el-icon-lock"
-            id="register-password">
+            id="user-profile-password">
             </el-input>
         </el-form-item>
         <el-form-item  prop="checkPass">
-            <el-input placeholder="Confirm Password" type="password" v-model="ruleForm.checkPass" autocomplete="off" prefix-icon="el-icon-lock" id="register-confirm-password"></el-input>
+            <el-input placeholder="Confirm Password" type="password" v-model="ruleForm.checkPass" autocomplete="off" prefix-icon="el-icon-lock" id="user-profile-confirm-password"></el-input>
         </el-form-item>
         
         <el-form-item>
-            <el-button type="primary" style="background:#505458 ;border:none" @click="submitForm(ruleForm)" id="register-register">Register</el-button>
-            <el-button @click="resetForm('ruleForm')" id="register-reset">Reset</el-button>
+            <el-button type="primary" style="background:#505458 ;border:none" @click="submitForm(ruleForm)" id="user-profile-register">Register</el-button>
+            <el-button @click="resetForm('ruleForm')" id="user-profile-reset">Reset</el-button>
         </el-form-item>
     </el-form>
 </div>
@@ -90,6 +90,23 @@ export default {
         var hash2 = bcrypt.hashSync(ruleForm.checkPass, salt);
         this.ruleForm.password = hash;
         this.ruleForm.checkPass = hash2;
+        // 单独测试前端
+        // this.ruleForm = {};
+        // console.log(this.ruleForm)
+        // console.log(this.ruleForm.password === this.ruleForm.checkPass)
+        // console.log(this.ruleForm.password.length)
+        //             this.$message({
+        //                 message: `Registration is successful, the login page will be displayed three seconds later`,
+        //                 type: 'success'
+        //             });
+        //             setTimeout(()=>{
+        //                 this.$router.push({
+        //                             path:'/LogIn'
+        //                         })
+                        
+        //             },3000)
+        //             this.$bus.$emit('ToOtherPage',5)
+        // 测试结束删掉
 
         var ruleFormToBackEnd={
           username:this.ruleForm.LoginName,
@@ -147,7 +164,7 @@ export default {
     font-family: element-icons!important; 
 }
 
-.register-container{
+.user-profile-container{
     border-radius: 15px;
     background-clip: padding-box;
     margin-top:50px;

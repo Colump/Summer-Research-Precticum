@@ -1,31 +1,30 @@
 <template>
-<div >
-    <el-form ref="form" :model="form" >
-  <el-form-item >
-    <el-input v-model="form.startPlace" placeholder="origin tpying here!" id="autoComplete"></el-input>
-  </el-form-item>
-  <div class="swap">
-    <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
-  </div>
-  <el-form-item >
-    <el-input v-model="form.endPlace" placeholder="Destination tpying here!" id="autoComplete2"></el-input>
-  </el-form-item>
-  <el-form-item>
-    <el-col :span="10">
-      <el-date-picker type="date" placeholder="Date" v-model="form.date1" style="width: 100%;"></el-date-picker>
-    </el-col>
-    <el-col class="line" :span="1">-</el-col>
-    <el-col :span="13">
-      <el-time-picker placeholder="Time" v-model="form.date2" style="width: 100%;"></el-time-picker>
-    </el-col>
-  </el-form-item>
-  <el-form-item>
-    <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
-    <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
-    <el-button type="success" icon="el-icon-check" round @click="onSubmit">Go!</el-button>
-    
-  </el-form-item>
-</el-form>
+<div>
+  <el-form ref="form" :model="form" >
+    <el-form-item >
+      <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete"></el-input>
+    </el-form-item>
+    <div class="swap">
+      <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
+    </div>
+    <el-form-item >
+      <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2"></el-input>
+    </el-form-item>
+    <el-form-item>
+      <el-col :span="10">
+        <el-date-picker type="date" placeholder="Date" v-model="form.date1" style="width: 100%;"></el-date-picker>
+      </el-col>
+      <el-col class="line" :span="1">-</el-col>
+      <el-col :span="13">
+        <el-time-picker placeholder="Time" v-model="form.date2" style="width: 100%;"></el-time-picker>
+      </el-col>
+    </el-form-item>
+    <el-form-item>
+      <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
+      <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
+      <el-button type="success" icon="el-icon-check" round @click="onSubmit">Go!</el-button>
+    </el-form-item>
+  </el-form>
   <div class="showUserChoiseRoute">
     <ul v-if="form.show">
                 <!-- 注意每个key要唯一 -->
@@ -291,6 +290,8 @@ export default {
   width: 100%;
   height: 100px;
   display: block;
+  font-family: element-icons;
+
 }
 .RouteShow{
   display: block;
