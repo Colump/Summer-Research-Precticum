@@ -1,5 +1,5 @@
 <template>
-  <div>This is our API page</div>
+  <div>This is our <a href="https://api.journeyti.me"> API page</a></div>
 </template>
 
 <script>
