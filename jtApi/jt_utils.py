@@ -679,7 +679,7 @@ def _predict_jt_stop_to_stop(journey_prediction):
     """
 
     # load the prediction model
-    stop_to_stop_filepath='pickles/stop_to_stop/stoptostop.pickle'
+    stop_to_stop_filepath='pickles/stop_to_stop/stoptostop2.pickle'
     #  f = open('test_rfc.pickle','rb')
     f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb')
     # TODO:: Agree what action we should take if the pickle is invalid/not found.
