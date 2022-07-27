@@ -27,10 +27,10 @@
           <router-view></router-view>
         </el-main>
         <el-footer>
-        <p> Legal Stuff </p>
+        <!-- <p> Legal Stuff </p>
         <p> Privacy Policy </p>
-        <p> Security </p>
-       <!-- <p>Copyright @ 2022 Raduno Technologies</p>-->
+        <p> Security </p>-->
+       <p>Copyright @ 2022 Raduno Technologies</p>
 
           </el-footer>
       </el-container>
@@ -88,9 +88,9 @@ export default {
     background-color: rgb(0, 140, 255);
     color: white;
     text-align: center;
-    font-family: element-icons!important;
+    font-family: element-icons;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     line-height: 1px;
    }
   
