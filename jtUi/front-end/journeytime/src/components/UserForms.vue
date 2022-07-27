@@ -5,7 +5,11 @@
       <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete"></el-input>
     </el-form-item>
     <div class="swap">
+      <el-tooltip
+    content="Swap start point and destination"
+    raw-content>
       <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
+      </el-tooltip>
     </div>
     <el-form-item >
       <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2"></el-input>
