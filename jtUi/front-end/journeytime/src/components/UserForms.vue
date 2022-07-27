@@ -30,7 +30,8 @@
                 <!-- 注意每个key要唯一 -->
             <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
                 you will take {{item.legs[0].steps[1].transit.line.short_name}} bus
-                total journey will spend {{}} time
+                <!-- {{}} -->
+                {{hellofunction(form.backEndRespond.routes[index].steps)}}
                 <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
             </li>
     </ul>
@@ -118,6 +119,13 @@ export default {
 
     },
     methods: {
+      hellofunction(arr){
+        let info = ""
+        arr.forEach(function(step){
+         info += step.duration.text
+        })
+        return info;
+      },
       showInMap(index,item){
         console.log('++++++++++++++++++++++++++++++++++');
         this.form.flag = index;
@@ -142,7 +150,10 @@ export default {
             origin: this.form.startPlaceLatLng,
             destination: this.form.endPlaceLatLng,
             travelMode: google.maps.TravelMode.TRANSIT,
-            provideRouteAlternatives:true
+            provideRouteAlternatives:true,
+            transitOptions:{
+              modes: ['BUS'],
+            }
           },
           (response,status) => {
             // console.log(this.form)
@@ -221,7 +232,7 @@ export default {
             console.log(JSON.stringify(this.form.toBackendInfo))
             console.log("---------------------------------")
             
-            this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
+            // this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
 
             this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
             { headers: {'Content-Type': 'application/json',}}).then(
@@ -230,6 +241,7 @@ export default {
                   console.log("---------------------------------****")
                   console.log(data)
                   this.form.backEndRespond = data;
+                  this.$bus.$emit('stopBystopInfo',this.form.backEndRespond);
                   console.log("---------------------------------****")
               }
             )
@@ -257,6 +269,7 @@ export default {
         this.form.startPlace = temp1;
         this.form.startPlaceLatLng = temp2;
       }
+      
     },
     watch:{
       flag(){

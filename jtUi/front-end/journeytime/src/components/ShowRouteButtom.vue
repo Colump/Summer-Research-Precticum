@@ -7,7 +7,7 @@
       title="我是标题"
       :visible.sync="drawer"
       :with-header="false">
-      <AsideShowRoute></AsideShowRoute>
+      <AsideShowRoute :displayInfo = "displayInfo"></AsideShowRoute>
     </el-drawer>
     
 </div>
@@ -23,8 +23,17 @@ export default {
     data() {
       return {
         drawer: false,
+        displayInfo:{
+
+        }
       };
-    }
+    },
+    created() {
+      this.$bus.$on('stopBystopInfo',(data)=>{
+        console.log("信息传递组件方法启动")
+        this.displayInfo = data
+      })
+    },
 
 }
 </script>
