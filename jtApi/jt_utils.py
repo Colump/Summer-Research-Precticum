@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from datetime import datetime, timedelta
 from flask import Response, stream_with_context
+from haversine import haversine, Unit
 import json
 import logging
 import os, sys
@@ -314,7 +315,7 @@ class JourneyPrediction:
 
 
 class StepStop:
-    """Model representing the stops on one step of a journey (part of a 'trip')
+    """Model representing a stop on one step of a journey (part of a 'trip')
 
     """
     def __init__(self, stop, stop_sequence, shape_dist_traveled):
@@ -329,6 +330,8 @@ class StepStop:
         self._stop_sequence = stop_sequence
     def set_shape_dist_traveled(self, shape_dist_traveled):
         self._shape_dist_traveled = shape_dist_traveled
+    def set_shape_predicted_time_traveled_s(self, shape_predicted_time_traveled_s):
+        self._shape_predicted_time_traveled_s = shape_predicted_time_traveled_s
 
     def get_stop(self):
         return self._stop
@@ -336,6 +339,8 @@ class StepStop:
         return self._stop_sequence
     def get_shape_dist_traveled(self):
         return self._shape_dist_traveled
+    def get_shape_predicted_time_traveled_s(self):
+        return self._shape_predicted_time_traveled_s
 
     def serialize(self):
        """Return object data in easily serializeable format"""
@@ -345,7 +350,8 @@ class StepStop:
             'stop_lat': self.stop.stop_lat,
             'stop_lon': self.stop.stop_lon,
             'stop_sequence': self.get_stop_sequence(),
-            'stop_lon': self.get_shape_dist_traveled()
+            'stop_shape_dist_traveled': self.get_shape_dist_traveled(),
+            'stop_shape_predicted_time_traveled_s': self.get_shape_predicted_time_traveled_s()
         }
 
 
@@ -567,47 +573,156 @@ def weather_information(inputtime):
 
 
 def predict_journey_time(journey_prediction):
-    """Predict the journey time(s) for journeys listed in 'prediction_requests' list
+    """Predict the journey timee for journey represented by the 'prediction_request' object
 
     Returns an updated JourneyPrediction model.
-    Uses the end-to-end model when...
-    Uses the stop-to-stop model when...
+    If the pickle for the prediction model exists we use the end-to-end model.
+    Else we use the stop-to-stop model.
+    """
+    if journey_prediction.get_route_shortname_pickle_exists():
+        journey_prediction = _predict_jt_end_to_end(journey_prediction)
+    else:
+        journey_prediction = _predict_jt_stop_to_stop(journey_prediction)
+
+    return journey_prediction
+
+
+def _predict_jt_end_to_end(journey_prediction):
+    """Predict the journey timee for journey represented by the 'prediction_request' object
+
+    Returns an updated JourneyPrediction model.
+    Uses the end-to-end model
     """
   
-    # # Pull the required information from the JourneyPrediction object.
-    # duration = journey_prediction.get_planned_duration_s()
-    # time = journey_prediction.get_planned_departure_datetime()
-    # hour=time.hour
-    # week=time.isoweekday()
-    # month=time.month
-    # lineid=journey_prediction.get_route_shortname()
-    # temperature=weather_information(hour)
+    # Pull the required information from the JourneyPrediction object.
+    duration = journey_prediction.get_planned_duration_s()
+    time = journey_prediction.get_planned_departure_datetime()
+    hour=time.hour
+    week=time.isoweekday()
+    month=time.month
+    lineid=journey_prediction.get_route_shortname()
+    temperature=weather_information(hour)
 
-    # week_sin= np.sin(2 * np.pi * week/6.0)
-    # week_cos = np.cos(2 * np.pi * week/6.0)
-    # hour_sin = np.sin(2 * np.pi * hour/23.0)
-    # hour_cos  = np.cos(2 * np.pi * hour/23.0)
-    # month_sin = np.sin(2 * np.pi * month/12.0)
-    # month_cos  = np.cos(2 * np.pi * month/12.0)
+    week_sin= np.sin(2 * np.pi * week/6.0)
+    week_cos = np.cos(2 * np.pi * week/6.0)
+    hour_sin = np.sin(2 * np.pi * hour/23.0)
+    hour_cos  = np.cos(2 * np.pi * hour/23.0)
+    month_sin = np.sin(2 * np.pi * month/12.0)
+    month_cos  = np.cos(2 * np.pi * month/12.0)
 
-    # # load the prediction model
-    # end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
-    # #  f = open('test_rfc.pickle','rb')
-    # f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
-    # usepickle = pickle.load(f)
-    # f.close()
+    # load the prediction model
+    end_to_end_filepath='/pickles/end_to_end/'+lineid+".pickle"
+    #  f = open('test_rfc.pickle','rb')
+    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'r')
+    model_for_line = pickle.load(f)
+    f.close()
 
-    # # create a pandas dataframe
-    # #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-    # dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
-    # input_to_pickle_data_frame = pd.DataFrame(dic_list)
-    # # Pass the dataframe into model and predict time 
-    # predict_result=usepickle.predict(input_to_pickle_data_frame)
-    # journey_prediction.set_predicted_duration_s(predict_result)  
+    # create a pandas dataframe
+    #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
+    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
+    input_to_pickle_data_frame = pd.DataFrame(dic_list)
+    # Pass the dataframe into model and predict time 
+    predict_result=model_for_line.predict(input_to_pickle_data_frame)
+    journey_prediction.set_predicted_duration_s(predict_result)
 
-    journey_prediction.set_predicted_duration_s(600)
+    # With the end-to-end time predicted we need to split the journey time out
+    # so we can display 'stop by stop' journey time predictions.  We do this
+    # proportionally using distance along the shape travelled.  This is not
+    # fantastic, but sufficient to give the user an idea of the predicted
+    # arrival times:
+    list_of_stops_for_journey = journey_prediction.get_step_stpps()
+
+    last_stop = list_of_stops_for_journey[-1]
+    first_stop = list_of_stops_for_journey[0]
+    total_dis_m = last_stop.get_shape_dist_traveled() - first_stop.get_shape_dist_traveled()
+
+    for index,stepstop in enumerate(list_of_stops_for_journey):
+        stepstop_current = stepstop
+        if index != 0:
+            stepstop_prev = stepstop_current
+            stepstop_current  = stepstop
+            
+            dist__from_last_stop=stepstop_current.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
+            predicted_time_stop_to_stop=predict_result*(dist__from_last_stop/total_dis_m)
+
+            # Set the predicted journey time on the current 'StepStop' Object
+            stepstop_current.set_shape_predicted_time_traveled_s(predicted_time_stop_to_stop)
+
+    #journey_prediction.set_predicted_duration_s(600)
 
     return journey_prediction  # Return the updated prediction_request
+
+
+def _predict_jt_stop_to_stop(journey_prediction):
+    """Predict the journey timee for journey represented by the 'prediction_request' object
+
+    Returns an updated JourneyPrediction model.
+    Uses the stop-to-stop model
+    """
+
+    # load the prediction model
+    stop_to_stop_filepath='/pickles/stop_to_stop/stoptostop.pickle'
+    #  f = open('test_rfc.pickle','rb')
+    f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'r')
+    model_stop_to_stop = pickle.load(f)
+    f.close()
+
+    duration = journey_prediction.get_planned_duration_s()
+    time = journey_prediction.get_planned_departure_datetime()
+    hour=time.hour
+    week=time.isoweekday()
+    # month=time.month
+    # lineid=journey_prediction.get_route_shortname()
+    temperature=weather_information(hour)
+    #temperature=20
+    week_sin= np.sin(2 * np.pi * week/6.0)
+    week_cos = np.cos(2 * np.pi * week/6.0)
+    hour_sin = np.sin(2 * np.pi * hour/23.0)
+    hour_cos  = np.cos(2 * np.pi * hour/23.0)
+    #  month_sin = np.sin(2 * np.pi * month/12.0)
+    #  month_cos  = np.cos(2 * np.pi * month/12.0)
+
+    list_of_stops_for_journey = journey_prediction.get_step_stpps()
+
+    total_dis_m=0.001  # Sensible default - avoid divide by zero error
+    total_time=0
+
+    last_stop = list_of_stops_for_journey[-1]
+    first_stop = list_of_stops_for_journey[0]
+    total_dis_m = last_stop.get_shape_dist_traveled() - first_stop.get_shape_dist_traveled()
+
+    for index,stepstop in enumerate(list_of_stops_for_journey):
+        if index != 0:
+            stepstop_prev = list_of_stops_for_journey[index-1]
+            stepstop_now  = stepstop
+            
+            stop_prev_dist_from_cc = stepstop_prev.get_stop().dist_from_cc
+            stop_now_dist_from_cc = stepstop_now.get_stop().dist_from_cc
+
+            dis_twostop=stepstop_now.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
+
+            plantime_partial=duration*(dis_twostop/total_dis_m)
+
+            #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
+            dic_list = [
+                {'PLANNED_JOURNEY_TIME':plantime_partial,	'dis_twostop':dis_twostop, \
+                'dis_prestop_city':stop_prev_dist_from_cc, 'dis_stopnow_city':stop_now_dist_from_cc, \
+                'temp':temperature,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos}
+                ]
+
+            input_to_pickle_data_frame = pd.DataFrame(dic_list)
+            # throw the dataframe into model and predict time 
+            predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)
+            # Set the predicted journey time on the current 'StepStop' Object
+            stepstop_now.set_shape_predicted_time_traveled_s(predict_result)
+
+            total_time=predict_result+total_time
+            
+    # At the end set the total predicted journey time on the journey_prediction object
+    log.debug(predict_result)
+    journey_prediction.set_predicted_duration_s(total_time)
+
+    return journey_prediction  # Return the updated rediction_request
 
 
 def time_rounded_to_hrs_mins_as_string(seconds):
