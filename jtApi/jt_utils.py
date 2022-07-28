@@ -19,8 +19,9 @@ import time
 import zlib
 
 # According to the article here:
-#    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
-# ... Python, if needing to use relative paths in order to make it easier to 
+#   https://towardsdatascience.com
+#     /simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
+# ... Python, if needing to use relative paths in order to make it easier to
 # relocate an application, one can determine the directory that a specific code
 # module is located in using os.path.dirname(__file__). A full path name can then
 # be constructed by using os.path.join()...
@@ -97,10 +98,11 @@ def query_results_as_compressed_csv(model, query):
             chunk = '\n'
         chunk += '\n'.join(row_list)  # csv - join the elements with 'commas'
         return chunk.encode(), first_chunk_tf
-    
+
     def generate(query):
         # I simply could not have implemented this method without:
-        #   -> https://stackoverflow.com/questions/44185486/generate-and-stream-compressed-file-with-flask
+        #   -> https://stackoverflow.com/questions
+        #          /44185486/generate-and-stream-compressed-file-with-flask
         # ... as a reference.  I have not researched the Gzip file specification
         # in detail (https://datatracker.ietf.org/doc/html/rfc1952#section-2.2),
         # rather I've copied the values supplied by Martijn Pieters in the
@@ -137,11 +139,11 @@ def query_results_as_compressed_csv(model, query):
         # keep the memory footprint down...
         while True:
             rows_this_chunk = query.filter(model.id > lastRowPK).limit(rows_chunk).all()
-            if not rows_this_chunk or len(rows_this_chunk) == 0: 
+            if not rows_this_chunk or len(rows_this_chunk) == 0:
                 break
             for row in rows_this_chunk:
                 lastRowPK = row.id
- 
+
                 # If we build up the string we plan to send by repeatedly appending,
                 # we're creating a new string each time. This is quite memory expensive
                 # and inefficient.
@@ -192,7 +194,7 @@ def query_results_as_json(model, query, **kwargs):
     if 'limit_exceeded' in kwargs:
         if kwargs['limit_exceeded'] == True:
             incl_limit_exceeded_warning = True
-    
+
     def get_chunk(json_list, first_chunk, name):
         if first_chunk:
             chunk = '{\n'
@@ -213,7 +215,7 @@ def query_results_as_json(model, query, **kwargs):
             chunk = ',\n'
         chunk += ',\n'.join(json_list)
         return chunk, first_chunk
-    
+
     # See...
     #https://stackoverflow.com/questions/19926089/python-equivalent-of-java-stringbuffer
     # ... for some benchmarking on a number of approaches to concatenating lots of strings...
@@ -239,7 +241,7 @@ def query_results_as_json(model, query, **kwargs):
             #json_list.append( json.dumps(row.serialize(), indent=4) )
             json_list.append( json.dumps(row.serialize()) )
             row_count += 1
-            
+
             # Every time we complete a chunk we yield it and reset out list
             # to an empty list...
             if row_count >= rows_chunk:
@@ -252,7 +254,7 @@ def query_results_as_json(model, query, **kwargs):
                 buffer, first_chunk = get_chunk(json_list, first_chunk, model.__table__.name)
                 if buffer:
                     yield buffer
-                
+
                 json_list = []
                 row_count = 0
 
@@ -323,6 +325,8 @@ class StepStop:
         self.set_stop(stop)
         self.set_stop_sequence(stop_sequence)
         self.set_shape_dist_traveled(shape_dist_traveled)
+        self.set_dist_from_first_stop_m(0)
+        self.set_predicted_time_from_first_stop_s(0)
 
     def set_stop(self, stop):
         self._stop = stop
@@ -330,8 +334,10 @@ class StepStop:
         self._stop_sequence = stop_sequence
     def set_shape_dist_traveled(self, shape_dist_traveled):
         self._shape_dist_traveled = shape_dist_traveled
-    def set_shape_predicted_time_traveled_s(self, shape_predicted_time_traveled_s):
-        self._shape_predicted_time_traveled_s = shape_predicted_time_traveled_s
+    def set_dist_from_first_stop_m(self, dist_from_first_stop_m):
+        self._dist_from_first_stop_m = dist_from_first_stop_m
+    def set_predicted_time_from_first_stop_s(self, predicted_time_from_first_stop_s):
+        self._predicted_time_from_first_stop_s = predicted_time_from_first_stop_s
 
     def get_stop(self):
         return self._stop
@@ -339,8 +345,10 @@ class StepStop:
         return self._stop_sequence
     def get_shape_dist_traveled(self):
         return self._shape_dist_traveled
-    def get_shape_predicted_time_traveled_s(self):
-        return self._shape_predicted_time_traveled_s
+    def get_dist_from_first_stop_m(self):
+        return self._dist_from_first_stop_m
+    def get_predicted_time_from_first_stop_s(self):
+        return self._predicted_time_from_first_stop_s
 
     def serialize(self):
        """Return object data in easily serializeable format"""
@@ -351,7 +359,8 @@ class StepStop:
             'stop_lon': self.stop.stop_lon,
             'stop_sequence': self.get_stop_sequence(),
             'stop_shape_dist_traveled': self.get_shape_dist_traveled(),
-            'stop_shape_predicted_time_traveled_s': self.get_shape_predicted_time_traveled_s()
+            'stop_dist_from_first_stop_m': self.get_dist_from_first_stop_m(),
+            'stop_predicted_time_from_first_stop_s': self.get_predicted_time_from_first_stop_s()
         }
 
 
@@ -373,16 +382,15 @@ def get_valid_route_shortnames(db):
     """Return a list of all valid route shortnamees
     """
     VALID_ROUTE_SHORTNAMES = []
-    
+
     route_shortname_query = db.session.query(Routes.route_short_name)
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
         VALID_ROUTE_SHORTNAMES = [row[0] for row in route_shortnames]
         log.debug('\tFound ' + str(len(VALID_ROUTE_SHORTNAMES)) + ' route-shortnames')
-        
-    return VALID_ROUTE_SHORTNAMES
 
+    return VALID_ROUTE_SHORTNAMES
 
 
 def get_stops_by_route(db, route_name, route_shortname, \
@@ -390,7 +398,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
     departure_stop_name, departure_stop_lat, departure_stop_lon, \
     arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
     """Returns an ordered list of stops for a selected LineId
-    
+
     Each route_shortname can (potentially) represent a collection of routes
     We identify the 'most likely route' based on a chosen datetime, starting
     from a chosen stop (identified by lat/lon coordinates)
@@ -424,7 +432,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
 
     def _identify_stop(db, name, lat, lon):
         """Returns a the 'most likely' Stop (sqlachemy model) for the supplied inputs
-        
+
         Attempts to identify Stop by exact shortname match first.
         If that fails OR if multiple results are found then select the stop using
         the MySQL 'ST_DISTANCE_SPHERE' method to identify to stop closest to the
@@ -443,7 +451,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
         except MultipleResultsFound as mrf:
             # log.warning('\tMultiple Stops found for stop name: ' + name)
             position_match_required = True
-        
+
         if position_match_required:
             # # Initially I couldn't find a nice 'ORM' way to do the following so
             # # had resorted to MySQL syntax for speed.
@@ -470,7 +478,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
             result = stop_query.first()
             # print('stop name is ' + result[0].stop_name)
             # print('distance is -> ' + str(result[1]))
-            
+
             stop = result[0]
 
         return stop
@@ -496,7 +504,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
         for r in routes.all():
             routes_for_shortname.append(r.route_id)
         log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
-        
+
         # We now how a list of route_ids, we can use that list to get a list of trips
         # for those routes...  we don't cater for 'no trips found' scenario
         trips = db.session.query(Trips)
@@ -577,7 +585,7 @@ def weather_information(inputtime):
     weather_json = rq.get(url).json()
     log.debug(weather_json)
     #weatherforecast_json = request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
-    
+
     # Loop over the hourly data - find the first hour??? @YC - What about date??
     predicted_temp = None
     for each_hour_data in weather_json['list']:
@@ -610,7 +618,7 @@ def _predict_jt_end_to_end(journey_prediction):
     Returns an updated JourneyPrediction model.
     Uses the end-to-end model
     """
-  
+
     # Pull the required information from the JourneyPrediction object.
     duration = journey_prediction.get_planned_duration_s()
     time = journey_prediction.get_planned_departure_datetime()
@@ -636,9 +644,9 @@ def _predict_jt_end_to_end(journey_prediction):
 
     # create a pandas dataframe
     #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]  
+    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]
     input_to_pickle_data_frame = pd.DataFrame(dic_list)
-    # Pass the dataframe into model and predict time 
+    # Pass the dataframe into model and predict time
     # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
     predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
     journey_prediction.set_predicted_duration_s(predict_result)
@@ -650,21 +658,28 @@ def _predict_jt_end_to_end(journey_prediction):
     # arrival times:
     list_of_stops_for_journey = journey_prediction.get_step_stpps()
 
-    last_stop = list_of_stops_for_journey[-1]
-    first_stop = list_of_stops_for_journey[0]
-    total_dis_m = last_stop.get_shape_dist_traveled() - first_stop.get_shape_dist_traveled()
+    start_distance = list_of_stops_for_journey[0].get_shape_dist_traveled()
+    end_distance = list_of_stops_for_journey[-1].get_shape_dist_traveled()
 
+    total_dis_m = end_distance - start_distance
+
+    cumulative_time = 0
     for index,stepstop in enumerate(list_of_stops_for_journey):
         stepstop_current = stepstop
         if index != 0:
             stepstop_prev = stepstop_current
             stepstop_current  = stepstop
-            
-            dist__from_last_stop=stepstop_current.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
-            predicted_time_stop_to_stop=predict_result*(dist__from_last_stop/total_dis_m)
 
-            # Set the predicted journey time on the current 'StepStop' Object
-            stepstop_current.set_shape_predicted_time_traveled_s(predicted_time_stop_to_stop)
+            dist_from_last_stop=stepstop_current.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
+            predicted_time_stop_to_stop=predict_result*(dist_from_last_stop/total_dis_m)
+
+            cumulative_time += + predicted_time_stop_to_stop
+
+            # Set the predicted journey distance/time on the current 'StepStop' Object
+            stepstop_current.set_dist_from_first_stop_m(
+                stepstop_current.get_shape_dist_traveled() - start_distance
+                )
+            stepstop_current.set_predicted_time_from_first_stop_s(cumulative_time)
 
     #journey_prediction.set_predicted_duration_s(600)
 
@@ -706,15 +721,17 @@ def _predict_jt_stop_to_stop(journey_prediction):
     total_dis_m=0.001  # Sensible default - avoid divide by zero error
     total_time=0
 
-    last_stop = list_of_stops_for_journey[-1]
-    first_stop = list_of_stops_for_journey[0]
-    total_dis_m = last_stop.get_shape_dist_traveled() - first_stop.get_shape_dist_traveled()
+    start_distance = list_of_stops_for_journey[0].get_shape_dist_traveled()
+    end_distance = list_of_stops_for_journey[-1].get_shape_dist_traveled()
 
+    total_dis_m = end_distance - start_distance
+
+    cumulative_time = 0
     for index,stepstop in enumerate(list_of_stops_for_journey):
         if index != 0:
             stepstop_prev = list_of_stops_for_journey[index-1]
             stepstop_now  = stepstop
-            
+
             stop_prev_dist_from_cc = stepstop_prev.get_stop().dist_from_cc
             stop_now_dist_from_cc = stepstop_now.get_stop().dist_from_cc
 
@@ -730,14 +747,20 @@ def _predict_jt_stop_to_stop(journey_prediction):
                 ]
 
             input_to_pickle_data_frame = pd.DataFrame(dic_list)
-            # throw the dataframe into model and predict time 
+            # throw the dataframe into model and predict time
             # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
             predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
-            # Set the predicted journey time on the current 'StepStop' Object
-            stepstop_now.set_shape_predicted_time_traveled_s(predict_result)
+            print("**** Predict result", predict_result)
+            cumulative_time += predict_result
+
+            # Set the predicted journey distance/time on the current 'StepStop' Object
+            stepstop_now.set_dist_from_first_stop_m(
+                stepstop_now.get_shape_dist_traveled() - start_distance
+                )
+            stepstop_now.set_predicted_time_from_first_stop_s(cumulative_time)
 
             total_time=predict_result+total_time
-            
+
     # At the end set the total predicted journey time on the journey_prediction object
     log.debug(predict_result)
     journey_prediction.set_predicted_duration_s(total_time)

@@ -690,7 +690,9 @@ def get_journey_time():
                             step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
                             step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
                             step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
-                            step_stop_dict['dist_from_last_stop'] = step_stop.get_shape_dist_traveled()
+                            step_stop_dict['shape_dist_traveled'] = step_stop.get_shape_dist_traveled()
+                            step_stop_dict['dist_from_first_stop_m'] = step_stop.get_dist_from_first_stop_m()
+                            step_stop_dict['predicted_time_from_first_stop_s'] = step_stop.get_predicted_time_from_first_stop_s()
                             step['stop_sequence']['stops'].append(step_stop_dict)
                     else:
                         # No stop information available
