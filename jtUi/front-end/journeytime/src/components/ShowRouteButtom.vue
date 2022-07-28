@@ -7,7 +7,7 @@
       title="我是标题"
       :visible.sync="drawer"
       :with-header="false">
-      <AsideShowRoute :displayInfo = "displayInfo"></AsideShowRoute>
+      <AsideShowRoute :displayInfo = "displayInfo" :routeIndex="routeIndex"></AsideShowRoute>
     </el-drawer>
     
 </div>
@@ -25,7 +25,8 @@ export default {
         drawer: false,
         displayInfo:{
 
-        }
+        },
+        routeIndex:0
       };
     },
     created() {
@@ -33,7 +34,16 @@ export default {
         console.log("信息传递组件方法启动")
         this.displayInfo = data
       })
+
+      this.$bus.$on('GetRouteIndex',(data)=>{
+        this.routeIndex = data
+      })
     },
+    watch:{
+      routeIndex(){
+        this.$bus.$emit('Index',this.form.flag);
+      }
+    }
 
 }
 </script>
