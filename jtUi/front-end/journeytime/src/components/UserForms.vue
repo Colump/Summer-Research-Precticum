@@ -75,6 +75,7 @@ export default {
           show : false,
           flag : 0,
         //   type: [],
+        
         //   resource: '',
         //   desc: ''
         }

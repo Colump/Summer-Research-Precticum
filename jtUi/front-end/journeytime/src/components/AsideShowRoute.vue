@@ -12,13 +12,15 @@
         {{activity.content}}
       </el-timeline-item>
     </el-timeline> -->
+
     <ul>
                 
-            <li v-for="(item,index) in displayInfo.routes" :key = "index">
-                {{item.steps[0].distance.value}}
+            <li v-for="(item,index) in displayInfo.routes[routeIndex].steps[0].stop_sequence.stops" :key = "index">
+                {{item.name}}
             </li>
     </ul>
-    {{displayInfo.routes[0].steps[0].distance.value}}
+    <!-- {{routeIndex}} -->
+    <!-- {{displayInfo.routes[0].steps[0].distance.value}} -->
   </div>
 </template>
 
@@ -27,36 +29,28 @@ export default {
     name:'AsideShowRoute',
     data() {
       return {
-        // displayInfo:{},
-        activities: [{
-          content: 'stop1',
-        }, {
-          content: 'stop2',
-        }, {
-          content: 'stop3',
-        }, {
-          content: 'stop4',
-        }]
+        Index:0
       };
     },
-    props: {
-      displayInfo: Object,
-      required: true
-    },
+    props: [
+      
+      "displayInfo","routeIndex"
+    ],
     mounted(){
       this.$bus.$on('stopBystopInfo',(data)=>{
         this.activities = data
         console.log("stop by stop model ======")
         console.log(data)
       })
+
+       this.$bus.$on('Index',(data)=>{
+        this.Index = data
+      })
     },
     created() {
-      // this.$bus.$on('stopBystopInfo',(data)=>{
-      //   console.log("信息传递组件方法启动")
-      //   this.displayInfo = data
-      // })
-
-      
+      this.$bus.$on('Index',(data)=>{
+        this.Index = data
+      })
     },
 }
     

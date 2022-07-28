@@ -9,7 +9,7 @@ module.exports = defineConfig({
         open: true,
         proxy: { //配置跨域
             '/api': {
-                target: 'http://localhost',
+                target: 'https://api.journeyti.me',
                 ws: true,
                 changeOrigin: true, //允许跨域
                 pathRewrite: {
