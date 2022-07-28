@@ -1,3 +1,5 @@
+"""Main Flask Module for the Journeyti.me Web Application
+"""
 # -*- coding: utf-8 -*-
 from datetime import date, datetime, timezone
 # jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
@@ -42,21 +44,21 @@ log = logging.getLogger(__name__)  # Standard naming...
 
 # According to the article here:
 #    -> https://towardsdatascience.com/simple-trick-to-work-with-relative-paths-in-python-c072cdc9acb9
-# ... Python, if needing to use relative paths in order to make it easier to 
+# ... Python, if needing to use relative paths in order to make it easier to
 # relocate an application, one can determine the directory that a specific code
 # module is located in using os.path.dirname(__file__). A full path name can then
 # be constructed by using os.path.join()...
 # Application Startup...
-jtFlaskModDir = os.path.dirname(__file__)
-jtFlaskModParentDir = os.path.dirname(jtFlaskModDir)
+jt_flask_mod_dir = os.path.dirname(__file__)
+jt_flask_mod_parent_dir = os.path.dirname(jt_flask_mod_dir)
 log.info("===================================================================")
-log.info("jtFlaskApp: Application Start-up.")
-log.info("            Module Directory is -> " + str(jtFlaskModDir))
-log.info("            Parent Dir. is -> " + str(jtFlaskModParentDir))
+log.info("jt_flask_app: Application Start-up.")
+log.info("              Module Directory is -> " + str(jt_flask_mod_dir))
+log.info("              Parent Dir. is -> " + str(jt_flask_mod_parent_dir))
 
 # Create our flask app.
 # Static files are server from the 'static' directory
-jtFlaskApp = Flask(__name__, static_url_path='')
+jt_flask_app = Flask(__name__, static_url_path='')
 
 # In Flask, regardless of how you load your config, there is a 'config' object
 # available which holds the loaded configuration values: The 'config' attribute
@@ -64,7 +66,7 @@ jtFlaskApp = Flask(__name__, static_url_path='')
 # The config is actually a subclass of a dictionary and can be modified just like
 # any dictionary.  E.g. to update multiple keys at once you can use the dict.update()
 # method:
-#     jtFlaskApp.config.update(
+#     jt_flask_app.config.update(
 #         TESTING=True,
 #         SECRET_KEY='192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf'
 #     )
@@ -73,12 +75,12 @@ jtFlaskApp = Flask(__name__, static_url_path='')
 #       (Ask me how I know...)
 #
 # This first line loads config from a Python object:
-#jtFlaskApp.config.from_object('config')
+#jt_flask_app.config.from_object('config')
 # This next one loads up our good old json object!!!
-jtFlaskApp.config.from_file(os.path.join(jtFlaskModParentDir, 'journeytime.json'), json.load)
+jt_flask_app.config.from_file(os.path.join(jt_flask_mod_parent_dir, 'journeytime.json'), json.load)
 # Following line disables some older stuff we don't use that is deprecated (and
 # suppresses a warning about using it). Please just leave it hard-coded here.
-jtFlaskApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+jt_flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # As recommended here:
 #     https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#installation
@@ -100,16 +102,16 @@ jtFlaskApp.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # query attribute attached that can be used to query the model. (Model and BaseQuery)
 # We have to commit the session, but we don’t have to remove it at the end of the
 # request, Flask-SQLAlchemy does that for us.
-jtFlaskApp.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
-            + jtFlaskApp.config['DB_USER'] + ":" + jtFlaskApp.config['DB_PASS'] \
+jt_flask_app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
+            + jt_flask_app.config['DB_USER'] + ":" + jt_flask_app.config['DB_PASS'] \
             + "@" \
-            + jtFlaskApp.config['DB_SRVR'] + ":" + jtFlaskApp.config['DB_PORT']\
-            + "/" + jtFlaskApp.config['DB_NAME'] + "?charset=utf8mb4"
+            + jt_flask_app.config['DB_SRVR'] + ":" + jt_flask_app.config['DB_PORT']\
+            + "/" + jt_flask_app.config['DB_NAME'] + "?charset=utf8mb4"
 
 # 'csrf' gives us a mechanism for controlling csrf behaviour on forms (enabled by default)
-csrf = CSRFProtect(jtFlaskApp)
+csrf = CSRFProtect(jt_flask_app)
 
-db = SQLAlchemy(jtFlaskApp)
+db = SQLAlchemy(jt_flask_app)
 
 ##########################################################################################
 #  GROUP 1: BASIC HTML PAGES
@@ -126,41 +128,41 @@ db = SQLAlchemy(jtFlaskApp)
 # def index():
 #     return '<h1>Bad Request</h1>', 400
 
-@jtFlaskApp.route('/')
-@jtFlaskApp.route('/index.html')
+@jt_flask_app.route('/')
+@jt_flask_app.route('/index.html')
 def root():
-#    print(jtFlaskApp.config)
+#    print(jt_flask_app.config)
 
     # This route simply serves 'static/index.html'
-    #return jtFlaskApp.send_static_file('index.html')
+    #return jt_flask_app.send_static_file('index.html')
     # This route renders a template from the template folder
     return render_template('index.html')
     # This route renders a template from the template folder
-    #return render_template('index.html', MAPS_API_KEY=jtFlaskApp.config["MAPS_API_KEY"])
+    #return render_template('index.html', MAPS_API_KEY=jt_flask_app.config["MAPS_API_KEY"])
 
-@jtFlaskApp.route('/documentation.html')
+@jt_flask_app.route('/documentation.html')
 def documentation():
     # This route renders a template from the template folder
     return render_template('documentation.html')
 
-@jtFlaskApp.route('/invalid_dataset.html')
+@jt_flask_app.route('/invalid_dataset.html')
 def invalid_dataset():
     # This route renders a template from the template folder
     return render_template('invalid_dataset.html')
 
-@jtFlaskApp.route('/about.html')
+@jt_flask_app.route('/about.html')
 def about():
     # This route renders a template from the template folder
     return render_template('about.html')
 
-@jtFlaskApp.route('/TKTESTING.do', methods=['GET'])
+@jt_flask_app.route('/TKTESTING.do', methods=['GET'])
 def TKTESTING():
     print('TKTESTING: AVAILABLE_MODEL_ROUTE_SHORTNAMES ->', AVAILABLE_MODEL_ROUTE_SHORTNAMES)
     print('TKTESTING: VALID_ROUTE_SHORTNAMES ->', VALID_ROUTE_SHORTNAMES)
     # This route renders a template from the template folder
     return render_template('test_forms.html', form=UpdateUserForm())
 
-@jtFlaskApp.route('/downloads.html')
+@jt_flask_app.route('/downloads.html')
 def downloads():
     return render_template ('downloads.html')
 
@@ -220,8 +222,8 @@ def get_dataset_in_format_requested(request, model, query):
 
         # Find out how many records are involved...
         total_records = query.count()
-        dl_row_limit_json        = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON'])
-        dl_row_limit_json_attach = int(jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT'])
+        dl_row_limit_json        = int(jt_flask_app.config['DOWNLOAD_ROW_LIMIT_JSON'])
+        dl_row_limit_json_attach = int(jt_flask_app.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT'])
 
         # NOTE: For the data we have at the moment, every 1,000,000 records
         # corresponds (quite roughly) to 100MB of filesize.  So... if we want
@@ -243,8 +245,8 @@ def get_dataset_in_format_requested(request, model, query):
                 # WE'RE GONNA LIMIT THE NUMBER OF ROWS RETURNED - HOW DO WE TELL THE USER!!!!!!!???????
                 #======================================================================================
                 list = []
-                dl_lim_json        = jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON']
-                dl_lim_json_attach = jtFlaskApp.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
+                dl_lim_json        = jt_flask_app.config['DOWNLOAD_ROW_LIMIT_JSON']
+                dl_lim_json_attach = jt_flask_app.config['DOWNLOAD_ROW_LIMIT_JSON_ATTACHMENT']
                 warning = {}
                 warning['filesize_warning'] = {}
                 warning['filesize_warning']['1_warning'] = 'WARNING'
@@ -259,7 +261,7 @@ def get_dataset_in_format_requested(request, model, query):
             else:
                 # Requested data set is under the row limit, send it!
                 response = jsonify([row.serialize() for row in query.all()])
-    
+
     return response
 
 # Endpoint for Agency model
@@ -267,8 +269,8 @@ def get_dataset_in_format_requested(request, model, query):
 #   'agency name' as a key (to get json response for just one agency)
 # -OR-
 #   supply argument '?dltype' ('json' or 'csv') to download content as a file
-@jtFlaskApp.route("/agency", defaults={'agency_name':None})
-@jtFlaskApp.route("/agency/<agency_name>")
+@jt_flask_app.route("/agency", defaults={'agency_name':None})
+@jt_flask_app.route("/agency/<agency_name>")
 def get_agency(agency_name):
     agencyQuery = db.session.query(Agency)
 
@@ -289,11 +291,11 @@ def get_agency(agency_name):
     return response
 
 # endpoint for Calendar model
-@jtFlaskApp.route("/calendar", defaults={'service_id':None})
-@jtFlaskApp.route("/calendar/<service_id>")
+@jt_flask_app.route("/calendar", defaults={'service_id':None})
+@jt_flask_app.route("/calendar/<service_id>")
 def get_calendar(service_id):
     calendarQuery = db.session.query(Calendar)
- 
+
     response = None
     if service_id != None:
         # Simplest use case - user requires information on single agency
@@ -311,8 +313,8 @@ def get_calendar(service_id):
     return response
 
 # endpoint for CalendarDates
-@jtFlaskApp.route("/calendardates", defaults={'date':None})
-@jtFlaskApp.route("/calendardates/<date>")
+@jt_flask_app.route("/calendardates", defaults={'date':None})
+@jt_flask_app.route("/calendardates/<date>")
 def get_calendar_dates(date):
     calendardatesQuery = db.session.query(CalendarDates)
 
@@ -332,8 +334,8 @@ def get_calendar_dates(date):
 
     return response
 
-@jtFlaskApp.route("/routes", defaults={'route_id': None})
-@jtFlaskApp.route("/routes/<route_id>")
+@jt_flask_app.route("/routes", defaults={'route_id': None})
+@jt_flask_app.route("/routes/<route_id>")
 def get_routes(route_id):
     routeQuery = db.session.query(Routes)
 
@@ -354,8 +356,8 @@ def get_routes(route_id):
     return response
 
 # endpoint for Shapes
-@jtFlaskApp.route("/shapes", defaults={'shape_id':None})
-@jtFlaskApp.route("/shapes/<shape_id>")
+@jt_flask_app.route("/shapes", defaults={'shape_id':None})
+@jt_flask_app.route("/shapes/<shape_id>")
 def get_shape(shape_id):
     shapeQuery = db.session.query(Shapes)
 
@@ -375,8 +377,8 @@ def get_shape(shape_id):
 
     return response
 
-@jtFlaskApp.route("/stops", defaults={'stop_id': None})
-@jtFlaskApp.route("/stops/<stop_id>")
+@jt_flask_app.route("/stops", defaults={'stop_id': None})
+@jt_flask_app.route("/stops/<stop_id>")
 def get_stops(stop_id):
 
     # .filter() and .filter_by:
@@ -410,8 +412,8 @@ def get_stops(stop_id):
 
 # endpoint for StopTime model, should work because TK has written serialize function
 # within StopTime
-@jtFlaskApp.route("/stoptimes", defaults={'trip_id':None})
-@jtFlaskApp.route("/stoptimes/<trip_id>")
+@jt_flask_app.route("/stoptimes", defaults={'trip_id':None})
+@jt_flask_app.route("/stoptimes/<trip_id>")
 def get_stop_times(trip_id):
     stoptimeQuery = db.session.query(StopTime)
 
@@ -430,10 +432,10 @@ def get_stop_times(trip_id):
         response = get_dataset_in_format_requested(request, StopTime, stoptimeQuery)
 
     return response
-    
+
 # endpoint for Transfers
-@jtFlaskApp.route("/transfers", defaults={'from_stop_id':None})
-@jtFlaskApp.route("/transfers/<from_stop_id>")
+@jt_flask_app.route("/transfers", defaults={'from_stop_id':None})
+@jt_flask_app.route("/transfers/<from_stop_id>")
 def get_transfers(from_stop_id):
     transferQuery = db.session.query(Transfers)
 
@@ -456,8 +458,8 @@ def get_transfers(from_stop_id):
 # endpoint for Trips
 # Trips is a large table - so we don't return the json directly to user in the
 # resonse, instead we stream them a file with the json inside!
-@jtFlaskApp.route("/trips", defaults={'trip_id':None})
-@jtFlaskApp.route("/trips/<trip_id>")
+@jt_flask_app.route("/trips", defaults={'trip_id':None})
+@jt_flask_app.route("/trips/<trip_id>")
 def get_trips(trip_id):
     tripsQuery = db.session.query(Trips)
 
@@ -484,10 +486,10 @@ def get_trips(trip_id):
 # ??????????????? Should I bother updating this to accept a POSTed json input??????
 # Was only used for demo purposes...
 
-@jtFlaskApp.route("/getStopsByShortname", methods=['GET'])
+@jt_flask_app.route("/getStopsByShortname", methods=['GET'])
 def get_stops_by_shortname():
     """Returns an ordered list of stops for a selected Route Shortname (a.k.a. 'Line_Id')
-    
+
     Each route_shortname can potentially refer to multiples routes.
     Each route can refer to multiple trips.
     The user has chosen departure datetime...
@@ -506,7 +508,7 @@ def get_stops_by_shortname():
     #   -> the departure stop lat/lon
     args = request.args
     route_short_name = args.get('rsn')
-    jrny_dt = args.get('jrny_dt')  
+    jrny_dt = args.get('jrny_dt')
     departure_stop_lat = args.get('depstoplat')
     departure_stop_lon = args.get('depstoplon')
     arrival_stop_lat = args.get('arrstoplat')
@@ -518,22 +520,22 @@ def get_stops_by_shortname():
     step_stops = get_stops_by_route(db, route_short_name, jrny_time, \
         departure_stop_lat, departure_stop_lon, \
         arrival_stop_lat, arrival_stop_lon)
-    
+
     return jsonify([ss.serialize() for ss in step_stops])
 
 
 # TESTING: Simple endpoint to allow submission of json and return it to the user...
-@jtFlaskApp.route('/json_parrot.do', methods=['POST'])
+@jt_flask_app.route('/json_parrot.do', methods=['POST'])
 @csrf.exempt
 def json_parrot():
     return jsonify(request.json)
 
 
 # Simple endpoint to submission of json and return it to the user...
-@jtFlaskApp.route('/update_model_list.do', methods=['GET'])
+@jt_flask_app.route('/update_model_list.do', methods=['GET'])
 # The following decorator means this function will run once just before the first
 # request is processed (NOT on startup, just before the first request)
-@jtFlaskApp.before_first_request
+@jt_flask_app.before_first_request
 def update_model_list():
     # We're careful to keep our original list reference alive and just empty
     # the list, then repopulate it.  To avoid referencing an object which only
@@ -541,13 +543,15 @@ def update_model_list():
     AVAILABLE_MODEL_ROUTE_SHORTNAMES.clear()
     AVAILABLE_MODEL_ROUTE_SHORTNAMES.extend(get_available_end_to_end_models())
 
+
     return jsonify(AVAILABLE_MODEL_ROUTE_SHORTNAMES)
 
+
 # Simple endpoint to load list of valid route names
-@jtFlaskApp.route('/update_valid_route_shortnames.do', methods=['GET'])
+@jt_flask_app.route('/update_valid_route_shortnames.do', methods=['GET'])
 # The following decorator means this function will run once just before the first
 # request is processed (NOT on startup, just before the first request)
-@jtFlaskApp.before_first_request
+@jt_flask_app.before_first_request
 def update_valid_route_shortnames():
     # We're careful to keep our original list reference alive and just empty
     # the list, then repopulate it.  To avoid referencing an object which only
@@ -558,7 +562,7 @@ def update_valid_route_shortnames():
     return jsonify(VALID_ROUTE_SHORTNAMES)
 
 
-@jtFlaskApp.route('/get_journey_time.do', methods=['POST'])
+@jt_flask_app.route('/get_journey_time.do', methods=['POST'])
 @csrf.exempt
 def get_journey_time():
     resp = get_failure_response()  # Assume failure
@@ -586,7 +590,7 @@ def get_journey_time():
             log.debug('\tlooping over steps')
             for step_idx, step in enumerate(route['steps']):
                 log.debug('\tProcessing step ' + str(step_idx) + '.')
-                
+
                 planned_time_s  = step['duration']['value']
                 # Extend the json to contain stop-by-stop route information...
                 # NOTE The mappings between Googles supplied data and the GTFSR
@@ -600,7 +604,6 @@ def get_journey_time():
                 else:
                     # Other operators like Aircoach seem to use the name...
                     route_shortname = step['transit_details']['line']['name']
-
                 # Our best guess for line-id is now route-shortname. BUT there
                 # are some routes in Dublin not covered by agencies in the
                 # transportforireland data set.  If we encounter one of these
@@ -728,7 +731,7 @@ def log_errors(errors):
     return
 
 
-@jtFlaskApp.route("/check_username_available.do", methods=['POST'])
+@jt_flask_app.route("/check_username_available.do", methods=['POST'])
 @csrf.exempt
 def check_username_available():
     """Check if the supplied username is available
@@ -750,7 +753,7 @@ def check_username_available():
 
     return resp
 
-@jtFlaskApp.route("/register.do", methods=['POST'])
+@jt_flask_app.route("/register.do", methods=['POST'])
 @csrf.exempt
 def register():
     #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
@@ -782,7 +785,7 @@ def register():
 
     return resp
 
-@jtFlaskApp.route("/login.do", methods=['POST'])
+@jt_flask_app.route("/login.do", methods=['POST'])
 @csrf.exempt
 def login():
     """For the supplied username and hashed password, attempt login
@@ -804,7 +807,7 @@ def login():
 
     return resp
 
-@jtFlaskApp.route("/update_user.do", methods=['POST'])
+@jt_flask_app.route("/update_user.do", methods=['POST'])
 @csrf.exempt
 def update_user():
     #form = UserForm(CombinedMultiDict((request.files, request.form)))  # see forms.py
@@ -846,7 +849,7 @@ def update_user():
 
     return resp
 
-@jtFlaskApp.route("/get_profile_picture.do", methods=['GET'])
+@jt_flask_app.route("/get_profile_picture.do", methods=['GET'])
 def get_profile_picture():
     args = request.args
     user_loaded = False
@@ -859,15 +862,15 @@ def get_profile_picture():
         except:
             #print(traceback.format_exc())
             log.debug("ERROR No user found for username ->", gpp_username)
-        
+
     if user_loaded and user.profile_picture:
         response = make_response(user.profile_picture)
-        extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip() 
+        extension = os.path.splitext(user.profile_picture_filename)[1][1:].strip()
         response.headers.set('Content-Type', 'image/' + extension)
         return response
     else:
         return '', 204  # 204 is the "No Content" status code
-    
+
 
 ##########################################################################################
 #  END: CLOSE APPLICATION
@@ -875,7 +878,7 @@ def get_profile_picture():
 
 # Flask will automatically remove database sessions at the end of the request or
 # when the application shuts down:
-@jtFlaskApp.teardown_appcontext
+@jt_flask_app.teardown_appcontext
 def shutdown_session(exception=None):
     #db.session.remove()
     # sys.stdout.close()  # Close the file handle we have open
@@ -888,4 +891,4 @@ if __name__ == "__main__":
     # sys.stdout = open('dwmb_Flask_.logs', 'a')
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-    jtFlaskApp.run(debug=False, host=jtFlaskApp.config["FLASK_HOST"], port=jtFlaskApp.config["FLASK_PORT"])
+    jt_flask_app.run(debug=True, host=jt_flask_app.config["FLASK_HOST"], port=jt_flask_app.config["FLASK_PORT"])
