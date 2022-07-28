@@ -9,7 +9,7 @@ comp47360_group3_raduno.egg-info/requires.txt
 comp47360_group3_raduno.egg-info/top_level.txt
 jtApi/__init__.py
 jtApi/forms.py
-jtApi/jtFlaskModule.py
+jtApi/jt_flask_module.py
 jtApi/jt_gtfs_loader.py
 jtApi/jt_scheduler.sh
 jtApi/jt_testing.py

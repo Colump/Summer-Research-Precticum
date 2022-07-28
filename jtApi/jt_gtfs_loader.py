@@ -440,6 +440,11 @@ def main():
         # Send a Cronitor request to signal our process has failed.
         requests.get(cronitorURI + "?state=fail")
 
+    print('\nUpdating Valid Route Name List in API Server.')
+    # Send a api.journeyti.me a request to update the 'valid route shortname' list
+    # now that we've loaded a fresh dataset.
+    requests.get(credentials['GTFS_LOADER']['JTAPI_SRVR'] + '/update_valid_route_shortnames.do')
+
     print('\nRegistering completion with cronitor.')
     # Send a Cronitor request to signal our process has completed.
     requests.get(cronitorURI + "?state=complete")

@@ -13,6 +13,23 @@
                         "text": "26 mins",
                         "value": 1537
                     },
+                    "predicted_duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                    },
+                    "prediction_status": "Prediction Attempted",
+                    "stop_sequence": [
+                        {
+                            "stop_id": 1234,
+                            "sequence_no": 1,
+                            "location": {
+                                "lat": 53.35135349999999,
+                                "lng": -6.2611282
+                            },
+                            "name": "O'Connell St Upper, stop 281",
+                            "dist_from_last_stop": 1234
+                        }
+                    ],
                     "transit_details": {
                         "arrival_stop": {
                             "location": {
@@ -44,23 +61,7 @@
                             "short_name": "46A"
                         },
                         "num_stops": 17
-                    },
-                    "predicted_duration": {
-                        "text": "26 mins",
-                        "value": 1537
-                    },
-                    "stop_sequence": [
-                        {
-                            "stop_id": 1234,
-                            "sequence_no": 1,
-                            "location": {
-                                "lat": 53.35135349999999,
-                                "lng": -6.2611282
-                            },
-                            "name": "O'Connell St Upper, stop 281",
-                            "dist_from_last_stop": 1234
-                        }
-                    ]
+                    }
                 }
             ]
         }

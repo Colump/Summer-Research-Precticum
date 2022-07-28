@@ -1,32 +1,32 @@
-# jt_testing; Selenium Testing module for Journeyti.me Application
+"""jt_testing; Selenium Testing module for Journeyti.me Application
 
-# This module requires the installation of selenium libraries:
-#   -> pip install selenium
+This module requires the installation of selenium libraries:
+  -> pip install selenium
+"""
 
-import glob, os, sys
-# This might seem unusual... but to make sure we can import modules from the
-# folder where jt_gtfs_loader is installed (e.g. if called as an installed
-# endpoint) - we always add the module directory to the python path. Endpoints
-# can be called from any 'working directory' - but modules can only be imported
-# from the python path etc..
-jt_testing_module_dir = os.path.dirname(__file__)
-sys.path.insert(0, jt_testing_module_dir)
+# PEP 8: Imports should be divided according to what is being imported.
+# There are generally three groups:
+#   -> standard library imports
+#      (Python’s built-in modules)
+#   -> related third party imports
+#      (modules that are installed and do not belong to the current application)
+#   -> local application imports
+#      (modules that belong to the current application)
 
+# Standard Library Imports
 from datetime import datetime
-from jt_utils import load_credentials
+import glob
 import logging
-from models import JT_User
-import requests
-import sqlalchemy as db
-from sqlalchemy import select
-from sqlalchemy.orm import sessionmaker
+import os
+import sys
+import time
 import traceback
 
-# For python testing without specifying chrome driver location:
+# Related Third Party Imports
+import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from selenium.webdriver.ie.service import Service as IEService
@@ -54,11 +54,23 @@ from selenium.webdriver.support import expected_conditions as EC
 #   -> element_located_selection_state_to_be
 #   -> alert_is_present
 from selenium.webdriver.support.ui import WebDriverWait
-import time
+import sqlalchemy as db
+from sqlalchemy import select
+from sqlalchemy.orm import sessionmaker
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.microsoft import EdgeChromiumDriverManager
 from webdriver_manager.microsoft import IEDriverManager
+
+# Local Application Imports
+# To make sure we can import modules from the folder where jt_gtfs_loader is
+# installed (e.g. if called as an installed endpoint) - we always add the
+# module directory to the python path. Endpoints can be called from any
+# 'working directory' - but modules can only be imported from the python path.
+jt_testing_module_dir = os.path.dirname(__file__)
+sys.path.insert(0, jt_testing_module_dir)
+from jt_utils import load_credentials
+from models import JT_User
 
 log = logging.getLogger(__name__)  # Standard naming...
 
@@ -91,7 +103,7 @@ TEST_MODE_FULL = 'Full'
 # An implicit wait is rarely the best solution, but it’s the easiest to
 # demonstrate here, so we’ll use it as a placeholder.
 
-# Find an element 
+# Find an element
 # These are the various ways the attributes are used to locate elements on a page:
 # find_element(By.ID, "id")
 # find_element(By.NAME, "name")
@@ -150,18 +162,16 @@ def test_static_pages(driver):
     else:
         print('\tAbout Page is Valid')
 
-    return
-
 
 def test_file_download_links(driver, **kwargs):
-    
+    """Basic Tests on Each of the supporting file download links
+
+    Requires a manual inspection of the files created to verify validity
+    """
+
     docs_url = TEST_JTAPI_URL + '/documentation.html'
 
-    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
-    # ten seconds before throwing an exception...
-    wait = WebDriverWait(driver, 10)
-
-    # Beforee we download anything, we empty the download directory. 
+    # Beforee we download anything, we empty the download directory.
     empty_download_dir()
 
     # Some files are huge - we only include those files when running a full
@@ -180,7 +190,7 @@ def test_file_download_links(driver, **kwargs):
             #  = driver.find_element_by_link_text("Agency")
             #  = driver.find_element_by_id('accept-cookie-notification')
             #onclick="setDownloadTargetValueAndOpenModal('/agency')"
-            
+
             # NOTE presence_of_element_located is waiting for element to be present
             # in the DOM - it's not really checking whether the element is clickable
             # json_element = wait.until(
@@ -204,8 +214,8 @@ def test_file_download_links(driver, **kwargs):
             # Following may seem pointless... but we catch internal server errors with it...
             if str(driver.title) != 'Journeyti.me GTFS Based Prediction Engine - Public API':
                 raise Exception('JSON link of ' + filename + ' is invalid :-(')
-            else:
-                print('JSON link for ' + filename + ' is valid!')
+
+            print('JSON link for ' + filename + ' is valid!')
 
             driver.get(docs_url)
 
@@ -220,8 +230,8 @@ def test_file_download_links(driver, **kwargs):
             # Following may seem pointless... but we catch internal server errors with it...
             if str(driver.title) != 'Journeyti.me GTFS Based Prediction Engine - Public API':
                 raise Exception('JSON link of ' + filename + ' is invalid :-(')
-            else:
-                print('\tDLJSON link for ' + filename + ' is valid!')
+
+            print('\tDLJSON link for ' + filename + ' is valid!')
 
             # No need to scroll here as we've already centered the title on the page
             driver.find_element(By.ID, filename + '_dlcsv').click()
@@ -234,8 +244,8 @@ def test_file_download_links(driver, **kwargs):
             # Following may seem pointless... but we catch internal server errors with it...
             if str(driver.title) != 'Journeyti.me GTFS Based Prediction Engine - Public API':
                 raise Exception('JSON link of ' + filename + ' is invalid :-(')
-            else:
-                print('\tDLCSV link for ' + filename + ' is valid!')
+
+            print('\tDLCSV link for ' + filename + ' is valid!')
 
         except Exception as e:
             print("Well... dang...", e.__class__, "occurred.")
@@ -243,10 +253,8 @@ def test_file_download_links(driver, **kwargs):
 
     time.sleep(4)  # We do a hard wait here to let ?most' file downloads finish...
 
-    return
 
-
-def test_restful_services(driver, **kwargs):
+def test_restful_services(**kwargs):
     """Test the restful services exposed by the jtApi back end.
 
     None of the tests here require selenium as they simply post JSON
@@ -255,10 +263,6 @@ def test_restful_services(driver, **kwargs):
     """
 
     print('Testing RESTful services')
-
-    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
-    # ten seconds before throwing an exception...
-    wait = WebDriverWait(driver, 10)
 
     # Some files are huge - we only include those files when running a full
     # integration test - to avoid wasting both time and bandwidth.
@@ -270,10 +274,13 @@ def test_restful_services(driver, **kwargs):
     # '/update_model_list.do', methods=['GET']
     print('\tTesting Forced Update of stored model list')
     model_update_response = requests.get(TEST_JTAPI_URL + '/update_model_list.do')
-    print('\tModel Update Response Status Code (expect \'200\') ->', model_update_response.status_code)
+    print( \
+        '\tModel Update Response Status Code (expect \'200\') ->', \
+        model_update_response.status_code
+        )
     # The JSON response for the model update should be a non-empty list.
     model_update_json = model_update_response.json()
-    if type(model_update_json) == list and len(model_update_json) > 0:
+    if isinstance(model_update_json, list) and len(model_update_json) > 0:
         print('\tModel Update Request Tests Passed.')
     else:
         print('\tModel Update Request Tests FAILED!')
@@ -289,34 +296,17 @@ def test_restful_services(driver, **kwargs):
     print('\tPrediction Response Status Code (expect \'200\') ->', prediction_response.status_code)
     # The following long statement essentially validates the structure of the
     # start of the response - and ensures the values are sane.
-    prediction_json = prediction_response.json()
-    if 'title' in prediction_json.keys() \
-        and prediction_json['title'] == 'Journeyti.me Prediction Response' \
-        and 'description' in prediction_json.keys() \
-        and prediction_json['description'] == 'Journeyti.me Step-by-Step Prediction Response' \
-        and 'routes' in prediction_json.keys() \
-        and type(prediction_json['routes']) == list \
-        and len(prediction_json['routes']) > 0 \
-        and type(prediction_json['routes'][0]) == dict \
-        and 'steps' in prediction_json['routes'][0].keys() \
-        and type(prediction_json['routes'][0]['steps']) == list \
-        and len(prediction_json['routes'][0]['steps']) > 0 \
-        and type(prediction_json['routes'][0]['steps'][0]) == dict \
-        and 'predicted_duration' in prediction_json['routes'][0]['steps'][0].keys() \
-        and type(prediction_json['routes'][0]['steps'][0]['predicted_duration']) == dict \
-        and 'text' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
-        and len(prediction_json['routes'][0]['steps'][0]['predicted_duration']['text']) > 0 \
-        and 'value' in prediction_json['routes'][0]['steps'][0]['predicted_duration'].keys() \
-        and prediction_json['routes'][0]['steps'][0]['predicted_duration']['value'] >= 0:
+    pred_resp_json = prediction_response.json()
 
+    if _quick_check_on_first_block(pred_resp_json):
         # Only if we pass the 'the start of the message looks sane at least' test
         # do we bother to iterate over the message, looking for predicted durations...
         # -
         # If any of the above tests fail - even once - then we consider the test
         # a failure.  This way the entire message is parsed per test
         valid = True
-        if 'routes' in prediction_json.keys():
-            for route in prediction_json['routes']:
+        if 'routes' in pred_resp_json.keys():
+            for route in pred_resp_json['routes']:
                 if 'steps' in route.keys():
                     for step in route['steps']:
                         if 'predicted_duration' in step.keys():
@@ -336,6 +326,13 @@ def test_restful_services(driver, **kwargs):
                                 valid = False
                         else:
                             valid = False
+                        # -
+                        if 'prediction_status' in step.keys():
+                            if len(step['prediction_status']) == 0:
+                                valid = False
+                        else:
+                            valid = False
+
                 else:
                     valid = False
         else:
@@ -349,8 +346,12 @@ def test_restful_services(driver, **kwargs):
 
     # "/check_username_available.do", methods=['POST'])
     print('\tTesting username availability function (we test for a username we know exists)')
-    username_availability_response = requests.post(TEST_JTAPI_URL + '/check_username_available.do?Username=flintdk')
-    print('\tUsername Availability Response Status Code (expect \'401\') ->', username_availability_response.status_code)
+    username_availability_response = \
+        requests.post(TEST_JTAPI_URL + '/check_username_available.do?Username=flintdk')
+    print(
+        '\tUsername Availability Response Status Code (expect \'401\') ->', \
+        username_availability_response.status_code
+        )
     # The JSON response for the userename availability should be a non-empty list.
     username_availability_json = username_availability_response.json()
     valid = True
@@ -361,7 +362,7 @@ def test_restful_services(driver, **kwargs):
             valid = False
     else:
         valid = False
-    
+
     if valid:
         print('\tModel Update Request Tests Passed.')
     else:
@@ -370,12 +371,17 @@ def test_restful_services(driver, **kwargs):
 
     # "/get_profile_picture.do", methods=['GET'])
     print('\tTesting profile picture retrieval function (for user \'flintdk\')')
-    # We don't want to actually get the image - what would we do with it anyway? 
+    # We don't want to actually get the image - what would we do with it anyway?
     # - it's enough to get the headers...
-    #profile_pic_response = requests.get(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
-    profile_pic_response = requests.head(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
+    # profile_pic_response = \
+    #     requests.get(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
+    profile_pic_response = \
+        requests.head(TEST_JTAPI_URL + '/get_profile_picture.do?username=flintdk')
     header = profile_pic_response.headers
-    print('\tProfile Picture Retrieval Response Status Code (expect \'200\') ->', profile_pic_response.status_code)
+    print( \
+        '\tProfile Picture Retrieval Response Status Code (expect \'200\') ->', \
+        profile_pic_response.status_code \
+        )
     # The JSON response for the userename availability should be a non-empty list.
     content_type = header.get('content-type')
     if content_type.startswith('image/'):
@@ -384,7 +390,58 @@ def test_restful_services(driver, **kwargs):
         print('\tProfile Picture Retrieval Request Tests FAILED!')
     print('\t-')
 
-    return
+
+def _quick_check_on_first_block(pred_resp_json):
+    """Validate all the elements in the first Step of the first Route in pred_resp_json
+
+    This catches 90% of all invalid messages - they're typically completely correct or
+    completely wrong!
+    """
+    valid = True
+
+    if not 'title' in pred_resp_json.keys():
+        valid = False
+    if not pred_resp_json['title'] == 'Journeyti.me Prediction Response':
+        valid = False
+    if not 'description' in pred_resp_json.keys():
+        valid = False
+    if not pred_resp_json['description'] == 'Journeyti.me Step-by-Step Prediction Response':
+        valid = False
+    if not 'routes' in pred_resp_json.keys():
+        valid = False
+    if not isinstance(pred_resp_json['routes'], list):
+        valid = False
+    if not len(pred_resp_json['routes']) > 0:
+        valid = False
+    if not isinstance(pred_resp_json['routes'][0], dict):
+        valid = False
+    if not 'steps' in pred_resp_json['routes'][0].keys():
+        valid = False
+    if not isinstance(pred_resp_json['routes'][0]['steps'], list):
+        valid = False
+    if not len(pred_resp_json['routes'][0]['steps']) > 0:
+        valid = False
+    if not isinstance(pred_resp_json['routes'][0]['steps'][0], dict):
+        valid = False
+    if not 'predicted_duration' in pred_resp_json['routes'][0]['steps'][0].keys():
+        valid = False
+    if not isinstance(pred_resp_json['routes'][0]['steps'][0]['predicted_duration'], dict):
+        valid = False
+    if not 'text' in pred_resp_json['routes'][0]['steps'][0]['predicted_duration'].keys():
+        valid = False
+    if not len(pred_resp_json['routes'][0]['steps'][0]['predicted_duration']['text']) > 0:
+        valid = False
+    if not 'value' in pred_resp_json['routes'][0]['steps'][0]['predicted_duration'].keys():
+        valid = False
+    if not pred_resp_json['routes'][0]['steps'][0]['predicted_duration']['value'] >= 0:
+        valid = False
+    if not 'prediction_status' in pred_resp_json['routes'][0]['steps'][0].keys():
+        valid = False
+    if not len(pred_resp_json['routes'][0]['steps'][0]['prediction_status']) > 0:
+        valid = False
+
+    return valid
+
 
 #===============================================================================
 #===   jtUi   ==================================================================
@@ -435,22 +492,20 @@ def test_register(driver):
         print('\tRegistration Function Test passed.')
         # Delete the user we created ("flintdk99") here...
         print('\t\tRemoving temporary user (' + testing_username + ')...')
-        # Load our private credentials from a JSON file
-        credentials = load_credentials()
         try:
             # We only want to initialise the engine and create a db connection once
             # as its expensive (i.e. time consuming)
-            connectionString = "mysql+mysqlconnector://" \
+            connection_string = "mysql+mysqlconnector://" \
                 + credentials['DB_USER'] + ":" + credentials['DB_PASS'] \
                 + "@" \
                 + credentials['DB_SRVR'] + ":" + credentials['DB_PORT']\
                 + "/" + credentials['DB_NAME'] + "?charset=utf8mb4"
             #print('Connection String: ' + connectionString + '\n')
-            engine = db.create_engine(connectionString)
+            engine = db.create_engine(connection_string)
             # engine.begin() runs a transaction
             with engine.begin() as connection:
-                Session = sessionmaker(bind=engine)
-                session = Session()
+                session_maker = sessionmaker(bind=engine)
+                session = session_maker()
                 result = session.execute(
                     select(JT_User).where(JT_User.username == testing_username)
                     )
@@ -463,9 +518,10 @@ def test_register(driver):
             # if there is any problem, print the traceback
             print(traceback.format_exc())
 
-    return
 
 def test_login(driver):
+    """Test the login endpoint
+    """
     print('JT_Testing: Validating jtUi Login page')
 
     # Set a default wait of 10 seconds... this means we wait a 'maximum' of
@@ -502,14 +558,15 @@ def test_login(driver):
     else:
         print('\tLog In Function Test passed.')
 
-    return
 
 def test_update_user(driver):
+    """Test the 'update user' endpoint
+    """
     print('JT_Testing: Validating jtUi Update User page')
 
-    # Set a default wait of 10 seconds... this means we wait a 'maximum' of
-    # ten seconds before throwing an exception...
-    wait = WebDriverWait(driver, 10)
+    # # Set a default wait of 10 seconds... this means we wait a 'maximum' of
+    # # ten seconds before throwing an exception...
+    # wait = WebDriverWait(driver, 10)
 
     # home_url = TEST_JTUI_URL
     # testing_username = 'flintdk'
@@ -541,14 +598,15 @@ def test_update_user(driver):
     # else:
     #     print('\tLog In Function Test passed.')
 
-    return
 
 #===============================================================================
 #===============================================================================
 #===============================================================================
 
 def center_element_on_screen_by_id(element_id, driver):
-    """
+    """Use Basic Math to center a html element on screen
+
+    Uses the 'window.scrollBy' javascript function to scroll the window.
     """
     wait = WebDriverWait(driver, 10)
     element = wait.until(
@@ -558,10 +616,12 @@ def center_element_on_screen_by_id(element_id, driver):
     #driver.execute_script('arguments[0].scrollIntoView(true);', json_element)
     #ActionChains(driver).scroll_to_element(json_element).perform()
     desired_y = (element.size['height'] / 2) + element.location['y']
-    current_y = (driver.execute_script('return window.innerHeight') / 2) + driver.execute_script('return window.pageYOffset')
+    current_y = \
+        (driver.execute_script('return window.innerHeight') / 2) \
+            + driver.execute_script('return window.pageYOffset')
     scroll_y_by = desired_y - current_y
     driver.execute_script("window.scrollBy(0, arguments[0]);", scroll_y_by)
-    log.debug('scroll complete, scrolled by: ', scroll_y_by)
+    log.debug('scroll complete, scrolled by: %s', scroll_y_by)
     time.sleep(1.5)  # This seems like a looong wait... but... it's also required!
 
     element = wait.until(
@@ -572,7 +632,7 @@ def center_element_on_screen_by_id(element_id, driver):
 
 def empty_download_dir():
     """Empty (delete all files in) the Download Directory
-    
+
     This means all files in the download directory at the end of a test run are
     releated to this test run. Makes checking files etc. easier.
     """
@@ -582,17 +642,16 @@ def empty_download_dir():
     files_removed = 0
     for extension in file_extensions:
         # Get a list of all the file paths that ends with .txt from in specified directory
-        fileList = glob.glob(os.path.join(jt_testing_dl_dir, extension))
+        file_list = glob.glob(os.path.join(jt_testing_dl_dir, extension))
         # Iterate over the list of filepaths & remove each file.
-        for filePath in fileList:
+        for file_path in file_list:
             try:
-                os.remove(filePath)
+                os.remove(file_path)
                 files_removed += 1
             except:
-                print("Error deleting file ->", filePath)
+                print("Error deleting file ->", file_path)
     print('\t' + str(files_removed) + ' files removed.')
-    
-    return
+
 
 def create_prediction_request_dict():
     """Return a valid journey prediction request dictionary
@@ -606,7 +665,7 @@ def create_prediction_request_dict():
     prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request"
     prediction_request["title"]       = "Journeyti.me Prediction Request"
     prediction_request["routes"]      = []
-    
+
     route          = {}
     route["steps"] = []
 
@@ -842,11 +901,10 @@ def test_jtapi(driver, **kwargs):
     test_file_download_links(driver, **kwargs)
 
     # Most complex case - test the restful services.
-    test_restful_services(driver, **kwargs)
+    test_restful_services(**kwargs)
 
-    return
 
-def test_jtui(driver, **kwargs):
+def test_jtui(driver):
     """Test the UI software
 
     There is a focus on functionality that calls the back-end (RESTful) services.
@@ -858,12 +916,11 @@ def test_jtui(driver, **kwargs):
     # "/update_user.do", methods=['POST'])
     test_update_user(driver)
 
-    return
 
 def test_using_chrome(download_dir, **kwargs):
-    # (ALTERNATIVE TO BELOW: Add driver location to path - always only one driver at a time!)
-    # Use install() to get the location used by the manager and pass it into service class
-    # SYNTAX FOM SELENIUM SITE:  DELETE IF NOTE NEEDED....  service=Service(executable_path=ChromeDriverManager().install()))
+    """Perform principle tests - using the Chrome service
+    """
+
     service = ChromeService(executable_path=ChromeDriverManager().install())
 
     options = webdriver.ChromeOptions()
@@ -884,13 +941,15 @@ def test_using_chrome(download_dir, **kwargs):
     # An implicit wait tells WebDriver to poll the DOM for a certain amount
     # of time when trying to find any element (or elements) not immediately available
     driver.implicitly_wait(10) # seconds
-    test_jtui(driver, **kwargs)
+    test_jtui(driver)
     driver.close()
 
     driver.quit()  # Closes all browser windows and safely ends the session
 
 
 def test_using_firefox(download_dir, **kwargs):
+    """Perform principle tests - using the Firefox service
+    """
     service = FirefoxService(executable_path=GeckoDriverManager().install())
 
     options = webdriver.FirefoxOptions()
@@ -912,7 +971,7 @@ def test_using_firefox(download_dir, **kwargs):
 
     test_jtapi(driver, **kwargs)
 
-    test_jtui(driver, **kwargs)
+    test_jtui(driver)
 
     driver.quit()  # Closes all browser windows and safely ends the session
 
@@ -958,16 +1017,16 @@ def main(**kwargs):
         test_using_chrome(jt_testing_dl_dir, **kwargs)
 
         #test_using_firefox(jt_testing_temp_dir, **kwargs)
-    except:
+    except Exception as e:
         # if there is any problem, print the traceback
         print(traceback.format_exc())
 
     # (following returns a timedelta object)
-    elapsedTime = datetime.now() - start_time
-    
+    elapsed_time = datetime.now() - start_time
+
     # returns (minutes, seconds)
-    #minutes = divmod(elapsedTime.seconds, 60) 
-    minutes = divmod(elapsedTime.total_seconds(), 60) 
+    #minutes = divmod(elapsedTime.seconds, 60)
+    minutes = divmod(elapsed_time.total_seconds(), 60)
     print('Tests Complete! (Elapsed time:', minutes[0], 'minutes', minutes[1], 'seconds)\n')
     sys.exit()
 

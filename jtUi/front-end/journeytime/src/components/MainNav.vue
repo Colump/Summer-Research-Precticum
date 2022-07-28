@@ -15,7 +15,8 @@
       <el-col :span="4">
         <div class="grid-content bg-purple">
            <el-button circle @click="SignUp">
-              <el-avatar v-bind:src="getAvatarUrl()" v-bind:alt="userName">{{userName}}</el-avatar>
+              <!-- <el-avatar v-bind:src="getAvatarUrl()" v-bind:alt="userName">{{userName}}</el-avatar>-->
+              <el-avatar :src="getAvatarUrl.icon" v-bind:alt="userName">{{userName}}</el-avatar>
            </el-button>
         </div>
       </el-col>
@@ -33,6 +34,14 @@ export default {
         // How do we get the actual users username in here!?!?!?!?!
         userName:'user'
       };
+    },
+    computed: {
+      getAvatarUrl () {
+        return {
+          // Hard coded for now - this is not good.
+          icon: 'https://api.journeyti.me/get_profile_picture.do?username=' & this.userName
+        }
+      }
     },
     mounted(){
       this.$bus.$on('ToOtherPage',(data)=>{
@@ -75,12 +84,6 @@ export default {
       },
       SignUp(){
         console.log("running success")
-      },
-      getAvatarUrl: function() {
-        // Hard coded for now - this is not good.
-        this.avatar_url = 'https://api.journeyti.me/get_profile_picture.do?username=' + this.userName;
-        console.log(this.avatar_url);
-        return require(this.avatar_url)
       }
       // ShowPage(){
       //   // console.log(this.$router)
