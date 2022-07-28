@@ -1,6 +1,17 @@
+# -*- coding: utf-8 -*-
 """Main Flask Module for the Journeyti.me Web Application
 """
-# -*- coding: utf-8 -*-
+
+# Standard Library Imports
+
+# Related Third Party Imports
+
+# Local Application Imports
+
+
+
+
+
 from datetime import date, datetime, timezone
 # jsonify serializes data to JavaScript Object Notation (JSON) format, wraps it
 # in a Response object with the application/json mimetype.

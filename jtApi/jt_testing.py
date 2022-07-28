@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """jt_testing; Selenium Testing module for Journeyti.me Application
 
 This module requires the installation of selenium libraries:

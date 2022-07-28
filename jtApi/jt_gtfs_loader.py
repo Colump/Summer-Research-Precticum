@@ -1,29 +1,35 @@
 # 2022-06-20 TK/BF/YC/CP; Group 3, "Raduno", "JourneyTi.me" Project
-#            Comp47360 Research Practicum 
-"""
+#            Comp47360 Research Practicum
+"""jt_gtfs_loader; Load Latest GTFS-R Data into Journeyti.me Database.
 
 """
 
-import os, sys, csv
-# This might seem unusual... but to make sure we can import modules from the
-# folder where jt_gtfs_loader is installed (e.g. if called as an installed
-# endpoint) - we always add the module directory to the python path. Endpoints
-# can be called from any 'working directory' - but modules can only be imported
-# from the python path etc..
-jt_gtfs_module_dir = os.path.dirname(__file__)
-sys.path.insert(0, jt_gtfs_module_dir)
-
+# Standard Library Imports
+import csv
 from datetime import datetime
-from haversine import haversine, Unit
-from jt_utils import load_credentials
-from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
-import requests
-import sqlalchemy as db
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import os
+import sys
 import traceback
 import zipfile
 from zipfile import ZipFile
+
+# Related Third Party Imports
+from haversine import haversine
+import requests
+import sqlalchemy as db
+from sqlalchemy.orm import sessionmaker
+
+
+# Local Application Imports
+# To make sure we can import modules from the folder where jt_gtfs_loader is
+# installed (e.g. if called as an installed endpoint) - we always add the
+# module directory to the python path. Endpoints can be called from any
+# 'working directory' - but modules can only be imported from the python path.
+jt_gtfs_module_dir = os.path.dirname(__file__)
+sys.path.insert(0, jt_gtfs_module_dir)
+from jt_utils import load_credentials
+from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
+
 
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
 # Dublin City Center...
@@ -31,7 +37,7 @@ credentials = load_credentials()
 CONST_DUBLIN_CC = (credentials['DUBLIN_CC']['lat'], credentials['DUBLIN_CC']['lon'])
 
 
-def download_gtfs_schedule_data(credentials, import_dir):
+def download_gtfs_schedule_data(import_dir):
     """Download the latest version of the GTFS Schedule Data.
 
     """
@@ -48,11 +54,14 @@ def download_gtfs_schedule_data(credentials, import_dir):
         os.remove(gtfs_schedule_data_file)
 
     # Would it be better to use the python 'wget' module??
-    # ????? response = wget.download(credentials['nta-gtfs']['gtfs-schedule-data-url'], "import/google_transit_dublinbus.zip")
+    #     response = wget.download( \
+    #         credentials['nta-gtfs']['gtfs-schedule-data-url'], \
+    #         "import/google_transit_dublinbus.zip" \
+    #         )
     # Open file for binary write...
     # ... and write to it!
     response = requests.get(credentials['nta-gtfs']['gtfs-schedule-data-url'])
-    if (response.status_code == 200):
+    if response.status_code == 200:
         print('\tSaving GTFS Schedule data to disk.')
         with open(gtfs_schedule_data_file, "wb") as gtfs_zip:
             gtfs_zip.write(response.content)
@@ -65,7 +74,7 @@ def download_gtfs_schedule_data(credentials, import_dir):
     return gtfs_schedule_data_file
 
 
-def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI):
+def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitor_uri):
     """Extract the contents of the GTFS Schedule Data zip to the import directory
 
     """
@@ -82,14 +91,12 @@ def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI)
         print('ERROR: Downloaded GTFS Schedule Data is not a valid .Zip file!')
         print('       Aborting...')
         # Send a Cronitor request to signal our process has failed.
-        requests.get(cronitorURI + "?state=fail")
+        requests.get(cronitor_uri + "?state=fail")
         # We don't have to clear down the file - it will get automatically cleared
         # during the next pass...
 
-    return
 
-
-def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
+def import_gtfs_txt_files_to_db(import_dir, session_maker):
     """Iterate Over the GTFS Txt Files, Import them to the db
 
     """
@@ -109,13 +116,13 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
             print('Processing \"' + str(filename) + '\".' \
                 + ' Time is: ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
 
-            if filename.endswith(".txt"): 
+            if filename.endswith(".txt"):
                 # Now... load all the files, by name...
                 # There may be a better abstraction for this but as we're only dealing
                 # with ten files we're taking the following expedient approach.
 
                 # Some of the files are large... 'stop_times.txt' is 220MB. We use a
-                # 'csv reader' as it is quite memory efficient. It is an iterator - 
+                # 'csv reader' as it is quite memory efficient. It is an iterator -
                 # so it processes the file line by line and does not load the whole
                 # file into memory (which would be bad).
                 with open(import_dir + filename, newline='', encoding='utf-8') as gtfs_csv:
@@ -124,7 +131,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                     next(data)
 
                     # Instantiate a session *per file* so we can talk to the database!
-                    session = Session()
+                    session = session_maker()
                     objects_this_session = []  # We build a list of objects for bulk insert...
 
                     # Process the files line-by-line...
@@ -151,7 +158,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 #db has field "agencycol" - what for??
                             )
                             objects_this_session.append(agency)
-                    
+
                     elif filename == "calendar.txt":
                         truncate_table(session, Calendar)
 
@@ -170,7 +177,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 end_date=row[9]
                             )
                             objects_this_session.append(calendar)
-                    
+
                     elif filename == "calendar_dates.txt":
                         truncate_table(session, CalendarDates)
 
@@ -182,7 +189,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 exception_type=row[2]
                             )
                             objects_this_session.append(calendar_date)
-                    
+
                     elif filename == "routes.txt":
                         truncate_table(session, Routes)
 
@@ -196,7 +203,7 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 route_type=row[4]
                             )
                             objects_this_session.append(route)
-                    
+
                     elif filename == "shapes.txt":
                         truncate_table(session, Shapes)
 
@@ -213,7 +220,9 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                             objects_this_session.append(shape)
 
                             if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
                                 objects_this_session = []  # Resume with an empty list...
 
                     elif filename == "stops.txt":
@@ -229,16 +238,20 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                                 # (See custom 'Point' type in models.py for following...)
                                 # Note that spatial points are defined "lon-lat"
                                 stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
-                                # 'stop_position' is binary information.  If you want to "see" it in a
-                                # query the easiest way is to use one of the built in functions to display
-                                # it. E.g:
-                                #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position) FROM stops
+                                # 'stop_position' is binary information.  If you want to
+                                # "see" it in a query the easiest way is to use one of
+                                # the built in functions to display it. E.g:
+                                #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position)
+                                #   FROM stops
 
                                 # Calculate distance to city center using haversine (in km) ...
-                                dist_from_cc = haversine(CONST_DUBLIN_CC, (float(row[2]), float(row[3])))
+                                dist_from_cc = haversine(
+                                    CONST_DUBLIN_CC,
+                                    (float(row[2]), float(row[3]))
+                                    )
                             )
                             objects_this_session.append(stop)
-                        
+
                     elif filename == "stop_times.txt":
                         truncate_table(session, StopTime)
 
@@ -259,7 +272,9 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                             objects_this_session.append(stop_time)
 
                             if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
                                 objects_this_session = []  # Resume with an empty list...
 
                     elif filename == "transfers.txt":
@@ -292,7 +307,9 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
                             objects_this_session.append(trip)
 
                             if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session(objects_this_session, session, Session)
+                                session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
                                 objects_this_session = []  # Resume with an empty list...
 
                     else:
@@ -312,11 +329,11 @@ def import_gtfs_txt_files_to_db(import_dir, credentials, Session):
             else:
                 print('WARNING: Unexpected file encountered -> ' + str(filename))
                 print('         Ignoring...')
-            
+
             print('')
 
 
-def commit_batch_and_start_new_session(list_of_objects, session, Session):
+def commit_batch_and_start_new_session(list_of_objects, session, session_maker):
     """Commit the session once the object session limit is reached.
 
     Also prints a '# to the console as a type of 'chunk progress indicator' for the logs...
@@ -326,7 +343,7 @@ def commit_batch_and_start_new_session(list_of_objects, session, Session):
     print('#', end='')
     session.bulk_save_objects(list_of_objects)
     session.commit()
-    session = Session()
+    session = session_maker()
 
     return session
 
@@ -341,8 +358,6 @@ def truncate_table(session, model):
     print('        Resetting auto-increment id...' )
     session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
     print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
-
-    return
 
 
 # If we need reference objects - load that shit in advance!  That way we're not loading for each
@@ -385,60 +400,58 @@ def main():
     print('JT_GTFS_Loader: Start of iteration (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
 
     print('\tLoading credentials.')
-    # Load our private credentials from a JSON file
-    credentials = load_credentials()
     import_dir  = jt_gtfs_module_dir + "/import/"
 
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)
     # to monitor the running data loader process.  This way if there is a failure
     # in the job etc. our team is notified by email.  In addition, if the job
-    # or the EC2 instance suspends for some reason, cronitor informs us of the 
+    # or the EC2 instance suspends for some reason, cronitor informs us of the
     # lack of activity so we can log in and investigate.
     # Send a request to log the start of a run
-    cronitorURI = credentials['cronitor']['TelemetryURL']
-    requests.get(cronitorURI + "?state=run")
+    cronitor_uri = credentials['cronitor']['TelemetryURL']
+    requests.get(cronitor_uri + "?state=run")
 
     # Download the GTFS Schedule Data File (it comes down as a ".zip")
-    gtfs_schedule_data_file = download_gtfs_schedule_data(credentials, import_dir)
+    gtfs_schedule_data_file = download_gtfs_schedule_data(import_dir)
 
     # Extract the contents of the GTFS Schedule Data .zip to the import directory...
-    extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitorURI)
+    extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitor_uri)
 
     # The following functions require a db commection...
+    connection = None
     try:
         print("\tCreating SQLAlchemy db engine.")
         # We only want to initialise the engine and create a db connection once
         # as its expensive (i.e. time consuming)
-        connectionString = "mysql+mysqlconnector://" \
+        connection_string = "mysql+mysqlconnector://" \
             + credentials['DB_USER'] + ":" + credentials['DB_PASS'] \
             + "@" \
             + credentials['DB_SRVR'] + ":" + credentials['DB_PORT']\
             + "/" + credentials['DB_NAME'] + "?charset=utf8mb4"
         #print('Connection String: ' + connectionString + '\n')
-        engine = db.create_engine(connectionString)
+        engine = db.create_engine(connection_string)
 
         print('')
-
         # engine.begin() runs a transaction
         with engine.begin() as connection:
 
-            Session = sessionmaker(bind=engine)
+            session_maker = sessionmaker(bind=engine)
 
             # With the CSV files (bizarrely, with a .txt extension) extracted to disk,
             # we import the content to the db.
-            import_gtfs_txt_files_to_db(import_dir, credentials, Session)
-
-        # Make sure to close the connection - a memory leak on this would kill
-        # us...
-        connection.close()
-
-    except:
+            import_gtfs_txt_files_to_db(import_dir, session_maker)
+    except Exception:
         # if there is any problem, print the traceback
         print(traceback.format_exc())
         print('\tRegistering error with cronitor.')
         # Send a Cronitor request to signal our process has failed.
-        requests.get(cronitorURI + "?state=fail")
+        requests.get(cronitor_uri + "?state=fail")
+    finally:
+        # Make sure to close the connection - a memory leak on this would kill
+        # us...
+        if connection is not None:
+            connection.close()
 
     print('\nUpdating Valid Route Name List in API Server.')
     # Send a api.journeyti.me a request to update the 'valid route shortname' list
@@ -447,14 +460,14 @@ def main():
 
     print('\nRegistering completion with cronitor.')
     # Send a Cronitor request to signal our process has completed.
-    requests.get(cronitorURI + "?state=complete")
+    requests.get(cronitor_uri + "?state=complete")
 
     # (following returns a timedelta object)
-    elapsedTime = datetime.now() - start_time
-    
+    elapsed_time = datetime.now() - start_time
+
     # returns (minutes, seconds)
-    #minutes = divmod(elapsedTime.seconds, 60) 
-    minutes = divmod(elapsedTime.total_seconds(), 60) 
+    #minutes = divmod(elapsedTime.seconds, 60)
+    minutes = divmod(elapsed_time.total_seconds(), 60)
     print('Iteration Complete! (Elapsed time:', minutes[0], 'minutes', minutes[1], 'seconds)\n')
     print('--------------------------------------------------------------------------------')
     print('================================================================================')

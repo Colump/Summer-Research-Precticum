@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+"""
+
+# Standard Library Imports
+
+# Related Third Party Imports
+
+# Local Application Imports
+
+
 from datetime import datetime, timedelta
 from flask import Response, stream_with_context
 from haversine import haversine, Unit
@@ -694,7 +704,7 @@ def _predict_jt_stop_to_stop(journey_prediction):
     """
 
     # load the prediction model
-    stop_to_stop_filepath='pickles/stop_to_stop/stoptostop2.pickle'
+    stop_to_stop_filepath='pickles/stop_to_stop/rfstoptostop1.pickle'
     #  f = open('test_rfc.pickle','rb')
     f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb')
     # TODO:: Agree what action we should take if the pickle is invalid/not found.
@@ -745,12 +755,11 @@ def _predict_jt_stop_to_stop(journey_prediction):
                 'dis_prestop_city':stop_prev_dist_from_cc, 'dis_stopnow_city':stop_now_dist_from_cc, \
                 'temp':temperature,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos}
                 ]
-
-            input_to_pickle_data_frame = pd.DataFrame(dic_list)
+            input_to_pickle_data_frame = pd.DataFrame(dic_list).values
             # throw the dataframe into model and predict time
             # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
             predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
-            print("**** Predict result", predict_result)
+            log.debug("**** Predict result", predict_result)
             cumulative_time += predict_result
 
             # Set the predicted journey distance/time on the current 'StepStop' Object
