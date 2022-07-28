@@ -275,7 +275,7 @@ def get_agency(agency_name):
     agencyQuery = db.session.query(Agency)
 
     response = None
-    if agency_name != None:
+    if agency_name is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -297,7 +297,7 @@ def get_calendar(service_id):
     calendarQuery = db.session.query(Calendar)
 
     response = None
-    if service_id != None:
+    if service_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -319,7 +319,7 @@ def get_calendar_dates(date):
     calendardatesQuery = db.session.query(CalendarDates)
 
     response = None
-    if date != None:
+    if date is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -340,7 +340,7 @@ def get_routes(route_id):
     routeQuery = db.session.query(Routes)
 
     response = None
-    if route_id != None:
+    if route_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -362,7 +362,7 @@ def get_shape(shape_id):
     shapeQuery = db.session.query(Shapes)
 
     response = None
-    if shape_id != None:
+    if shape_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -395,7 +395,7 @@ def get_stops(stop_id):
     stopQuery = db.session.query(Stop)
 
     response = None
-    if stop_id != None:
+    if stop_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -418,7 +418,7 @@ def get_stop_times(trip_id):
     stoptimeQuery = db.session.query(StopTime)
 
     response = None
-    if trip_id != None:
+    if trip_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -440,7 +440,7 @@ def get_transfers(from_stop_id):
     transferQuery = db.session.query(Transfers)
 
     response = None
-    if from_stop_id != None:
+    if from_stop_id is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
         # information as json.
@@ -464,7 +464,7 @@ def get_trips(trip_id):
     tripsQuery = db.session.query(Trips)
 
     response = None
-    if trip_id != None:
+    if trip_id is not None:
         # Simplest use case - user requires information on single trip
         # No option to download this as a file (currently) - just return requested
         # information as json.
