@@ -1,32 +1,31 @@
 # -*- coding: utf-8 -*-
-"""
+"""jt_utils: General Purpose Utility module for the Journeyti.me Web Application
 """
 
 # Standard Library Imports
-
-# Related Third Party Imports
-
-# Local Application Imports
-
-
-from datetime import datetime, timedelta
-from flask import Response, stream_with_context
-from haversine import haversine, Unit
+from datetime import datetime
 import json
 import logging
-import os, sys
-from models import Routes, Stop, StopTime, Trips
-import numpy as np
-import pandas as pd
 from pathlib import Path
 import pickle
-import requests as rq
-from sqlalchemy import asc, desc, text, func
-from sqlalchemy.dialects import mysql
-from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound  # Exceptions
+import os
+import sys
 import struct
 import time
 import zlib
+
+# Related Third Party Imports
+from flask import Response
+import numpy as np
+import pandas as pd
+import requests as rq
+from sqlalchemy import asc, text, func
+#from sqlalchemy.dialects import mysql
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound  # Exceptions
+
+
+# Local Application Imports
+from models import Routes, Stop, StopTime, Trips
 
 # According to the article here:
 #   https://towardsdatascience.com
@@ -52,10 +51,14 @@ def load_credentials():
     # This file is not saved to GitHub and is placed on each EC2 instance
     # by a team member.
     # Load the JSON file
-    file = open(os.path.join(jt_utils_parent_dir, 'journeytime.json'), 'r')
-    credentials = json.load(file)
-    file.close  # Can close the file now we have the data loaded...
-    return credentials
+    with open( \
+        os.path.join(jt_utils_parent_dir, 'journeytime.json'), \
+        'r', \
+        encoding="utf-8" \
+        ) as file:
+        _credentials = json.load(file)
+
+    return _credentials
 
 
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
@@ -75,11 +78,11 @@ def _get_next_chunk_size(rows_remain):
 
     Based on the remaining rows and the paramaterised optimimum chunk size
     """
-    CHUNK_SIZE = int(credentials['DOWNLOAD_CHUNK_SIZE'])
+    chunk_size = int(credentials['DOWNLOAD_CHUNK_SIZE'])
     rows_chunk = 0
     if rows_remain > 0:
-        if rows_remain >= CHUNK_SIZE:
-            rows_chunk  = CHUNK_SIZE
+        if rows_remain >= chunk_size:
+            rows_chunk  = chunk_size
         else:
             rows_chunk  = rows_remain
 
@@ -138,7 +141,7 @@ def query_results_as_compressed_csv(model, query):
         row_count      = 0
         row_list       = []
         first_chunk_tf = True
-        lastRowPK      = 0
+        last_row_pk    = 0
 
         # I still got memory overruns trying to use query.yield_per()... which
         # looked almost tailor made for our objective.  So perhaps I was doing
@@ -148,11 +151,11 @@ def query_results_as_compressed_csv(model, query):
         # Instead I did an old fashioned loop to let me use smaller queries, to
         # keep the memory footprint down...
         while True:
-            rows_this_chunk = query.filter(model.id > lastRowPK).limit(rows_chunk).all()
+            rows_this_chunk = query.filter(model.id > last_row_pk).limit(rows_chunk).all()
             if not rows_this_chunk or len(rows_this_chunk) == 0:
                 break
             for row in rows_this_chunk:
-                lastRowPK = row.id
+                last_row_pk = row.id
 
                 # If we build up the string we plan to send by repeatedly appending,
                 # we're creating a new string each time. This is quite memory expensive
@@ -160,7 +163,10 @@ def query_results_as_compressed_csv(model, query):
                 # Instead we build a list of strings - which we will later convert to
                 # a single string.
                 # 'row_list' will be a list of strings...
-                row_list.append( '"' + '","'.join([str(value) for value in row.serialize().values()]) + '"')
+                row_list.append( \
+                    '"' \
+                    + '","'.join([str(value) for value in row.serialize().values()]) \
+                    + '"')
                 row_count += 1
 
                 if row_count >= rows_chunk:
@@ -191,7 +197,8 @@ def query_results_as_compressed_csv(model, query):
     # streaming).  But time/testing will tell...
     #response = Response(stream_with_context(generate(query, name)), mimetype='application/gzip')
     response = Response(generate(query), mimetype='application/gzip')
-    response.headers['Content-Disposition'] = 'attachment; filename=' + model.__table__.name + '.csv.gz'
+    response.headers['Content-Disposition'] = \
+        'attachment; filename=' + model.__table__.name + '.csv.gz'
     return response
 
 
@@ -202,7 +209,7 @@ def query_results_as_json(model, query, **kwargs):
     """
     incl_limit_exceeded_warning = False
     if 'limit_exceeded' in kwargs:
-        if kwargs['limit_exceeded'] == True:
+        if kwargs['limit_exceeded'] is True:
             incl_limit_exceeded_warning = True
 
     def get_chunk(json_list, first_chunk, name):
@@ -214,10 +221,18 @@ def query_results_as_json(model, query, **kwargs):
 
                 chunk += '\"filesize_warning\": {\n'
                 chunk += '\"1_warning\": \"WARNING\",\n'
-                chunk += '\"2_description\": \"The number of records in this extract exceeds the current streamed .json file limit\",\n'
-                chunk += '\"3_limits1\": \"A maximum of ' + dl_lim_json + ' records can be delivered directly to a clients browswer\",\n'
-                chunk += '\"4_limits2\": \"A maximum of ' + dl_lim_json_attach + ' records can be delivered as a .json file attachment\",\n'
-                chunk += '\"5_limits3\": \"There is currently no limit on filesizes downloaded as compressed .csv.gz\"\n'
+                chunk += '\"2_description\": ' \
+                    + '\"The number of records in this extract exceeds the current ' \
+                    + 'streamed .json file limit\",\n'
+                chunk += '\"3_limits1\": ' \
+                    + '\"A maximum of ' + dl_lim_json + ' records can be delivered ' \
+                    + 'directly to a clients browswer\",\n'
+                chunk += '\"4_limits2\": ' \
+                    + '\"A maximum of ' + dl_lim_json_attach + ' records can be ' \
+                    + 'delivered as a .json file attachment\",\n'
+                chunk += '\"5_limits3\": ' \
+                    + '\"There is currently no limit on filesizes downloaded as ' \
+                    + 'compressed .csv.gz\"\n'
                 chunk += '},\n'
             chunk += '\"' + name + '\": [\n'
             first_chunk = False
@@ -258,8 +273,8 @@ def query_results_as_json(model, query, **kwargs):
                 rows_remain -= rows_chunk  # we've jusr competed a chunk
                 rows_chunk = _get_next_chunk_size(rows_remain)
                 log.debug("Completed a chunk:")
-                log.debug("\tRows Remaining ->", rows_remain)
-                log.debug("\tRows This Chunk ->", rows_chunk)
+                log.debug("\tRows Remaining -> %d", rows_remain)
+                log.debug("\tRows This Chunk -> %d", rows_chunk)
 
                 buffer, first_chunk = get_chunk(json_list, first_chunk, model.__table__.name)
                 if buffer:
@@ -289,41 +304,63 @@ class JourneyPrediction:
     end-to-end model is available, etc.. But those factors are common to all
     predictions, the data encapsulated here is for a single journey
     """
-    def __init__(self, route_shortname, route_shortname_pickle_exists, planned_duration_s, planned_departure_datetime, step_stpps):
+    def __init__( \
+            self, route_shortname, route_shortname_pickle_exists, \
+            planned_duration_s, planned_departure_datetime, \
+            step_stops
+            ):
         # Instance Variables
-        self.set_route_shortname(route_shortname)
-        self.set_route_shortname_pickle_exists(route_shortname_pickle_exists)
-        self.set_planned_duration_s(planned_duration_s)
-        self.set_planned_departure_datetime(planned_departure_datetime)
+        self.route_shortname = route_shortname
+        self.route_shortname_pickle_exists = route_shortname_pickle_exists
+        self.planned_duration_s = planned_duration_s
+        self.planned_departure_datetime = planned_departure_datetime
         # 'step_stops' is a list of StepStop model objects for the current journey step.
-        self.set_step_stpps(step_stpps)
-        self.set_predicted_duration_s(0)
+        self.step_stops = step_stops
+        self.predicted_duration_s = 0
 
-    def set_route_shortname(self, route_shortname):
-        self._route_shortname = route_shortname
-    def set_route_shortname_pickle_exists(self, route_shortname_pickle_exists):
-        self._route_shortname_pickle_exists = route_shortname_pickle_exists
-    def set_planned_duration_s(self, planned_duration_s):
-        self._planned_duration_s = planned_duration_s
-    def set_planned_departure_datetime(self, planned_departure_datetime):
-        self._planned_departure_datetime = planned_departure_datetime
-    def set_step_stpps(self, step_stpps):
-        self._step_stpps = step_stpps
-    def set_predicted_duration_s(self, predicted_duration_s):
-        self._predicted_duration_s = predicted_duration_s
-
-    def get_route_shortname(self):
+    @property
+    def route_shortname(self):
+        """The route shortname for this journey."""
         return self._route_shortname
-    def get_route_shortname_pickle_exists(self):
+    @property
+    def route_shortname_pickle_exists(self):
+        """If a 'route shortname' (a.k.a. 'end-to-end') pickle exists for this journey."""
         return self._route_shortname_pickle_exists
-    def get_planned_duration_s(self):
+    @property
+    def planned_duration_s(self):
+        """The planned duration for this journey."""
         return self._planned_duration_s
-    def get_planned_departure_datetime(self):
+    @property
+    def planned_departure_datetime(self):
+        """The planned departure datetime for this journey."""
         return self._planned_departure_datetime
-    def get_step_stpps(self):
-        return self._step_stpps
-    def get_predicted_duration_s(self):
+    @property
+    def step_stops(self):
+        """The list of step-stops for this journey."""
+        return self._step_stops
+    @property
+    def predicted_duration_s(self):
+        """The predicted duration in s for this journey."""
         return self._predicted_duration_s
+
+    @route_shortname.setter
+    def route_shortname(self, route_shortname):
+        self._route_shortname = route_shortname
+    @route_shortname_pickle_exists.setter
+    def route_shortname_pickle_exists(self, route_shortname_pickle_exists):
+        self._route_shortname_pickle_exists = route_shortname_pickle_exists
+    @planned_duration_s.setter
+    def planned_duration_s(self, planned_duration_s):
+        self._planned_duration_s = planned_duration_s
+    @planned_departure_datetime.setter
+    def planned_departure_datetime(self, planned_departure_datetime):
+        self._planned_departure_datetime = planned_departure_datetime
+    @step_stops.setter
+    def step_stops(self, step_stops):
+        self._step_stops = step_stops
+    @predicted_duration_s.setter
+    def predicted_duration_s(self, predicted_duration_s):
+        self._predicted_duration_s = predicted_duration_s
 
 
 class StepStop:
@@ -332,78 +369,93 @@ class StepStop:
     """
     def __init__(self, stop, stop_sequence, shape_dist_traveled):
         # Instance Variables
-        self.set_stop(stop)
-        self.set_stop_sequence(stop_sequence)
-        self.set_shape_dist_traveled(shape_dist_traveled)
-        self.set_dist_from_first_stop_m(0)
-        self.set_predicted_time_from_first_stop_s(0)
+        self.stop = stop
+        self.stop_sequence = stop_sequence
+        self.shape_dist_traveled = shape_dist_traveled
+        self.dist_from_first_stop_m = 0
+        self.predicted_time_from_first_stop_s = 0
 
-    def set_stop(self, stop):
-        self._stop = stop
-    def set_stop_sequence(self, stop_sequence):
-        self._stop_sequence = stop_sequence
-    def set_shape_dist_traveled(self, shape_dist_traveled):
-        self._shape_dist_traveled = shape_dist_traveled
-    def set_dist_from_first_stop_m(self, dist_from_first_stop_m):
-        self._dist_from_first_stop_m = dist_from_first_stop_m
-    def set_predicted_time_from_first_stop_s(self, predicted_time_from_first_stop_s):
-        self._predicted_time_from_first_stop_s = predicted_time_from_first_stop_s
-
-    def get_stop(self):
+    @property
+    def stop(self):
+        """A stop model."""
         return self._stop
-    def get_stop_sequence(self):
+    @property
+    def stop_sequence(self):
+        """The sequence number of this stop, in a step."""
         return self._stop_sequence
-    def get_shape_dist_traveled(self):
+    @property
+    def shape_dist_traveled(self):
+        """The distance traveled from the terminus to this stop."""
         return self._shape_dist_traveled
-    def get_dist_from_first_stop_m(self):
+    @property
+    def dist_from_first_stop_m(self):
+        """The distance from the first stop in this step."""
         return self._dist_from_first_stop_m
-    def get_predicted_time_from_first_stop_s(self):
+    @property
+    def predicted_time_from_first_stop_s(self):
+        """The time from the first stop in this step."""
         return self._predicted_time_from_first_stop_s
 
+    @stop.setter
+    def stop(self, stop):
+        self._stop = stop
+    @stop_sequence.setter
+    def stop_sequence(self, stop_sequence):
+        self._stop_sequence = stop_sequence
+    @shape_dist_traveled.setter
+    def shape_dist_traveled(self, shape_dist_traveled):
+        self._shape_dist_traveled = shape_dist_traveled
+    @dist_from_first_stop_m.setter
+    def dist_from_first_stop_m(self, dist_from_first_stop_m):
+        self._dist_from_first_stop_m = dist_from_first_stop_m
+    @predicted_time_from_first_stop_s.setter
+    def predicted_time_from_first_stop_s(self, predicted_time_from_first_stop_s):
+        self._predicted_time_from_first_stop_s = predicted_time_from_first_stop_s
+
     def serialize(self):
-       """Return object data in easily serializeable format"""
-       return  {
+        """Return object data in easily serializeable format"""
+        return  {
             'stop_id': self.stop.stop_id,
             'stop_name': self.stop.stop_name,
             'stop_lat': self.stop.stop_lat,
             'stop_lon': self.stop.stop_lon,
-            'stop_sequence': self.get_stop_sequence(),
-            'stop_shape_dist_traveled': self.get_shape_dist_traveled(),
-            'stop_dist_from_first_stop_m': self.get_dist_from_first_stop_m(),
-            'stop_predicted_time_from_first_stop_s': self.get_predicted_time_from_first_stop_s()
+            'stop_sequence': self.stop_sequence,
+            'stop_shape_dist_traveled': self.shape_dist_traveled,
+            'stop_dist_from_first_stop_m': self.dist_from_first_stop_m,
+            'stop_predicted_time_from_first_stop_s': self.predicted_time_from_first_stop_s
         }
 
 
 def get_available_end_to_end_models():
     """Return a list of all End-to-End model pickles currently on disk
     """
-    AVAILABLE_MODEL_ROUTE_SHORTNAMES = []
+    available_model_names = []
     end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
 
     # iterate over files in that directory
     files = Path(end_to_end_model_dir).glob('*.pickle')
     for file in files:
-        AVAILABLE_MODEL_ROUTE_SHORTNAMES.append(Path(file).stem)
+        available_model_names.append(Path(file).stem)
 
-    return AVAILABLE_MODEL_ROUTE_SHORTNAMES
+    return available_model_names
 
 
-def get_valid_route_shortnames(db):
+def get_valid_route_shortnames(database):
     """Return a list of all valid route shortnamees
     """
-    VALID_ROUTE_SHORTNAMES = []
+    valid_route_shortnames = []
 
-    route_shortname_query = db.session.query(Routes.route_short_name)
+    route_shortname_query = database.session.query(Routes.route_short_name)
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
-        VALID_ROUTE_SHORTNAMES = [row[0] for row in route_shortnames]
-        log.debug('\tFound ' + str(len(VALID_ROUTE_SHORTNAMES)) + ' route-shortnames')
+        valid_route_shortnames = [row[0] for row in route_shortnames]
+        log.debug('\tFound %d route-shortnames', len(valid_route_shortnames))
 
-    return VALID_ROUTE_SHORTNAMES
+    return valid_route_shortnames
 
 
-def get_stops_by_route(db, route_name, route_shortname, \
+def get_stops_by_route(database, route_name, route_shortname, \
     stop_headsign, jrny_time, \
     departure_stop_name, departure_stop_lat, departure_stop_lon, \
     arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
@@ -440,7 +492,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
     # running on the requested travel date (i.e. we don't cross check the calendar
     # or calendar_dates tables)
 
-    def _identify_stop(db, name, lat, lon):
+    def _identify_stop(database, name, lat, lon):
         """Returns a the 'most likely' Stop (sqlachemy model) for the supplied inputs
 
         Attempts to identify Stop by exact shortname match first.
@@ -452,13 +504,13 @@ def get_stops_by_route(db, route_name, route_shortname, \
         position_match_required = False
         try:
             # Exact MATCH based ON NAME
-            stop_query = db.session.query(Stop)
+            stop_query = database.session.query(Stop)
             stop_query = stop_query.filter(Stop.stop_name == name)
             stop = stop_query.one()
-        except NoResultFound as nrf:
+        except NoResultFound:
             # log.warning('\tNo Stops found for stop name: ' + name)
             position_match_required = True
-        except MultipleResultsFound as mrf:
+        except MultipleResultsFound:
             # log.warning('\tMultiple Stops found for stop name: ' + name)
             position_match_required = True
 
@@ -474,7 +526,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
             #     + ' ORDER BY distance ASC' \
             #     + ' LIMIT 1'
             # log.debug(raw_sql)
-            # result = db.engine.execute(raw_sql).one()
+            # result = database.engine.execute(raw_sql).one()
             #position = func.ST_MakePoint(lon, lat)
 
             # MySQL Spatial Function reference:
@@ -483,7 +535,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
                 Stop.stop_position, \
                 func.ST_PointFromText('point(' + str(lon) + ' ' + str(lat) + ')')
                 )
-            stop_query = db.session.query(Stop, distance_col)
+            stop_query = database.session.query(Stop, distance_col)
             stop_query = stop_query.order_by(asc(distance_col))
             result = stop_query.first()
             # print('stop name is ' + result[0].stop_name)
@@ -493,50 +545,58 @@ def get_stops_by_route(db, route_name, route_shortname, \
 
         return stop
 
-    log.debug('get_stops_by_route: Starting search for route \"' + route_shortname + '\", at ' + str(jrny_time))
+    log.debug(
+        'get_stops_by_route: Starting search for route \"%s\", at %d',
+        route_shortname, jrny_time)
 
     stoptimes_whole_trip = []
     if (route_shortname is None) or (jrny_time is None) \
-        or (departure_stop_name is None) or (departure_stop_lat is None) or (departure_stop_lon is None) \
-        or (arrival_stop_name is None) or (arrival_stop_lat is None) or (arrival_stop_lon is None):
+        or (departure_stop_name is None) \
+        or (departure_stop_lat is None) or (departure_stop_lon is None) \
+        or (arrival_stop_name is None) \
+        or (arrival_stop_lat is None) or (arrival_stop_lon is None):
         # required parameters missing
         # ALERT the LERTS!!!!!
         pass
     else:
         # Look up routes for supplied short name. Should always find some...  we
         # don't cater for 'no routes found' scenario
-        routes = db.session.query(Routes.route_id)
+        routes = database.session.query(Routes.route_id)
         routes = routes.filter(Routes.route_long_name == route_name)
         routes = routes.filter(Routes.route_short_name == route_shortname)
         routes = routes.order_by(text('route_id asc'))
 
         routes_for_shortname = []
-        for r in routes.all():
-            routes_for_shortname.append(r.route_id)
-        log.debug('\tFound ' + str(len(routes_for_shortname)) + ' routes for shortname ' + route_shortname)
+        for route in routes.all():
+            routes_for_shortname.append(route.route_id)
+        log.debug('\tFound %d routes for shortname %s', len(routes_for_shortname), route_shortname)
 
         # We now how a list of route_ids, we can use that list to get a list of trips
         # for those routes...  we don't cater for 'no trips found' scenario
-        trips = db.session.query(Trips)
+        trips = database.session.query(Trips)
         trips = trips.filter(Trips.route_id.in_(routes_for_shortname))
 
         # Extract a list of trip_id's from the 'trips' query result...
         trips_for_routes = []
-        for t in trips.all():
-            trips_for_routes.append(t.trip_id)
-        log.debug('\tFound ' + str(len(trips_for_routes)) + ' trips for above routes.')
+        for trip in trips.all():
+            trips_for_routes.append(trip.trip_id)
+        log.debug('\tFound %d trips for above routes.', len(trips_for_routes))
 
         # Identify the departure stop (by name ideally, if that fails then by lat/lon)
-        depstop = _identify_stop(db, departure_stop_name, departure_stop_lat, departure_stop_lon)
-        log.debug('\tIdentified departure stop -> ' + depstop.stop_name)
+        depstop = _identify_stop(
+            database, departure_stop_name, departure_stop_lat, departure_stop_lon
+            )
+        log.debug('\tIdentified departure stop -> %s', depstop.stop_name)
 
         # Identify the departure stop (by name ideally, if that fails then by lat/lon)
-        arrstop = _identify_stop(db, arrival_stop_name, arrival_stop_lat, arrival_stop_lon)
-        log.debug('\tIdentified arrival stop -> ' + arrstop.stop_name)
+        arrstop = _identify_stop(
+            database, arrival_stop_name, arrival_stop_lat, arrival_stop_lon
+            )
+        log.debug('\tIdentified arrival stop -> %s', arrstop.stop_name)
 
         # ***
         # THIS IS THE MAGIC - WHERE ROUTES, STEPS... BECOME A SINGLE TRIP
-        trip_from_stoptimes = db.session.query(StopTime.trip_id)
+        trip_from_stoptimes = database.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.trip_id.in_(trips_for_routes))
         # Additionally filtering by 'trip_headsign' in most cases ensures we never
@@ -544,27 +604,33 @@ def get_stops_by_route(db, route_name, route_shortname, \
         if stop_headsign:
             # A lot of the GTFS data have leading spaces, the google data does not...
             # ... so func.ltrim
-            trip_from_stoptimes = trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
+            trip_from_stoptimes = \
+                trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time <= jrny_time)
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
-        #log.debug('\tMost likely trip query:', trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
+        #log.debug('\tMost likely trip query:', \
+        # trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))
         trip_query_result = trip_from_stoptimes.limit(1).all()
 
         trip_id = None
         for row in trip_query_result:
             trip_id = row[0]
-            log.debug('\tMost likely trip identified: ' + str(trip_id))
+            log.debug('\tMost likely trip identified: %d', trip_id)
 
         # At this point we've hopefully identified the * most likely * trip_id for
         # the requested journey! Sweet - now we just return the list of stops for
         # this trip_id!
         step_stops  = []
         if trip_id:
-            stepstops_info_for_trip = db.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
-            stepstops_info_for_trip = stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
-            stepstops_info_for_trip = stepstops_info_for_trip.filter(StopTime.trip_id == trip_id)
-            stepstops_info_for_trip = stepstops_info_for_trip.order_by(text('stop_sequence'))
+            stepstops_info_for_trip = \
+                database.session.query(StopTime.stop_sequence, StopTime.shape_dist_traveled, Stop)
+            stepstops_info_for_trip = \
+                stepstops_info_for_trip.join(Stop, StopTime.stop_id == Stop.stop_id)
+            stepstops_info_for_trip = \
+                stepstops_info_for_trip.filter(StopTime.trip_id == trip_id)
+            stepstops_info_for_trip = \
+                stepstops_info_for_trip.order_by(text('stop_sequence'))
             # All stops selected, omit stop_times detail
             stoptimes_whole_trip = stepstops_info_for_trip.all()
 
@@ -575,7 +641,7 @@ def get_stops_by_route(db, route_name, route_shortname, \
                 if (stop.stop_id == depstop.stop_id) or (stops_in_step):
                     step_stops.append(StepStop(stop, row[0], row[1]))
                     stops_in_step = True
-                if (stop.stop_id == arrstop.stop_id):
+                if stop.stop_id == arrstop.stop_id:
                     stops_in_step = False
                     break
 
@@ -584,7 +650,9 @@ def get_stops_by_route(db, route_name, route_shortname, \
 
 
 def weather_information(inputtime):
-    """
+    """Return the predicted temperature at the provided time.
+
+    Uses the open-weather weather prediction service.
     """
     # Call the weather prediction service
     # This returns hourly weather predictions for four days from now
@@ -594,7 +662,8 @@ def weather_information(inputtime):
         + '&appid=' + credentials['open-weather']['api-key']
     weather_json = rq.get(url).json()
     log.debug(weather_json)
-    #weatherforecast_json = request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
+    #weatherforecast_json = \
+    # request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
 
     # Loop over the hourly data - find the first hour??? @YC - What about date??
     predicted_temp = None
@@ -614,7 +683,7 @@ def predict_journey_time(journey_prediction):
     If the pickle for the prediction model exists we use the end-to-end model.
     Else we use the stop-to-stop model.
     """
-    if journey_prediction.get_route_shortname_pickle_exists():
+    if journey_prediction.route_shortname_pickle_exists:
         journey_prediction = _predict_jt_end_to_end(journey_prediction)
     else:
         journey_prediction = _predict_jt_stop_to_stop(journey_prediction)
@@ -630,46 +699,51 @@ def _predict_jt_end_to_end(journey_prediction):
     """
 
     # Pull the required information from the JourneyPrediction object.
-    duration = journey_prediction.get_planned_duration_s()
-    time = journey_prediction.get_planned_departure_datetime()
-    hour=time.hour
-    week=time.isoweekday()
-    month=time.month
-    lineid=journey_prediction.get_route_shortname()
+    duration = journey_prediction.planned_duration_s
+    planned_departure_datetime = journey_prediction.planned_departure_datetime
+    hour=planned_departure_datetime.hour
+    week=planned_departure_datetime.isoweekday()
+    month=planned_departure_datetime.month
+    lineid=journey_prediction.route_shortname
     temperature=weather_information(hour)
 
-    week_sin= np.sin(2 * np.pi * week/6.0)
-    week_cos = np.cos(2 * np.pi * week/6.0)
-    hour_sin = np.sin(2 * np.pi * hour/23.0)
+    week_sin  = np.sin(2 * np.pi * week/6.0)
+    week_cos  = np.cos(2 * np.pi * week/6.0)
+    hour_sin  = np.sin(2 * np.pi * hour/23.0)
     hour_cos  = np.cos(2 * np.pi * hour/23.0)
     month_sin = np.sin(2 * np.pi * month/12.0)
-    month_cos  = np.cos(2 * np.pi * month/12.0)
+    month_cos = np.cos(2 * np.pi * month/12.0)
 
     # load the prediction model
     end_to_end_filepath='pickles/end_to_end/'+lineid+".pickle"
     #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, end_to_end_filepath), 'rb')
-    model_for_line = pickle.load(f)
-    f.close()
+    with open(os.path.join(jt_utils_dir, end_to_end_filepath), 'rb') as file:
+        model_for_line = pickle.load(file)
 
     # create a pandas dataframe
     #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-    dic_list = [{'PLANNED_JOURNEY_TIME':duration,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos,'month_sin':month_sin,'month_cos':month_cos,'temp':temperature}]
+    dic_list = [
+        {'PLANNED_JOURNEY_TIME':duration,
+        'week_sin':week_sin,'week_cos':week_cos,
+        'hour_sin':hour_sin,'hour_cos':hour_cos,
+        'month_sin':month_sin,'month_cos':month_cos,
+        'temp':temperature}
+        ]
     input_to_pickle_data_frame = pd.DataFrame(dic_list)
     # Pass the dataframe into model and predict time
     # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
     predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
-    journey_prediction.set_predicted_duration_s(predict_result)
+    journey_prediction.predicted_duration_s = predict_result
 
     # With the end-to-end time predicted we need to split the journey time out
     # so we can display 'stop by stop' journey time predictions.  We do this
     # proportionally using distance along the shape travelled.  This is not
     # fantastic, but sufficient to give the user an idea of the predicted
     # arrival times:
-    list_of_stops_for_journey = journey_prediction.get_step_stpps()
+    list_of_stops_for_journey = journey_prediction.step_stops
 
-    start_distance = list_of_stops_for_journey[0].get_shape_dist_traveled()
-    end_distance = list_of_stops_for_journey[-1].get_shape_dist_traveled()
+    start_distance = list_of_stops_for_journey[0].shape_dist_traveled
+    end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
 
     total_dis_m = end_distance - start_distance
 
@@ -680,18 +754,18 @@ def _predict_jt_end_to_end(journey_prediction):
             stepstop_prev = stepstop_current
             stepstop_current  = stepstop
 
-            dist_from_last_stop=stepstop_current.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
+            dist_from_last_stop = \
+                stepstop_current.shape_dist_traveled - stepstop_prev.shape_dist_traveled
             predicted_time_stop_to_stop=predict_result*(dist_from_last_stop/total_dis_m)
 
             cumulative_time += + predicted_time_stop_to_stop
 
             # Set the predicted journey distance/time on the current 'StepStop' Object
-            stepstop_current.set_dist_from_first_stop_m(
-                stepstop_current.get_shape_dist_traveled() - start_distance
-                )
-            stepstop_current.set_predicted_time_from_first_stop_s(cumulative_time)
+            stepstop_current.dist_from_first_stop_m = \
+                stepstop_current.shape_dist_traveled - start_distance
+            stepstop_current.predicted_time_from_first_stop_s = cumulative_time
 
-    #journey_prediction.set_predicted_duration_s(600)
+    #journey_prediction.predicted_duration_s = 600
 
     return journey_prediction  # Return the updated prediction_request
 
@@ -704,19 +778,18 @@ def _predict_jt_stop_to_stop(journey_prediction):
     """
 
     # load the prediction model
-    stop_to_stop_filepath='pickles/stop_to_stop/rfstoptostop1.pickle'
+    stop_to_stop_filepath='pickles/stop_to_stop/rfstoptostop.pickle'
     #  f = open('test_rfc.pickle','rb')
-    f= open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb')
-    # TODO:: Agree what action we should take if the pickle is invalid/not found.
-    model_stop_to_stop = pickle.load(f)
-    f.close()
+    with open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb') as file:
+        # TODO:: Agree what action we should take if the pickle is invalid/not found.
+        model_stop_to_stop = pickle.load(file)
 
-    duration = journey_prediction.get_planned_duration_s()
-    time = journey_prediction.get_planned_departure_datetime()
-    hour=time.hour
-    week=time.isoweekday()
+    duration = journey_prediction.planned_duration_s
+    planned_departure_datetime = journey_prediction.planned_departure_datetime
+    hour=planned_departure_datetime.hour
+    week=planned_departure_datetime.isoweekday()
     # month=time.month
-    # lineid=journey_prediction.get_route_shortname()
+    # lineid=journey_prediction.route_shortname
     temperature=weather_information(hour)
     #temperature=20
     week_sin= np.sin(2 * np.pi * week/6.0)
@@ -726,13 +799,13 @@ def _predict_jt_stop_to_stop(journey_prediction):
     #  month_sin = np.sin(2 * np.pi * month/12.0)
     #  month_cos  = np.cos(2 * np.pi * month/12.0)
 
-    list_of_stops_for_journey = journey_prediction.get_step_stpps()
+    list_of_stops_for_journey = journey_prediction.step_stops
 
     total_dis_m=0.001  # Sensible default - avoid divide by zero error
     total_time=0
 
-    start_distance = list_of_stops_for_journey[0].get_shape_dist_traveled()
-    end_distance = list_of_stops_for_journey[-1].get_shape_dist_traveled()
+    start_distance = list_of_stops_for_journey[0].shape_dist_traveled
+    end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
 
     total_dis_m = end_distance - start_distance
 
@@ -742,37 +815,41 @@ def _predict_jt_stop_to_stop(journey_prediction):
             stepstop_prev = list_of_stops_for_journey[index-1]
             stepstop_now  = stepstop
 
-            stop_prev_dist_from_cc = stepstop_prev.get_stop().dist_from_cc
-            stop_now_dist_from_cc = stepstop_now.get_stop().dist_from_cc
+            stop_prev_dist_from_cc = stepstop_prev.stop.dist_from_cc
+            stop_now_dist_from_cc = stepstop_now.stop.dist_from_cc
 
-            dis_twostop=stepstop_now.get_shape_dist_traveled() - stepstop_prev.get_shape_dist_traveled()
+            dis_twostop = \
+                stepstop_now.shape_dist_traveled - stepstop_prev.shape_dist_traveled
 
             plantime_partial=duration*(dis_twostop/total_dis_m)
 
             #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
             dic_list = [
-                {'PLANNED_JOURNEY_TIME':plantime_partial,	'dis_twostop':dis_twostop, \
-                'dis_prestop_city':stop_prev_dist_from_cc, 'dis_stopnow_city':stop_now_dist_from_cc, \
-                'temp':temperature,'week_sin':week_sin,'week_cos':week_cos,'hour_sin':hour_sin,'hour_cos':hour_cos}
+                {'PLANNED_JOURNEY_TIME':plantime_partial, \
+                'dis_twostop':dis_twostop, \
+                'dis_prestop_city':stop_prev_dist_from_cc, \
+                'dis_stopnow_city':stop_now_dist_from_cc, \
+                'temp':temperature, \
+                'week_sin':week_sin,'week_cos':week_cos, \
+                'hour_sin':hour_sin,'hour_cos':hour_cos}
                 ]
             input_to_pickle_data_frame = pd.DataFrame(dic_list).values
             # throw the dataframe into model and predict time
             # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
             predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
-            log.debug("**** Predict result", predict_result)
+            log.debug("**** Predict result -> %d", predict_result)
             cumulative_time += predict_result
 
             # Set the predicted journey distance/time on the current 'StepStop' Object
-            stepstop_now.set_dist_from_first_stop_m(
-                stepstop_now.get_shape_dist_traveled() - start_distance
-                )
-            stepstop_now.set_predicted_time_from_first_stop_s(cumulative_time)
+            stepstop_now.dist_from_first_stop_m = \
+                stepstop_now.shape_dist_traveled - start_distance
+            stepstop_now.predicted_time_from_first_stop_s = cumulative_time
 
             total_time=predict_result+total_time
 
     # At the end set the total predicted journey time on the journey_prediction object
     log.debug(predict_result)
-    journey_prediction.set_predicted_duration_s(total_time)
+    journey_prediction.predicted_duration_s = total_time
 
     return journey_prediction  # Return the updated rediction_request
 
@@ -782,8 +859,10 @@ def time_rounded_to_hrs_mins_as_string(seconds):
 
     Timne is rounded to the nearest minute.
     """
-    # divmod() accepts two ints as parameters, returns a tuple containing the quotient and remainder of their division
-    mins, secs = divmod(seconds, 60)  # secs is 'remaining seconds', we don't show them, but used for rounding...
+    # divmod() accepts two ints as parameters, returns a tuple containing the
+    # quotient and remainder of their division
+    mins, secs = divmod(seconds, 60)  # secs is 'remaining seconds'
+                                      # not shown, but used for rounding...
     hrs, mins = divmod(mins,60)
     if secs >= 30:
         mins += 1

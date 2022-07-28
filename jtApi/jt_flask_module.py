@@ -684,7 +684,7 @@ def get_journey_time():
                     journey_pred = predict_journey_time(journey_pred)
 
                     # Extend the json to contain the prediction information...
-                    predicted_duration = journey_pred.get_predicted_duration_s()
+                    predicted_duration = journey_pred.predicted_duration_s
                     step['predicted_duration'] = {}
                     step['predicted_duration']['text'] = time_rounded_to_hrs_mins_as_string(predicted_duration)
                     step['predicted_duration']['value'] = predicted_duration
@@ -695,15 +695,15 @@ def get_journey_time():
                         step['stop_sequence']['stops'] = []
                         for step_stop in step_stops:
                             step_stop_dict = {}
-                            step_stop_dict['stop_id'] = step_stop.get_stop().stop_id
-                            step_stop_dict['name'] = step_stop.get_stop().stop_name
+                            step_stop_dict['stop_id'] = step_stop.stop.stop_id
+                            step_stop_dict['name'] = step_stop.stop.stop_name
                             step_stop_dict['location'] = {}
-                            step_stop_dict['location']['lat'] = step_stop.get_stop().stop_lat
-                            step_stop_dict['location']['lng'] = step_stop.get_stop().stop_lon
-                            step_stop_dict['sequence_no'] = step_stop.get_stop_sequence()
-                            step_stop_dict['shape_dist_traveled'] = step_stop.get_shape_dist_traveled()
-                            step_stop_dict['dist_from_first_stop_m'] = step_stop.get_dist_from_first_stop_m()
-                            step_stop_dict['predicted_time_from_first_stop_s'] = step_stop.get_predicted_time_from_first_stop_s()
+                            step_stop_dict['location']['lat'] = step_stop.stop.stop_lat
+                            step_stop_dict['location']['lng'] = step_stop.stop.stop_lon
+                            step_stop_dict['sequence_no'] = step_stop.stop_sequence
+                            step_stop_dict['shape_dist_traveled'] = step_stop.shape_dist_traveled
+                            step_stop_dict['dist_from_first_stop_m'] = step_stop.dist_from_first_stop_m
+                            step_stop_dict['predicted_time_from_first_stop_s'] = step_stop.predicted_time_from_first_stop_s
                             step['stop_sequence']['stops'].append(step_stop_dict)
                     else:
                         # No stop information available

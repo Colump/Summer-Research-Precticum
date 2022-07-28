@@ -17,8 +17,8 @@ from zipfile import ZipFile
 from haversine import haversine
 import requests
 import sqlalchemy as db
+from sqlalchemy.exc import SQLAlchemyError, DBAPIError
 from sqlalchemy.orm import sessionmaker
-
 
 # Local Application Imports
 # To make sure we can import modules from the folder where jt_gtfs_loader is
@@ -35,6 +35,8 @@ from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, St
 # Dublin City Center...
 credentials = load_credentials()
 CONST_DUBLIN_CC = (credentials['DUBLIN_CC']['lat'], credentials['DUBLIN_CC']['lon'])
+
+CONST_OBJ_PER_SESS_MAX = 50000
 
 
 def download_gtfs_schedule_data(import_dir):
@@ -101,8 +103,6 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
 
     """
 
-    objects_per_session_max = 50000
-
     import_dir_enc = os.fsencode(import_dir)
     for file in os.listdir(import_dir_enc):
         # 'file' is a handle on the actual file...
@@ -144,173 +144,34 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                     #           What if population fails???
 
                     if filename == "agency.txt":
-                        truncate_table(session, Agency)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            agency = Agency(
-                                agency_id=row[0],
-                                agency_name=row[1],
-                                agency_url=row[2],
-                                agency_timezone=row[3],
-                                agency_lang=row[4],
-                                agency_phone=row[5]
-                                #db has field "agencycol" - what for??
-                            )
-                            objects_this_session.append(agency)
+                        import_agency(data, session, objects_this_session)
 
                     elif filename == "calendar.txt":
-                        truncate_table(session, Calendar)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            calendar = Calendar(
-                                service_id=row[0],
-                                monday=row[1],
-                                tuesday=row[2],
-                                wednesday=row[3],
-                                thursday=row[4],
-                                friday=row[5],
-                                saturday=row[6],
-                                sunday=row[7],
-                                start_date=row[8],
-                                end_date=row[9]
-                            )
-                            objects_this_session.append(calendar)
+                        import_calendar(data, session, objects_this_session)
 
                     elif filename == "calendar_dates.txt":
-                        truncate_table(session, CalendarDates)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            calendar_date = CalendarDates(
-                                service_id=row[0],
-                                date=row[1],
-                                exception_type=row[2]
-                            )
-                            objects_this_session.append(calendar_date)
+                        import_calendar_dates(data, session, objects_this_session)
 
                     elif filename == "routes.txt":
-                        truncate_table(session, Routes)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            route = Routes(
-                                route_id=row[0],
-                                agency_id=row[1],
-                                route_short_name=row[2],
-                                route_long_name=row[3],
-                                route_type=row[4]
-                            )
-                            objects_this_session.append(route)
+                        import_routes(data, session, objects_this_session)
 
                     elif filename == "shapes.txt":
-                        truncate_table(session, Shapes)
-
-                        print('        Processing records in batches of', objects_per_session_max)
-                        print('          -> ', end='')
-                        for row in data:
-                            shape = Shapes(
-                                shape_id=row[0],
-                                shape_pt_lat=row[1],
-                                shape_pt_lon=row[2],
-                                shape_pt_sequence=row[3],
-                                shape_dist_traveled=row[4]
-                            )
-                            objects_this_session.append(shape)
-
-                            if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session( \
-                                    objects_this_session, session, session_maker \
-                                    )
-                                objects_this_session = []  # Resume with an empty list...
+                        session, objects_this_session = \
+                            import_shapes(data, session, session_maker, objects_this_session)
 
                     elif filename == "stops.txt":
-                        truncate_table(session, Stop)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            stop = Stop(
-                                stop_id=row[0],
-                                stop_name=row[1],
-                                stop_lat=row[2],
-                                stop_lon=row[3],
-                                # (See custom 'Point' type in models.py for following...)
-                                # Note that spatial points are defined "lon-lat"
-                                stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
-                                # 'stop_position' is binary information.  If you want to
-                                # "see" it in a query the easiest way is to use one of
-                                # the built in functions to display it. E.g:
-                                #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position)
-                                #   FROM stops
-
-                                # Calculate distance to city center using haversine (in km) ...
-                                dist_from_cc = haversine(
-                                    CONST_DUBLIN_CC,
-                                    (float(row[2]), float(row[3]))
-                                    )
-                            )
-                            objects_this_session.append(stop)
+                        import_stops(data, session, objects_this_session)
 
                     elif filename == "stop_times.txt":
-                        truncate_table(session, StopTime)
-
-                        print('        Processing records in batches of', objects_per_session_max)
-                        print('          -> ', end='')
-                        for row in data:
-                            stop_time = StopTime(
-                                trip_id=row[0],
-                                arrival_time=row[1],
-                                departure_time=row[2],
-                                stop_id=row[3],
-                                stop_sequence=row[4],
-                                stop_headsign=row[5],
-                                pickup_type=row[6],
-                                drop_off_type=row[7],
-                                shape_dist_traveled=row[8]
-                            )
-                            objects_this_session.append(stop_time)
-
-                            if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session( \
-                                    objects_this_session, session, session_maker \
-                                    )
-                                objects_this_session = []  # Resume with an empty list...
+                        session, objects_this_session = \
+                            import_stop_times(data, session, session_maker, objects_this_session)
 
                     elif filename == "transfers.txt":
-                        truncate_table(session, Transfers)
-
-                        print('          -> ', end='')
-                        for row in data:
-                            transfer = Transfers(
-                                from_stop_id=row[0],
-                                to_stop_id=row[1],
-                                transfer_type=row[2],
-                                min_transfer_time=row[3] if row[3] != '' else None
-                            )
-                            objects_this_session.append(transfer)
+                        import_transfers(data, session, objects_this_session)
 
                     elif filename == "trips.txt":
-                        truncate_table(session, Trips)
-
-                        print('        Processing records in batches of', objects_per_session_max)
-                        print('          -> ', end='')
-                        for row in data:
-                            trip = Trips(
-                                route_id=row[0],
-                                service_id=row[1],
-                                trip_id=row[2],
-                                shape_id=row[3],
-                                trip_headsign=row[4],
-                                direction_id=row[5]
-                            )
-                            objects_this_session.append(trip)
-
-                            if len(objects_this_session) >= objects_per_session_max:
-                                session = commit_batch_and_start_new_session( \
-                                    objects_this_session, session, session_maker \
-                                    )
-                                objects_this_session = []  # Resume with an empty list...
+                        session, objects_this_session = \
+                            import_trips(data, session, session_maker, objects_this_session)
 
                     else:
                         print('WARNING: Unexpected .txt file encountered -> ' + str(filename))
@@ -331,6 +192,215 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                 print('         Ignoring...')
 
             print('')
+
+
+def import_agency(data, session, objects_this_session):
+    """Import content from data into the Agency table
+
+    """
+    truncate_table(session, Agency)
+
+    print('          -> ', end='')
+    for row in data:
+        agency = Agency(agency_id=row[0],
+                        agency_name=row[1],
+                        agency_url=row[2],
+                        agency_timezone=row[3],
+                        agency_lang=row[4],
+                        agency_phone=row[5]
+                        #db has field "agencycol" - what for??
+                        )
+        objects_this_session.append(agency)
+
+
+def import_calendar(data, session, objects_this_session):
+    """Import content from data into the Calendar table
+
+    """
+    truncate_table(session, Calendar)
+
+    print('          -> ', end='')
+    for row in data:
+        calendar = Calendar(
+                                service_id=row[0],
+                                monday=row[1],
+                                tuesday=row[2],
+                                wednesday=row[3],
+                                thursday=row[4],
+                                friday=row[5],
+                                saturday=row[6],
+                                sunday=row[7],
+                                start_date=row[8],
+                                end_date=row[9]
+                            )
+        objects_this_session.append(calendar)
+
+
+def import_calendar_dates(data, session, objects_this_session):
+    """Import content from data into the CalendarDates table
+
+    """
+    truncate_table(session, CalendarDates)
+
+    print('          -> ', end='')
+    for row in data:
+        calendar_date = CalendarDates(
+                                service_id=row[0],
+                                date=row[1],
+                                exception_type=row[2]
+                            )
+        objects_this_session.append(calendar_date)
+
+
+def import_routes(data, session, objects_this_session):
+    """Import content from data into the Routes table
+
+    """
+    truncate_table(session, Routes)
+
+    print('          -> ', end='')
+    for row in data:
+        route = Routes(
+                                route_id=row[0],
+                                agency_id=row[1],
+                                route_short_name=row[2],
+                                route_long_name=row[3],
+                                route_type=row[4]
+                            )
+        objects_this_session.append(route)
+
+
+def import_shapes(data, session, session_maker, objects_this_session):
+    """Import content from data into the Shapes table
+
+    """
+    truncate_table(session, Shapes)
+
+    print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
+    print('          -> ', end='')
+    for row in data:
+        shape = Shapes(
+                                shape_id=row[0],
+                                shape_pt_lat=row[1],
+                                shape_pt_lon=row[2],
+                                shape_pt_sequence=row[3],
+                                shape_dist_traveled=row[4]
+                            )
+        objects_this_session.append(shape)
+
+        if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
+            session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
+            objects_this_session = []  # Resume with an empty list...
+    return session,objects_this_session
+
+
+def import_stops(data, session, objects_this_session):
+    """Import content from data into the Stop table
+
+    """
+    truncate_table(session, Stop)
+
+    print('          -> ', end='')
+    for row in data:
+        stop = Stop(stop_id=row[0],
+                    stop_name=row[1],
+                    stop_lat=row[2],
+                    stop_lon=row[3],
+                    # (See custom 'Point' type in models.py for following...)
+                    # Note that spatial points are defined "lon-lat"
+                    stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
+                    # 'stop_position' is binary information.  If you want to
+                    # "see" it in a query the easiest way is to use one of
+                    # the built in functions to display it. E.g:
+                    #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position)
+                    #   FROM stops
+                    # Calculate distance to city center using haversine (in km) ...
+                    dist_from_cc = haversine(
+                        CONST_DUBLIN_CC,
+                        (float(row[2]), float(row[3]))
+                        )
+                    )
+        objects_this_session.append(stop)
+
+
+def import_stop_times(data, session, session_maker, objects_this_session):
+    """Import content from data into the StopTimes table
+
+    Processed in batches of "CONST_OBJ_PER_SESS_MAX" records.
+    """
+    truncate_table(session, StopTime)
+
+    print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
+    print('          -> ', end='')
+    for row in data:
+        stop_time = StopTime(trip_id=row[0],
+                            arrival_time=row[1],
+                            departure_time=row[2],
+                            stop_id=row[3],
+                            stop_sequence=row[4],
+                            stop_headsign=row[5],
+                            pickup_type=row[6],
+                            drop_off_type=row[7],
+                            shape_dist_traveled=row[8]
+                            )
+        objects_this_session.append(stop_time)
+
+        if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
+            session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
+            objects_this_session = []  # Resume with an empty list...
+
+    return session,objects_this_session
+
+
+def import_transfers(data, session, objects_this_session):
+    """Import content from data into the Transfers table
+
+    """
+    truncate_table(session, Transfers)
+
+    print('          -> ', end='')
+    for row in data:
+        transfer = Transfers(from_stop_id=row[0],
+                            to_stop_id=row[1],
+                            transfer_type=row[2],
+                            min_transfer_time=row[3] if row[3] != '' else None
+                            )
+        objects_this_session.append(transfer)
+
+
+def import_trips(data, session, session_maker, objects_this_session):
+    """Import content from data into the Trips table
+
+    Processed in batches of "CONST_OBJ_PER_SESS_MAX" records.
+    """
+    truncate_table(session, Trips)
+
+    print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
+    print('          -> ', end='')
+    for row in data:
+        trip = Trips(route_id=row[0],
+                    service_id=row[1],
+                    trip_id=row[2],
+                    shape_id=row[3],
+                    trip_headsign=row[4],
+                    direction_id=row[5]
+                    )
+        objects_this_session.append(trip)
+
+        if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
+            session = commit_batch_and_start_new_session( \
+                                    objects_this_session, session, session_maker \
+                                    )
+            objects_this_session = []  # Resume with an empty list...
+
+    return session,objects_this_session
+
+
+#-------------------------------------------------------------------------------
 
 
 def commit_batch_and_start_new_session(list_of_objects, session, session_maker):
@@ -441,8 +511,9 @@ def main():
             # With the CSV files (bizarrely, with a .txt extension) extracted to disk,
             # we import the content to the db.
             import_gtfs_txt_files_to_db(import_dir, session_maker)
-    except Exception:
+    except (SQLAlchemyError, DBAPIError):
         # if there is any problem, print the traceback
+        print("ERROR Database Error")
         print(traceback.format_exc())
         print('\tRegistering error with cronitor.')
         # Send a Cronitor request to signal our process has failed.
