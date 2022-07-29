@@ -646,9 +646,6 @@ def get_journey_time():
         prediction_request_json = request.json
         print("get_journey_time.do: request.json type is -> ", type(request.json))
 
-        # pickles_dir='pickles'
-        # TEMP_pickle_path= os.path.join(jtFlaskModDir, pickles_dir)
-
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
@@ -680,9 +677,10 @@ def _predict_all_steps(route):
     for step_idx, step in enumerate(route['steps']):
         log.debug('\tProcessing step %s.', step_idx)
 
-        _attempt_predict_this_step(step)
+        _attempt_predict_this_step(step_idx, step)
 
-def _attempt_predict_this_step(step):
+
+def _attempt_predict_this_step(step_idx, step):
     """Attempt to perform a journey prediction for the current step
 
     Extracts the details required for prediction from the inbound json
@@ -690,35 +688,32 @@ def _attempt_predict_this_step(step):
     If we don't have information for this route, return a 'no prediction' message
     """
     planned_time_s  = step['duration']['value']
-                # Extend the json to contain stop-by-stop route information...
-                # NOTE The mappings between Googles supplied data and the GTFSR
-                #      fields are *inferred* - I could not find documentation
-                #      guaranteeing the mappings.
+    # Extend the json to contain stop-by-stop route information...
+    # NOTE The mappings between Googles supplied data and the GTFSR fields are
+    #      *inferred* - I could not find documentation guaranteeing the mappings.
     route_name = step['transit_details']['line']['name']
     route_shortname = ''
     if 'short_name' in step['transit_details']['line'].keys():
-                    # Dublin Bus use route shortname to list the line id's...
+        # Dublin Bus use route shortname to list the line id's...
         route_shortname = step['transit_details']['line']['short_name']
     else:
-                    # Other operators like Aircoach seem to use the name...
+        # Other operators like Aircoach seem to use the name...
         route_shortname = step['transit_details']['line']['name']
-                # Our best guess for line-id is now route-shortname. BUT there
-                # are some routes in Dublin not covered by agencies in the
-                # transportforireland data set.  If we encounter one of these
-                # routes there's nothing we can do (we have no information about
-                # the route at all).
+        # Our best guess for line-id is now route-shortname. BUT there  are some
+        # routes in Dublin not covered by agencies in the  transportforireland
+        # data set.  If we encounter one of these  routes there's nothing we can
+        # do (we have no information about the route at all).
     if route_shortname in VALID_ROUTE_SHORTNAMES:
         # We have supporting information in the database (route details etc.)
         # - let's go ahead and perform a prediction!
-        _predict_this_step(step, planned_time_s, route_name, route_shortname)
+        _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortname)
     else:
-                    # We have encountered an invalid route shortname. We abort
-                    # with an error message...
+        # We have encountered an invalid route shortname. We abort with an error message...
         step['prediction_status'] = \
                         'Prediction Service not available for route \'' + route_shortname + '\'.'
 
 
-def _predict_this_step(step, planned_time_s, route_name, route_shortname):
+def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortname):
     """Perform a journey prediction for the current step
 
     Look up the stop sequence for this route from the GTFS data
@@ -729,48 +724,47 @@ def _predict_this_step(step, planned_time_s, route_name, route_shortname):
     route_shortname_pickle_exists = \
                         route_shortname in AVAILABLE_MODEL_ROUTE_SHORTNAMES
 
-                    # Dublin Bus times are 'timestamp' expressed in seconds
-                    # elapsed since the Unix epoch, 1970-01-01 00:00:00 UTC
-                    # Using datetime to construct our date seems to nicely cater
-                    # for daylight savings times, differences from UTC etc. ...
-                    # -
-                    # Aircoach on the other hand appear to publish their times as strings
-                    # So... we just fudge around it...
+    # Dublin Bus times are 'timestamp' expressed in seconds elapsed since the Unix
+    # epoch, 1970-01-01 00:00:00 UTC.  Using datetime to construct our date seems
+    # to nicely cater for daylight savings times, differences from UTC etc. ...
+    # -
+    # Aircoach on the other hand appear to publish their times as strings.  So...
+    # we just fudge around it...
     planned_departure_datetime = _get_planned_departure_datetime(step)
 
     step_stops = _get_stops_for_this_step(step, route_name, route_shortname)
 
-                    # Bundle everything we need to make a prediction into a convenient
-                    # object. We can then pass this object to the prediction routine
+    # Bundle everything we need to make a prediction into a convenient object.
+    # We can then pass this object to the prediction routine
     journey_pred = JourneyPrediction( \
                         route_shortname, route_shortname_pickle_exists, \
                         planned_time_s, planned_departure_datetime, step_stops)
 
-                    # # Pickle the JourneyPrediction object - handy for testing!!
-                    # with open(
-                    #       os.path.join(
-                    #           TEMP_pickle_path,
-                    #           'JourneyPrediction-r' + str(route_idx)
-                    #           + '-s' + str(step_idx) + '.pickle')
-                    #       , 'wb+'
-                    #       ) as handle:
-                    #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # # Pickle the JourneyPrediction object - handy for testing!!
+    # with open(
+    #     os.path.join(
+    #         os.path.join(jt_flask_mod_dir, 'pickles'),
+    #         'JourneyPrediction-r' + str(route_shortname)
+    #         + '-s' + str(step_idx) + '.pickle')
+    #     , 'wb+'
+    #     ) as handle:
+    #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
-                    # Call a function to get the predicted journey time for this step.
+    # Call a function to get the predicted journey time for this step.
     journey_pred = predict_journey_time(journey_pred, CONST_MODEL_STOP_TO_STOP)
 
-                    # Extend the json to contain the prediction information...
+    # Extend the json to contain the prediction information...
     predicted_duration = journey_pred.predicted_duration_s
     step['predicted_duration'] = {}
     step['predicted_duration']['text'] = \
                         time_rounded_to_hrs_mins_as_string(predicted_duration)
     step['predicted_duration']['value'] = predicted_duration
 
-                    # Where possible - extend the json to contain the step_stops information
+    # Where possible - extend the json to contain the step_stops information
     if len(step_stops) > 0:
         _add_stop_seq_json_to_step(step, step_stops)
     else:
-                        # No stop information available
+        # No stop information available
         step['prediction_status'] = \
                             'Prediction Attempted - Stop-by-Stop information not available.'
 
@@ -783,14 +777,14 @@ def _get_planned_departure_datetime(step):
     planned_departure_datetime = datetime.now()
     if isinstance(step['transit_details']['departure_time']['value'], str):
         dep_datetime_str = step['transit_details']['departure_time']['value']
-                        # We strip off the trailing 'GMT+0100' etc from the string before...
+        # We strip off the trailing 'GMT+0100' etc from the string before...
         last_period = dep_datetime_str.rfind('.')
         dep_datetime_str = dep_datetime_str[:last_period]
-                        # ... converting it to a datetime object.
+        # ... converting it to a datetime object.
         planned_departure_datetime = \
                             datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S')
     else:
-                        # Dublin bus scenario...
+        # Dublin bus scenario...
         planned_departure_datetime = \
                             datetime.fromtimestamp(
                                 step['transit_details']['departure_time']['value']
@@ -845,13 +839,13 @@ def _get_departure_time(step):
     departure_time = datetime.now().time()
     if isinstance(step['transit_details']['departure_time']['value'], str):
         dep_datetime_str = step['transit_details']['departure_time']['value']
-                        # We strip off the trailing 'GMT+0100' from the string before processing...
+        # We strip off the trailing 'GMT+0100' from the string before processing...
         last_period = dep_datetime_str.rfind('.')
         dep_datetime_str = dep_datetime_str[:last_period]
         departure_time = \
                             datetime.strptime(dep_datetime_str, '%Y-%m-%dT%H:%M:%S').time()
     else:
-                        # Dublin bus scenario...
+        # Dublin bus scenario...
         departure_time = datetime.fromtimestamp(
                             step['transit_details']['departure_time']['value']
                             ).time()

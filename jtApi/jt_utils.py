@@ -556,8 +556,8 @@ def get_stops_by_route(database, route_name, route_shortname, \
         return stop
 
     log.debug(
-        'get_stops_by_route: Starting search for route \"%s\", at %d',
-        route_shortname, jrny_time)
+        'get_stops_by_route: Starting search for route \"%s\", at %s',
+        route_shortname, str(jrny_time))
 
     stoptimes_whole_trip = []
     if (route_shortname is None) or (jrny_time is None) \
@@ -579,7 +579,8 @@ def get_stops_by_route(database, route_name, route_shortname, \
         routes_for_shortname = []
         for route in routes.all():
             routes_for_shortname.append(route.route_id)
-        log.debug('\tFound %d routes for shortname %s', len(routes_for_shortname), route_shortname)
+        log.debug('\tFound %d routes for shortname/name %s/%s', \
+            len(routes_for_shortname), route_shortname, route_name)
 
         # We now how a list of route_ids, we can use that list to get a list of trips
         # for those routes...  we don't cater for 'no trips found' scenario
@@ -626,7 +627,7 @@ def get_stops_by_route(database, route_name, route_shortname, \
         trip_id = None
         for row in trip_query_result:
             trip_id = row[0]
-            log.debug('\tMost likely trip identified: %d', trip_id)
+            log.debug('\tMost likely trip identified: %s', trip_id)
 
         # At this point we've hopefully identified the * most likely * trip_id for
         # the requested journey! Sweet - now we just return the list of stops for
@@ -671,7 +672,8 @@ def weather_information(inputtime):
         + '&lon=' + str(CONST_DUBLIN_CC[1]) \
         + '&appid=' + credentials['open-weather']['api-key']
     weather_json = rq.get(url).json()
-    log.debug(weather_json)
+    # Following produces a lot of json... only enable when required.
+    #log.debug(weather_json)
     #weatherforecast_json = \
     # request_weatherforecast_data(latitude=str(position_lat), longitude=str(position_lng))
 
@@ -744,6 +746,7 @@ def _predict_jt_end_to_end(journey_prediction):
     # Pass the dataframe into model and predict time
     # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
     predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
+    log.debug("\tEnd-to-end prediction result -> %d", predict_result)
     journey_prediction.predicted_duration_s = predict_result
 
     # With the end-to-end time predicted we need to split the journey time out
@@ -842,7 +845,7 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
             # throw the dataframe into model and predict time
             # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
             predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
-            log.debug("**** Predict result -> %d", predict_result)
+            log.debug("\tStop-to-stop prediction result -> %d", predict_result)
             cumulative_time += predict_result
 
             # Set the predicted journey distance/time on the current 'StepStop' Object
@@ -889,13 +892,18 @@ def main():
     """
 
     print('JT_Utils: Main Method')
-    pickles_dir='pickles'
-    pickle_path= os.path.join(jt_utils_dir, pickles_dir)
+    pickle_path= os.path.join(jt_utils_dir, 'pickles')
 
-    with (open(os.path.join(pickle_path, 'JourneyPrediction-r0-s0.pickle'), "rb")) as jp_pickle:
+    stop_to_stop_filepath=os.path.join(pickle_path, 'stop_to_stop' )
+    stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' )
+    with open(stop_to_stop_filepath, 'rb') as file:
+        # TODO:: Agree what action we should take if the pickle is invalid/not found.
+        model_stop_to_stop = pickle.load(file)
+
+    with (open(os.path.join(pickle_path, 'JourneyPrediction-r15-s1.pickle'), "rb")) as jp_pickle:
         journey_pred = pickle.load(jp_pickle)
         # # Call a function to get the predicted journey time for this step.
-        journey_pred = predict_journey_time(journey_pred)
+        journey_pred = predict_journey_time(journey_pred, model_stop_to_stop)
 
     sys.exit()
 
