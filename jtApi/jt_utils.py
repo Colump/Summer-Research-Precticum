@@ -304,6 +304,11 @@ class JourneyPrediction:
     end-to-end model is available, etc.. But those factors are common to all
     predictions, the data encapsulated here is for a single journey
     """
+
+    # pylint: disable=too-many-instance-attributes
+    # Twelve is reasonable in this case.
+    # (pylint counts BOTH properties and the associated private variables)
+
     def __init__( \
             self, route_shortname, route_shortname_pickle_exists, \
             planned_duration_s, planned_departure_datetime, \
@@ -321,52 +326,57 @@ class JourneyPrediction:
     @property
     def route_shortname(self):
         """The route shortname for this journey."""
-        return self._route_shortname
+        return self.__route_shortname
     @property
     def route_shortname_pickle_exists(self):
         """If a 'route shortname' (a.k.a. 'end-to-end') pickle exists for this journey."""
-        return self._route_shortname_pickle_exists
+        return self.__route_shortname_pickle_exists
     @property
     def planned_duration_s(self):
         """The planned duration for this journey."""
-        return self._planned_duration_s
+        return self.__planned_duration_s
     @property
     def planned_departure_datetime(self):
         """The planned departure datetime for this journey."""
-        return self._planned_departure_datetime
+        return self.__planned_departure_datetime
     @property
     def step_stops(self):
         """The list of step-stops for this journey."""
-        return self._step_stops
+        return self.__step_stops
     @property
     def predicted_duration_s(self):
         """The predicted duration in s for this journey."""
-        return self._predicted_duration_s
+        return self.__predicted_duration_s
 
     @route_shortname.setter
     def route_shortname(self, route_shortname):
-        self._route_shortname = route_shortname
+        self.__route_shortname = route_shortname
     @route_shortname_pickle_exists.setter
     def route_shortname_pickle_exists(self, route_shortname_pickle_exists):
-        self._route_shortname_pickle_exists = route_shortname_pickle_exists
+        self.__route_shortname_pickle_exists = route_shortname_pickle_exists
     @planned_duration_s.setter
     def planned_duration_s(self, planned_duration_s):
-        self._planned_duration_s = planned_duration_s
+        self.__planned_duration_s = planned_duration_s
     @planned_departure_datetime.setter
     def planned_departure_datetime(self, planned_departure_datetime):
-        self._planned_departure_datetime = planned_departure_datetime
+        self.__planned_departure_datetime = planned_departure_datetime
     @step_stops.setter
     def step_stops(self, step_stops):
-        self._step_stops = step_stops
+        self.__step_stops = step_stops
     @predicted_duration_s.setter
     def predicted_duration_s(self, predicted_duration_s):
-        self._predicted_duration_s = predicted_duration_s
+        self.__predicted_duration_s = predicted_duration_s
 
 
 class StepStop:
     """Model representing a stop on one step of a journey (part of a 'trip')
 
     """
+
+    # pylint: disable=too-many-instance-attributes
+    # Ten is reasonable in this case.
+    # (pylint counts BOTH properties and the associated private variables)
+
     def __init__(self, stop, stop_sequence, shape_dist_traveled):
         # Instance Variables
         self.stop = stop
@@ -378,39 +388,39 @@ class StepStop:
     @property
     def stop(self):
         """A stop model."""
-        return self._stop
+        return self.__stop
     @property
     def stop_sequence(self):
         """The sequence number of this stop, in a step."""
-        return self._stop_sequence
+        return self.__stop_sequence
     @property
     def shape_dist_traveled(self):
         """The distance traveled from the terminus to this stop."""
-        return self._shape_dist_traveled
+        return self.__shape_dist_traveled
     @property
     def dist_from_first_stop_m(self):
         """The distance from the first stop in this step."""
-        return self._dist_from_first_stop_m
+        return self.__dist_from_first_stop_m
     @property
     def predicted_time_from_first_stop_s(self):
         """The time from the first stop in this step."""
-        return self._predicted_time_from_first_stop_s
+        return self.__predicted_time_from_first_stop_s
 
     @stop.setter
     def stop(self, stop):
-        self._stop = stop
+        self.__stop = stop
     @stop_sequence.setter
     def stop_sequence(self, stop_sequence):
-        self._stop_sequence = stop_sequence
+        self.__stop_sequence = stop_sequence
     @shape_dist_traveled.setter
     def shape_dist_traveled(self, shape_dist_traveled):
-        self._shape_dist_traveled = shape_dist_traveled
+        self.__shape_dist_traveled = shape_dist_traveled
     @dist_from_first_stop_m.setter
     def dist_from_first_stop_m(self, dist_from_first_stop_m):
-        self._dist_from_first_stop_m = dist_from_first_stop_m
+        self.__dist_from_first_stop_m = dist_from_first_stop_m
     @predicted_time_from_first_stop_s.setter
     def predicted_time_from_first_stop_s(self, predicted_time_from_first_stop_s):
-        self._predicted_time_from_first_stop_s = predicted_time_from_first_stop_s
+        self.__predicted_time_from_first_stop_s = predicted_time_from_first_stop_s
 
     def serialize(self):
         """Return object data in easily serializeable format"""
