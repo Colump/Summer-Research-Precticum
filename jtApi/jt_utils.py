@@ -569,30 +569,7 @@ def get_stops_by_route(database, route_name, route_shortname, \
         # ALERT the LERTS!!!!!
         pass
     else:
-        # Look up routes for supplied short name. Should always find some...  we
-        # don't cater for 'no routes found' scenario
-        routes = database.session.query(Routes.route_id)
-        routes = routes.filter(Routes.route_long_name == route_name)
-        routes = routes.filter(Routes.route_short_name == route_shortname)
-        routes = routes.order_by(text('route_id asc'))
-
-        routes_for_shortname = []
-        for route in routes.all():
-            routes_for_shortname.append(route.route_id)
-        log.debug('\tFound %d routes for shortname/name %s/%s', \
-            len(routes_for_shortname), route_shortname, route_name)
-
-        # We now how a list of route_ids, we can use that list to get a list of trips
-        # for those routes...  we don't cater for 'no trips found' scenario
-        trips = database.session.query(Trips)
-        trips = trips.filter(Trips.route_id.in_(routes_for_shortname))
-
-        # Extract a list of trip_id's from the 'trips' query result...
-        trips_for_routes = []
-        for trip in trips.all():
-            trips_for_routes.append(trip.trip_id)
-        log.debug('\tFound %d trips for above routes.', len(trips_for_routes))
-
+        # First - identify the stops!
         # Identify the departure stop (by name ideally, if that fails then by lat/lon)
         depstop = _identify_stop(
             database, departure_stop_name, departure_stop_lat, departure_stop_lon
@@ -605,8 +582,25 @@ def get_stops_by_route(database, route_name, route_shortname, \
             )
         log.debug('\tIdentified arrival stop -> %s', arrstop.stop_name)
 
+        #----------
+
+        routes_for_shortname, poor_route_matching = \
+            _search_for_routes(database, route_name, route_shortname)
+
+        trips_for_routes = _trips_for_route_ids(database, routes_for_shortname)
+
         # ***
         # THIS IS THE MAGIC - WHERE ROUTES, STEPS... BECOME A SINGLE TRIP
+        # ***
+
+        if poor_route_matching:
+            # Replace the 'poor_route_matching' list with our freshly filtered list
+            trips_for_routes.clear()
+            trips_for_routes.extend(
+                _trips_with_stops_in_correct_order(database, trips_for_routes, depstop, arrstop)
+            )
+
+
         trip_from_stoptimes = database.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.trip_id.in_(trips_for_routes))
@@ -658,6 +652,114 @@ def get_stops_by_route(database, route_name, route_shortname, \
 
     # NOTE step_stops may well be empty.  We can only do our best!!
     return step_stops
+
+def _trips_for_route_ids(database, routes_ids):
+    """Find all the trip_id's for the supplied list of route_id's
+    """
+    # We now have a list of route_ids, we can use that list to get a list of
+    # trips for those routes...  we don't cater for 'no trips found' scenario
+    trips = database.session.query(Trips)
+    trips = trips.filter(Trips.route_id.in_(routes_ids))
+
+        # Extract a list of trip_id's from the 'trips' query result...
+    trip_ids_for_routes = []
+    for trip in trips.all():
+        trip_ids_for_routes.append(trip.trip_id)
+    log.debug('\tFound %d trips for routes.', len(trip_ids_for_routes))
+
+    return trip_ids_for_routes
+
+
+def _trips_with_stops_in_correct_order(database, trips_for_routes, depstop, arrstop):
+    """Filter a list of trips_ids, selecting only Trips where depstop preceeds arrstop
+    """
+    # If we didn't get an exact match on routes then it's likely we have both
+    # inbound and outbound trips. Filter our trips - removing any trips where the
+    # depstop is AFTER the arrstop (this implies a trip in the wrong direction)
+    trips_with_stops_in_correct_order = []
+
+    stoptimes_all_trips_query = database.session.query(StopTime)
+            #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
+    stoptimes_all_trips_query = \
+        stoptimes_all_trips_query.filter(StopTime.trip_id.in_(trips_for_routes))
+    stoptimes_all_trips_query = \
+        stoptimes_all_trips_query.order_by(StopTime.trip_id.asc(),StopTime.stop_sequence.asc())
+    stoptimes_all_trips = stoptimes_all_trips_query.all()
+
+    log.debug(
+            'Poor route matching cost us a loop over %d stoptimes records',
+            len(stoptimes_all_trips)
+            )
+
+    # Iterate over the results in trip order
+    wcurr_trip = ''
+    for stoptime in stoptimes_all_trips:
+                # On change of trip...
+        if stoptime.trip_id != wcurr_trip:
+            wcurr_trip = stoptime.trip_id
+            wdepstop_found = False
+            wfinished      = False
+
+        if not wfinished:
+            if stoptime.stop_id == depstop.stop_id:
+                wdepstop_found = True
+
+            if stoptime.stop_id == arrstop.stop_id:
+                # We have found the arrival stop!
+                # If the departure stop was already found for this trip then
+                # the stops are in the correct order and we can proceed. If
+                # not then this trip is a dud - we can just ignore it...
+                if wdepstop_found:
+                    trips_with_stops_in_correct_order.append(stoptime.trip_id)
+                    wfinished = True
+
+    return trips_with_stops_in_correct_order
+
+
+def _search_for_routes(
+        database, route_name, route_shortname):
+    """Returns a list of the the 'most likely' Routes (sqlachemy models) for the supplied inputs
+    Returns a boolean indicating if the match was good (both names) or poor (shortname only)
+
+    Attempts to identify Route by exact match on shortname/name first.
+    If that fails we load all routes by shortname, and then filter that list
+    further using the depstop, arrstop information
+    """
+    # Look up routes for supplied shortname/name...
+    routes_base_query = database.session.query(Routes.route_id)
+    routes_base_query = routes_base_query.filter(Routes.route_short_name == route_shortname)
+    routes_base_query = routes_base_query.order_by(text('route_id asc'))
+
+    route_ids_by_name = []
+    poor_match = False
+
+    routes_full_match = routes_base_query.filter(Routes.route_long_name == route_name)
+    if routes_full_match.count() > 0:
+        # Great! This is the best solution - we found a full match - just grab
+        # all these routes...
+        for route in routes_full_match.all():
+            route_ids_by_name.append(route.route_id)
+
+        log.debug('\tFound %d routes on exact match shortname \"%s\" / name \"%s\"', \
+            len(route_ids_by_name), route_shortname, route_name)
+    else:
+        # Awww... no exact match found.  What we do next is attempt to match on
+        # just shortname. Testing has revealed many cases where the route
+        # shortname is in the data - but the long name has been altered (e.g.
+        # for the 155 our database shows a long name of "St.Margaret's Road -
+        # Outside Train Station" but the google directions returns "Ballymun to Bray"
+        for route in routes_base_query.all():
+            # BUT this gives us BOTH inbound and outbound routes.  Which is bad
+            # naturally... we only want to consider trips where the bus is going
+            # in the correct direction!
+            route_ids_by_name.append(route.route_id)
+
+        poor_match = True
+
+        log.debug('\tFound %d routes matched on shortname \"%s\" only', \
+            len(route_ids_by_name), route_shortname)
+
+    return route_ids_by_name, poor_match
 
 
 def weather_information(inputtime):
@@ -812,6 +914,7 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
     total_dis_m=0.001  # Sensible default - avoid divide by zero error
     total_time=0
 
+    # TODO - Define behaviour if list of stops is empty!!!!
     start_distance = list_of_stops_for_journey[0].shape_dist_traveled
     end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
 
