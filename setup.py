@@ -9,10 +9,10 @@
 #      -> python -m pip install -e "git+https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/
 #      -> @dev    (<- this is the Branch name from which you want to install, blank if 'main')
 #      -> #egg=comp47360_group3_raduno"
-#      
+#
 # NOTES
 # To install an entire GitHub project on the VM instance you might use:
-#   python -m pip install git+https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/    
+#   python -m pip install git+https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/
 #
 # BRANCHES: It is also possible to specify a “git ref” such as branch name, a commit hash or a tag name:
 #   python -m pip install git+https://csgitlab.ucd.ie/flintdk/comp47360_group3_raduno/@dev
@@ -68,7 +68,7 @@ setup(
             'requests==2.27.1',
             'sqlalchemy==1.4.27',
             'pandas==1.4.2',
-            'scikit-learn==1.0.2',
+            'scikit-learn==1.1.1.',
             'WTForms==3.0.1',
             'zipp>=3.6.0'
        ],
@@ -90,7 +90,7 @@ setup(
 
             # Here I'll add the audience this library is intended for.
             'Intended Audience :: Developers',
- 
+
             # Here I'll define the license that guides my library.
             'License :: OSI Approved :: MIT License',
 
@@ -109,7 +109,7 @@ setup(
             'Topic :: Education',
 
             ],
-      
+
       # When we install the package, setuptools will copy the script to our PATH
       # and make it available for general use.
       scripts=['jtApi/jt_scheduler.sh'],
