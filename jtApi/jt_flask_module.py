@@ -128,6 +128,20 @@ csrf = CSRFProtect(jt_flask_app)
 
 db = SQLAlchemy(jt_flask_app)
 
+# Load the 'stop-to-stop' prediction model
+# The journeyti.me application uses two classes of predictive model:
+#   -> Targetted models, trained per LineId (the 'real world route short name')
+#   -> A generic model that predicts times based on distance from the city center
+#      (used in cases where our training data - from 2018 - did not contain
+#       information for lines that exist currently).
+# We keep the stop-to-stop model in memory - to improve performance.
+stop_to_stop_filepath=os.path.join(jt_flask_mod_dir, 'pickles')
+stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'stop_to_stop' )
+stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' )
+with open(stop_to_stop_filepath, 'rb') as file:
+    # TODO:: Agree what action we should take if the pickle is invalid/not found.
+    CONST_MODEL_STOP_TO_STOP = pickle.load(file)
+
 ##########################################################################################
 #  GROUP 1: BASIC HTML PAGES
 ##########################################################################################
@@ -743,7 +757,7 @@ def _predict_this_step(step, planned_time_s, route_name, route_shortname):
                     #     pickle.dump(journey_pred, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
                     # Call a function to get the predicted journey time for this step.
-    journey_pred = predict_journey_time(journey_pred)
+    journey_pred = predict_journey_time(journey_pred, CONST_MODEL_STOP_TO_STOP)
 
                     # Extend the json to contain the prediction information...
     predicted_duration = journey_pred.predicted_duration_s

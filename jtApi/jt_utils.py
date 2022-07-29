@@ -306,7 +306,7 @@ class JourneyPrediction:
     """
 
     # pylint: disable=too-many-instance-attributes
-    # Twelve is reasonable in this case.
+    # Twelve is reasonable in this case (6 property, 6 private).
     # (pylint counts BOTH properties and the associated private variables)
 
     def __init__( \
@@ -374,7 +374,7 @@ class StepStop:
     """
 
     # pylint: disable=too-many-instance-attributes
-    # Ten is reasonable in this case.
+    # Ten is reasonable in this case (5 property, 5 private).
     # (pylint counts BOTH properties and the associated private variables)
 
     def __init__(self, stop, stop_sequence, shape_dist_traveled):
@@ -686,7 +686,7 @@ def weather_information(inputtime):
     return predicted_temp
 
 
-def predict_journey_time(journey_prediction):
+def predict_journey_time(journey_prediction, model_stop_to_stop):
     """Predict the journey timee for journey represented by the 'prediction_request' object
 
     Returns an updated JourneyPrediction model.
@@ -696,7 +696,7 @@ def predict_journey_time(journey_prediction):
     if journey_prediction.route_shortname_pickle_exists:
         journey_prediction = _predict_jt_end_to_end(journey_prediction)
     else:
-        journey_prediction = _predict_jt_stop_to_stop(journey_prediction)
+        journey_prediction = _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop)
 
     return journey_prediction
 
@@ -725,9 +725,10 @@ def _predict_jt_end_to_end(journey_prediction):
     month_cos = np.cos(2 * np.pi * month/12.0)
 
     # load the prediction model
-    end_to_end_filepath='pickles/end_to_end/'+lineid+".pickle"
-    #  f = open('test_rfc.pickle','rb')
-    with open(os.path.join(jt_utils_dir, end_to_end_filepath), 'rb') as file:
+    end_to_end_filepath=os.path.join(jt_utils_dir, 'pickles')
+    end_to_end_filepath=os.path.join(end_to_end_filepath, 'end_to_end' )
+    end_to_end_filepath=os.path.join(end_to_end_filepath, lineid+'.pickle' )
+    with open(end_to_end_filepath, 'rb') as file:
         model_for_line = pickle.load(file)
 
     # create a pandas dataframe
@@ -780,19 +781,13 @@ def _predict_jt_end_to_end(journey_prediction):
     return journey_prediction  # Return the updated prediction_request
 
 
-def _predict_jt_stop_to_stop(journey_prediction):
+def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
     """Predict the journey timee for journey represented by the 'prediction_request' object
 
     Returns an updated JourneyPrediction model.
     Uses the stop-to-stop model
+    ASSUMES the stop to stop model is in memory (global) as 'CONST_MODEL_STOP_TO_STOP'
     """
-
-    # load the prediction model
-    stop_to_stop_filepath='pickles/stop_to_stop/rfstoptostop.pickle'
-    #  f = open('test_rfc.pickle','rb')
-    with open(os.path.join(jt_utils_dir, stop_to_stop_filepath), 'rb') as file:
-        # TODO:: Agree what action we should take if the pickle is invalid/not found.
-        model_stop_to_stop = pickle.load(file)
 
     duration = journey_prediction.planned_duration_s
     planned_departure_datetime = journey_prediction.planned_departure_datetime
