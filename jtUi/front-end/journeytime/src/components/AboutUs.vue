@@ -1,44 +1,42 @@
 <template>
 <div class="text">
   <h1> About Us</h1>
-       <p>Journeyti.me is a free to use web application developed by four MSc Computer Science students from University College Dublin. 
+       <p>Journeyti.me is a free to use web application developed by four MSc Computer Science students from University College Dublin.
          The application gives users a tool to recommend the best bus route or routes between a users desired start and end locations.
          Our prediction engine takes into account a nnumber of factors such as historical bus journey data, weather conditions, traffic data and so on.
       <br>
-        A unique selling point of our web application is the development of our own API. While we acknowledge our API will not be as advanced as other APIs such as GTFS and GTFS-R, 
-        but we hope that it can be of use to other groups undertaking similar projects in the future. Our API can be accesed through the API page in our main navigation bar. 
+        A unique selling point of our web application is the development of our own API. While we acknowledge our API will not be as advanced as other APIs such as GTFS and GTFS-R,
+        but we hope that it can be of use to other groups undertaking similar projects in the future. Our API can be accesed through the API page in our main navigation bar.
       <br>
       <h4>Meet the Team</h4>
       <table>
         <tr>
-        <th>Name</th>
-        <th>Role</th>
-        <th>Background</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Background</th>
         </tr>
-
-      <tr>
-        <td>Boshen Fan</td>
-        <td>Code Lead</td>
-        <td>Experience in Java and embedded development</td>
-      </tr>
-      <tr>
-        <td>Yungpeng Chen</td>
-        <td>Customer Lead</td>
-        <td>Experience in financial and investment</td>
-      </tr>
-       <tr>
-        <td>Tomás Kelly</td>
-        <td>Co-ordination Lead</td>
-        <td>Experience in OpenVMS</td>
-      </tr> 
-       <tr>
-        <td>Colum Prendiville</td>
-        <td>Maintenance Lead</td>
-        <td>Experience in project management in the automotive industry</td>
-      </tr>
-      
+        <tr>
+          <td>Boshen Fan</td>
+          <td>Code Lead</td>
+          <td>Experience in Java and embedded development</td>
+        </tr>
+        <tr>
+          <td>Yungpeng Chen</td>
+          <td>Customer Lead</td>
+          <td>Experience in financial and investment</td>
+        </tr>
+        <tr>
+          <td>Tomás Kelly</td>
+          <td>Co-ordination Lead</td>
+          <td>Experience in Java, RDBMS, OpenVMS</td>
+        </tr>
+        <tr>
+          <td>Colum Prendiville</td>
+          <td>Maintenance Lead</td>
+          <td>Experience in project management in the automotive industry</td>
+        </tr>
       </table>
-      
+
 </div>
 </template>
 
