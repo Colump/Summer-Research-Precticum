@@ -612,7 +612,7 @@ def get_stops_by_route(database, route_name, route_shortname, \
             trip_from_stoptimes = \
                 trip_from_stoptimes.filter(func.ltrim(StopTime.stop_headsign) == stop_headsign)
         trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.stop_id == depstop.stop_id)
-        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time <= jrny_time)
+        trip_from_stoptimes = trip_from_stoptimes.filter(StopTime.arrival_time <= jrny_time)  #!!<-
         trip_from_stoptimes = trip_from_stoptimes.order_by(text('arrival_time desc'))
         #log.debug('\tMost likely trip query:', \
         # trip_from_stoptimes.statement.compile(compile_kwargs={"literal_binds": True}))

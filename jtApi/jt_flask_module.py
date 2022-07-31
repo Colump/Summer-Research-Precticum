@@ -664,6 +664,7 @@ def get_journey_time():
         # it's easier to understand at the client end.
         prediction_request_json['title'] = 'Journeyti.me Prediction Response'
         prediction_request_json['description'] = 'Journeyti.me Step-by-Step Prediction Response'
+        prediction_request_json['version'] = 'v0.0.1'  # Hard Coded for now
 
         resp = jsonify(prediction_request_json)
 

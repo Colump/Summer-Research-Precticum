@@ -1,6 +1,7 @@
 {
-    "title": "Journeyti.me Prediction Request",
-    "description": "Journeyti.me Step Journey Time Prediction Request",
+    "title": "Journeyti.me Prediction Response",
+    "description": "Journeyti.me Step-by-Step Prediction Response",
+    "version": "vn.n.n - the Journeyti.me API Spec. Version",
     "routes": [
         {
             "steps": [
