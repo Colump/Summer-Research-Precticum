@@ -734,6 +734,10 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     planned_departure_datetime = _get_planned_departure_datetime(step)
 
     step_stops = _get_stops_for_this_step(step, route_name, route_shortname)
+    if len(step_stops) == 0:
+        log.warning(
+            'WARNING: No Route Breakdown (stop by stop) found for %s', \
+            route_shortname)
 
     # Bundle everything we need to make a prediction into a convenient object.
     # We can then pass this object to the prediction routine

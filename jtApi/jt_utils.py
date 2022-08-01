@@ -800,6 +800,7 @@ def predict_journey_time(journey_prediction, model_stop_to_stop):
     if journey_prediction.route_shortname_pickle_exists:
         journey_prediction = _predict_jt_end_to_end(journey_prediction)
     else:
+        # TODO - should we abort here if not step-stops information exists!
         journey_prediction = _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop)
 
     return journey_prediction
@@ -920,49 +921,56 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
     total_dis_m=0.001  # Sensible default - avoid divide by zero error
     total_time=0
 
-    # TODO - Define behaviour if list of stops is empty!!!!
-    start_distance = list_of_stops_for_journey[0].shape_dist_traveled
-    end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
+    # There will be cases where we fail to identify a list of stops for a route
+    # In these cases we don't want to crash - we simply ignore the missing information...
+    # Yes... for the stop-to-stop model failing to ID a route is a big problem...
+    log.warning('WARNING: No Route Breakdown (stop by stop) found for ')
+    if len(list_of_stops_for_journey) > 0:
+        # Assuming we have a stop-to-stop journey breakdown available...
+        # ... portion out the time for the journey based on % fraction of the
+        # total journey distance.
+        start_distance = list_of_stops_for_journey[0].shape_dist_traveled
+        end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
 
-    total_dis_m = end_distance - start_distance
+        total_dis_m = end_distance - start_distance
 
-    cumulative_time = 0
-    for index,stepstop in enumerate(list_of_stops_for_journey):
-        if index != 0:
-            stepstop_prev = list_of_stops_for_journey[index-1]
-            stepstop_now  = stepstop
+        cumulative_time = 0
+        for index,stepstop in enumerate(list_of_stops_for_journey):
+            if index != 0:
+                stepstop_prev = list_of_stops_for_journey[index-1]
+                stepstop_now  = stepstop
 
-            stop_prev_dist_from_cc = stepstop_prev.stop.dist_from_cc
-            stop_now_dist_from_cc = stepstop_now.stop.dist_from_cc
+                stop_prev_dist_from_cc = stepstop_prev.stop.dist_from_cc
+                stop_now_dist_from_cc = stepstop_now.stop.dist_from_cc
 
-            dis_twostop = \
-                stepstop_now.shape_dist_traveled - stepstop_prev.shape_dist_traveled
+                dis_twostop = \
+                    stepstop_now.shape_dist_traveled - stepstop_prev.shape_dist_traveled
 
-            plantime_partial=duration*(dis_twostop/total_dis_m)
+                plantime_partial=duration*(dis_twostop/total_dis_m)
 
-            #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
-            dic_list = [
-                {'PLANNED_JOURNEY_TIME':plantime_partial, \
-                'dis_twostop':dis_twostop, \
-                'dis_prestop_city':stop_prev_dist_from_cc, \
-                'dis_stopnow_city':stop_now_dist_from_cc, \
-                'temp':temperature, \
-                'week_sin':week_sin,'week_cos':week_cos, \
-                'hour_sin':hour_sin,'hour_cos':hour_cos}
-                ]
-            input_to_pickle_data_frame = pd.DataFrame(dic_list).values
-            # throw the dataframe into model and predict time
-            # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
-            predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
-            log.debug("\tStop-to-stop prediction result -> %d", predict_result)
-            cumulative_time += predict_result
+                #dic_list = [{'PLANNED_JOURNEY_TIME':duration,'HOUR':10,'temp':6.8,'week':6,'Month':1}]
+                dic_list = [
+                    {'PLANNED_JOURNEY_TIME':plantime_partial, \
+                    'dis_twostop':dis_twostop, \
+                    'dis_prestop_city':stop_prev_dist_from_cc, \
+                    'dis_stopnow_city':stop_now_dist_from_cc, \
+                    'temp':temperature, \
+                    'week_sin':week_sin,'week_cos':week_cos, \
+                    'hour_sin':hour_sin,'hour_cos':hour_cos}
+                    ]
+                input_to_pickle_data_frame = pd.DataFrame(dic_list).values
+                # throw the dataframe into model and predict time
+                # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
+                predict_result=model_stop_to_stop.predict(input_to_pickle_data_frame)[0]
+                log.debug("\tStop-to-stop prediction result -> %d", predict_result)
+                cumulative_time += predict_result
 
-            # Set the predicted journey distance/time on the current 'StepStop' Object
-            stepstop_now.dist_from_first_stop_m = \
-                stepstop_now.shape_dist_traveled - start_distance
-            stepstop_now.predicted_time_from_first_stop_s = cumulative_time
+                # Set the predicted journey distance/time on the current 'StepStop' Object
+                stepstop_now.dist_from_first_stop_m = \
+                    stepstop_now.shape_dist_traveled - start_distance
+                stepstop_now.predicted_time_from_first_stop_s = cumulative_time
 
-            total_time=predict_result+total_time
+                total_time=predict_result+total_time
 
     # At the end set the total predicted journey time on the journey_prediction object
     log.debug(predict_result)
