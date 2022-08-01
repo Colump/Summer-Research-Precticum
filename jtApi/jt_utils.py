@@ -858,28 +858,34 @@ def _predict_jt_end_to_end(journey_prediction):
     # arrival times:
     list_of_stops_for_journey = journey_prediction.step_stops
 
-    start_distance = list_of_stops_for_journey[0].shape_dist_traveled
-    end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
+    # There will be cases where we fail to identify a list of stops for a route
+    # In these cases we don't want to crash - we simply ignore the missing information...
+    if len(list_of_stops_for_journey) > 0:
+        # Assuming we have a stop-to-stop journey breakdown available...
+        # ... portion out the time for the journey based on % fraction of the
+        # total journey distance.
+        start_distance = list_of_stops_for_journey[0].shape_dist_traveled
+        end_distance = list_of_stops_for_journey[-1].shape_dist_traveled
 
-    total_dis_m = end_distance - start_distance
+        total_dis_m = end_distance - start_distance
 
-    cumulative_time = 0
-    for index,stepstop in enumerate(list_of_stops_for_journey):
-        stepstop_current = stepstop
-        if index != 0:
-            stepstop_prev = stepstop_current
-            stepstop_current  = stepstop
+        cumulative_time = 0
+        for index,stepstop in enumerate(list_of_stops_for_journey):
+            stepstop_current = stepstop
+            if index != 0:
+                stepstop_prev = stepstop_current
+                stepstop_current  = stepstop
 
-            dist_from_last_stop = \
-                stepstop_current.shape_dist_traveled - stepstop_prev.shape_dist_traveled
-            predicted_time_stop_to_stop=predict_result*(dist_from_last_stop/total_dis_m)
+                dist_from_last_stop = \
+                    stepstop_current.shape_dist_traveled - stepstop_prev.shape_dist_traveled
+                predicted_time_stop_to_stop=predict_result*(dist_from_last_stop/total_dis_m)
 
-            cumulative_time += + predicted_time_stop_to_stop
+                cumulative_time += + predicted_time_stop_to_stop
 
-            # Set the predicted journey distance/time on the current 'StepStop' Object
-            stepstop_current.dist_from_first_stop_m = \
-                stepstop_current.shape_dist_traveled - start_distance
-            stepstop_current.predicted_time_from_first_stop_s = cumulative_time
+                # Set the predicted journey distance/time on the current 'StepStop' Object
+                stepstop_current.dist_from_first_stop_m = \
+                    stepstop_current.shape_dist_traveled - start_distance
+                stepstop_current.predicted_time_from_first_stop_s = cumulative_time
 
     #journey_prediction.predicted_duration_s = 600
 
