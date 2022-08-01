@@ -972,9 +972,9 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
 
                 total_time=predict_result+total_time
 
-    # At the end set the total predicted journey time on the journey_prediction object
-    log.debug(predict_result)
-    journey_prediction.predicted_duration_s = total_time
+        # At the end set the total predicted journey time on the journey_prediction object
+        log.debug(total_time)
+        journey_prediction.predicted_duration_s = total_time
 
     return journey_prediction  # Return the updated rediction_request
 
