@@ -91,7 +91,7 @@ export default {
       //     name:'AboutUs',
       //   })
       // }
-      
+
     },
     watch:{
       activeIndex(){
@@ -113,8 +113,10 @@ export default {
     padding: 4px;
 }
 .el-menu {
-  font-family: element-icons!important;
+  font-family: element-icons !important;
   background-color: rgb(0, 140, 255);
-
+}
+.el-menu-item:hover {
+  background-color: rgb(7, 7, 179) !important;
 }
 </style>

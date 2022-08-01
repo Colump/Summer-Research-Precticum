@@ -716,6 +716,10 @@ def _attempt_predict_this_step(step_idx, step):
         # We have encountered an invalid route shortname. We abort with an error message...
         step['prediction_status'] = \
                         'Prediction Service not available for route \'' + route_shortname + '\'.'
+        log.debug(
+            '\tThe bad news - route %s is invalid, i.e. not in our database, IGNORING!',
+            route_shortname
+            )
 
 
 def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortname):
@@ -740,7 +744,7 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     step_stops = _get_stops_for_this_step(step, route_name, route_shortname)
     if len(step_stops) == 0:
         log.warning(
-            'WARNING: No Route Breakdown (stop by stop) found for %s', \
+            'No Route Breakdown (stop by stop) found for %s', \
             route_shortname)
 
     # Bundle everything we need to make a prediction into a convenient object.
