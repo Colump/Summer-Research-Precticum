@@ -51,7 +51,7 @@ VALID_ROUTE_SHORTNAMES = []
 logging.basicConfig(
     format='%(levelname)s: %(message)s',
     encoding='utf-8',
-    level=os.environ.get("LOGLEVEL", "INFO")
+    level=os.environ.get("LOGLEVEL", "DEBUG")
     )
 log = logging.getLogger(__name__)  # Standard naming...
 
@@ -672,7 +672,7 @@ def get_journey_time():
 
 
 def _predict_all_steps(route):
-    """Convenience method to perform predictions for each step in a route.
+    """Predictions for each step in a route.
     """
     log.debug('\tlooping over steps')
     for step_idx, step in enumerate(route['steps']):
@@ -707,6 +707,10 @@ def _attempt_predict_this_step(step_idx, step):
     if route_shortname in VALID_ROUTE_SHORTNAMES:
         # We have supporting information in the database (route details etc.)
         # - let's go ahead and perform a prediction!
+        log.debug(
+            '\tThe good news - route %s is valid and is in our database!',
+            route_shortname
+            )
         _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortname)
     else:
         # We have encountered an invalid route shortname. We abort with an error message...
@@ -1091,7 +1095,7 @@ if __name__ == "__main__":
 
     # print("DWMB Flask Application is starting: " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
     jt_flask_app.run(
-        debug=True,
+        debug=False,
         host=jt_flask_app.config["FLASK_HOST"],
         port=jt_flask_app.config["FLASK_PORT"]
         )

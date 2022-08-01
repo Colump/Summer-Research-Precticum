@@ -519,9 +519,11 @@ def get_stops_by_route(database, route_name, route_shortname, \
             stop = stop_query.one()
         except NoResultFound:
             # log.warning('\tNo Stops found for stop name: ' + name)
+            log.debug('\tNo stop found based on name %s', name)
             position_match_required = True
         except MultipleResultsFound:
             # log.warning('\tMultiple Stops found for stop name: ' + name)
+            log.debug('\tMultiple stops found based on name %s', name)
             position_match_required = True
 
         if position_match_required:
@@ -548,10 +550,13 @@ def get_stops_by_route(database, route_name, route_shortname, \
             stop_query = database.session.query(Stop, distance_col)
             stop_query = stop_query.order_by(asc(distance_col))
             result = stop_query.first()
+
             # print('stop name is ' + result[0].stop_name)
             # print('distance is -> ' + str(result[1]))
 
             stop = result[0]
+            log.debug('\tBest match for lat %s and lon %s is stop %s (at lat %s, lon %s)', \
+                lat, lon, stop.stop_name, stop.stop_lat, stop.stop_lon)
 
         return stop
 
@@ -595,11 +600,13 @@ def get_stops_by_route(database, route_name, route_shortname, \
 
         if poor_route_matching:
             # Replace the 'poor_route_matching' list with our freshly filtered list
-            trips_for_routes.clear()
-            trips_for_routes.extend(
-                _trips_with_stops_in_correct_order(database, trips_for_routes, depstop, arrstop)
-            )
+            filtered_trips_list = \
+                _trips_with_stops_in_correct_order(
+                    database, trips_for_routes, depstop, arrstop
+                    )
 
+            trips_for_routes.clear()
+            trips_for_routes.extend(filtered_trips_list)
 
         trip_from_stoptimes = database.session.query(StopTime.trip_id)
         #stop_times_query = stop_times_query.join(Stop, Stop.stop_id == StopTime.stop_id)
@@ -921,10 +928,6 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
     total_dis_m=0.001  # Sensible default - avoid divide by zero error
     total_time=0
 
-    # There will be cases where we fail to identify a list of stops for a route
-    # In these cases we don't want to crash - we simply ignore the missing information...
-    # Yes... for the stop-to-stop model failing to ID a route is a big problem...
-    log.warning('WARNING: No Route Breakdown (stop by stop) found for ')
     if len(list_of_stops_for_journey) > 0:
         # Assuming we have a stop-to-stop journey breakdown available...
         # ... portion out the time for the journey based on % fraction of the
@@ -975,6 +978,14 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
         # At the end set the total predicted journey time on the journey_prediction object
         log.debug(total_time)
         journey_prediction.predicted_duration_s = total_time
+    else:
+        # There will be cases where we fail to identify a list of stops for a route
+        # In these cases we don't want to crash - we simply ignore the missing information...
+        # Yes... for the stop-to-stop model failing to ID a route is a big problem...
+        log.warning(
+            'No Route Breakdown (stop by stop) found for %s', \
+            journey_prediction.route_shortname
+        )
 
     return journey_prediction  # Return the updated rediction_request
 
@@ -994,8 +1005,8 @@ def time_rounded_to_hrs_mins_as_string(seconds):
 
     time_string = ''
     if hrs > 0:
-        time_string += str(hrs) + ' hrs, '
-    time_string += str(mins) + ' mins'  # Rounded to nearest minute...
+        time_string += str(hrs) + 'hrs, '
+    time_string += str(mins) + 'mins'  # Rounded to nearest minute...
 
     return time_string
 
