@@ -51,7 +51,7 @@ VALID_ROUTE_SHORTNAMES = []
 logging.basicConfig(
     format='%(levelname)s: %(message)s',
     encoding='utf-8',
-    level=os.environ.get("LOGLEVEL", "DEBUG")
+    level=os.environ.get("LOGLEVEL", "INFO")
     )
 log = logging.getLogger(__name__)  # Standard naming...
 
@@ -141,6 +141,7 @@ stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' 
 with open(stop_to_stop_filepath, 'rb') as file:
     # TODO:: Agree what action we should take if the pickle is invalid/not found.
     CONST_MODEL_STOP_TO_STOP = pickle.load(file)
+log.debug("              Stop-to-stop model has been loaded in memory.")
 
 ##########################################################################################
 #  GROUP 1: BASIC HTML PAGES
@@ -604,7 +605,8 @@ def update_model_list():
     # exists in the scope of this endpoint.
     AVAILABLE_MODEL_ROUTE_SHORTNAMES.clear()
     AVAILABLE_MODEL_ROUTE_SHORTNAMES.extend(get_available_end_to_end_models())
-
+    log.debug("              Available predictive mode list: %s", \
+        AVAILABLE_MODEL_ROUTE_SHORTNAMES)
 
     return jsonify(AVAILABLE_MODEL_ROUTE_SHORTNAMES)
 
@@ -625,6 +627,9 @@ def update_valid_route_shortnames():
     # exists in the scope of this endpoint.
     VALID_ROUTE_SHORTNAMES.clear()
     VALID_ROUTE_SHORTNAMES.extend(get_valid_route_shortnames(db))
+
+    log.debug("              Valid route shortnames are: %s", \
+        VALID_ROUTE_SHORTNAMES)
 
     return jsonify(VALID_ROUTE_SHORTNAMES)
 
@@ -700,10 +705,11 @@ def _attempt_predict_this_step(step_idx, step):
     else:
         # Other operators like Aircoach seem to use the name...
         route_shortname = step['transit_details']['line']['name']
-        # Our best guess for line-id is now route-shortname. BUT there  are some
-        # routes in Dublin not covered by agencies in the  transportforireland
-        # data set.  If we encounter one of these  routes there's nothing we can
-        # do (we have no information about the route at all).
+
+    # Our best guess for line-id is now route-shortname. BUT there  are some
+    # routes in Dublin not covered by agencies in the  transportforireland
+    # data set.  If we encounter one of these  routes there's nothing we can
+    # do (we have no information about the route at all).
     if route_shortname in VALID_ROUTE_SHORTNAMES:
         # We have supporting information in the database (route details etc.)
         # - let's go ahead and perform a prediction!
