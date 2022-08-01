@@ -1,0 +1,1210 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+  <!-- We only display the sidebar on XL screens (d-none by default...)-->
+  <div class="col-1 bg-altlight py-5 d-none d-xl-block" style="height: 500vh;">
+    <div class="sticky-xl-top" style="top:175px">
+      <!-- In-page Navigation -->
+      <nav class="nav navbar-light flex-column">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item">
+            <a class="nav-link" aria-current="page" href="#top">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="feather feather-home">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+              </svg>
+              Home
+            </a>
+          </li>
+          <!--
+          <li class="nav-item">
+            <a class="nav-link" href="#">Link1</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" href="#">Disabled</a>
+          </li>
+          -->
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <!-- The side nav takes one column of our 12 columns. Define a wrapper div to
+    take the remaining 11 columns of the grid
+  -->
+  <div class="col-11 p-5">
+    <!-- File Download Modal -->
+    <div class="modal fade" id="downloadModal" tabindex="-1" aria-labelledby="downloadModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="downloadModalLabel">Warning - Large File Sizes</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              Some of the supporting data files available for download here are
+              large (hundreds of megabytes). Attempting to have such files streamed
+              directly to a brower in json is neither practical, nor an efficient
+              use of our bandwidth.
+            </p>
+            <p>All files are complete when downloaded as compressed .CSVs.</p>
+            <p>
+              If you have chosen to either download or view a file as .JSON - and
+              we are forced to limit it for practical reasons - we will include
+              a clear warning in the .JSON
+            </p>
+            <input type="hidden" name="downloadTarget" id="downloadTarget" value="" />
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="downloadModalContinueButton">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      // Define a function to give me a small (configurable) delay
+      //https://www.geeksforgeeks.org/how-to-delay-a-loop-in-javascript-using-async-await-with-promise/
+      const delay = ms => new Promise(res => setTimeout(res, ms));
+
+      // Define a function to close the modal, wait a bit, and then download the file
+      function setDownloadTargetValueAndOpenModal(target) {
+        document.getElementById('downloadTarget').value = target;
+        var myModal = new bootstrap.Modal(document.getElementById('downloadModal'))
+        myModal.show();
+      };
+
+      // Define a function to close the modal, wait a bit, and then download the file
+      const closeModalAndAccessFile = async () => {
+        var myModalEl = document.getElementById('downloadModal')
+        var myModal = bootstrap.Modal.getInstance(myModalEl) // Returns a Bootstrap modal instance
+        myModal.hide();
+
+        await delay(100);
+
+        window.location = document.getElementById('downloadTarget').value;
+      };
+
+      // Add an event listener so the modal calls our function on click...
+      document.getElementById("downloadModalContinueButton").addEventListener("click", closeModalAndAccessFile);
+    </script>
+
+
+    <!-- Page content -->
+    <div id="top" class="section-anchor"></div>
+
+    <h1 id="documentation_heading1">Journeyti.me API Reference</h1>
+    <p>
+      The journeyti.me prediction engine is free and available for anyone to use.
+      Predicting journey times on public transport is a complex task.
+    </p>
+    <p>An app consuming the output of this API will need to ask well-formed questions,
+      using appropriate data to support the provision of accurate journey times.
+    </p>
+    <p>
+      This API provides both static transit-system related information AND access
+      to the prediction engine. The static information is composed of a number of
+      json data sets that can be queried individually. Each set describes a particular
+      aspect of transit information (stops, routes, etc.) required for accessing
+      the prediction engine. For more information about each dataset, consult
+      the reference material below.
+    </p>
+    <h2>Using the API</h2>
+    <p>
+      Logically, potential users would 'get' (HTTP GET) a journey prediction. A
+      prediction request though (as defined here) involves several levels of
+      nested data. JSON seems the logical choice for a prediction request message
+      format but there are no clearly defined semantics for using GET with a JSON
+      body.  Indeed giving a request meaning by parsing the message body on the
+      server (and changing our response based on its contents) would be ignoring
+      this recommendation in the <a href ="https://www.rfc-editor.org/rfc/rfc2616#section-4.3">
+      HTTP/1.1 spec, section 4.3</a>
+    </p>
+    <p>
+      Because of the above, using the prediction service provided here involves
+      two simple steps:
+      <ol>
+        <li>
+          <p>
+          Prepare a prediction request message body.  The prediction request is a
+          JSON message conforming to the message format outlined below.  The
+          prediction requested must be POST'ed to the 'get prediction' https URL:<br>
+          <code>https://api.journeyti.me/get_journey_time.do</code><br>
+          ...on the prediction server with a mimetype of "<em>application/json</em>".
+          </p>
+        </li>
+        <li>
+          The prediction response will be a JSON message returned to the user,
+          again with a mimetype of "<em>application/json</em>".  The format of
+          the prediction response will be as outlined below.
+        </li>
+      </ol>
+    </p>
+    <p>
+      It is important to note the prediction service uses the common concepts of
+      'routes' and 'steps along the route'.  A route is the planned path for a
+      journey.  Each route can consist of multiple steps - encompassing the idea
+      that it may take more than one step (take bus one, disembark, then take bus
+      two) to complete a journey.  Logical separation beyond this is not considered
+      - this is not a route planning service after all, rather one for providing
+      multipe journey predictions for bus services operating in the Dublin region
+      under the tranport for Ireland network.
+    </p>
+    <h3>Prediction Engine</h3>
+    <div class="container">
+      <div class="row justify-content-center">
+        <h4>Prediction Request JSON Message - Schema</h4>
+        <p>
+          Each prediction request can contain multiple routes.<br>
+          Each route can contain multiple requests.
+        </p>
+        <div class="col-8 overflow-auto" style="height:400px">
+          <pre>
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "routes": {
+      "type": "array",
+      "items": [
+        {
+          "type": "object",
+          "properties": {
+            "steps": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "distance": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "text",
+                        "value"
+                      ]
+                    },
+                    "duration": {
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "text",
+                        "value"
+                      ]
+                    },
+                    "transit_details": {
+                      "type": "object",
+                      "properties": {
+                        "arrival_stop": {
+                          "type": "object",
+                          "properties": {
+                            "location": {
+                              "type": "object",
+                              "properties": {
+                                "lat": {
+                                  "type": "number"
+                                },
+                                "lng": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "lat",
+                                "lng"
+                              ]
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "location",
+                            "name"
+                          ]
+                        },
+                        "arrival_time": {
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string"
+                            },
+                            "time_zone": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "text",
+                            "time_zone",
+                            "value"
+                          ]
+                        },
+                        "departure_stop": {
+                          "type": "object",
+                          "properties": {
+                            "location": {
+                              "type": "object",
+                              "properties": {
+                                "lat": {
+                                  "type": "number"
+                                },
+                                "lng": {
+                                  "type": "number"
+                                }
+                              },
+                              "required": [
+                                "lat",
+                                "lng"
+                              ]
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "location",
+                            "name"
+                          ]
+                        },
+                        "departure_time": {
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string"
+                            },
+                            "time_zone": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "integer"
+                            }
+                          },
+                          "required": [
+                            "text",
+                            "time_zone",
+                            "value"
+                          ]
+                        },
+                        "headsign": {
+                          "type": "string"
+                        },
+                        "line": {
+                          "type": "object",
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "short_name": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "short_name"
+                          ]
+                        },
+                        "num_stops": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "arrival_stop",
+                        "arrival_time",
+                        "departure_stop",
+                        "departure_time",
+                        "headsign",
+                        "line",
+                        "num_stops"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "distance",
+                    "duration",
+                    "transit_details"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "steps"
+          ]
+        }
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "description",
+    "routes"
+  ]
+}
+          </pre>
+        </div>
+      </div>
+    </div>
+    <br />
+    <div class="container">
+      <div class="row justify-content-center">
+        <h4>Prediction Request JSON Message - Sample</h4>
+        <p>
+          The above schema can be long and difficult to read. If you - like most
+          developers want to dive straight in - check out the more approachable
+          sample message below!
+        </p>
+        <div class="col-8 overflow-auto" style="height:400px">
+          <pre>
+            <code name="samplePredictionRequestJSON" id="samplePredictionRequestJSON" cols="100" rows="30"></code>
+          </pre>
+          <script type="text/javascript">
+            var samplePredictionRequestJSON =
+            {
+              "title": "Journeyti.me Prediction Request - Your Title",
+              "description": "Journeyti.me Prediction Request - Your Description",
+              "routes": [
+                {
+                  "steps": [
+                    {
+                      "distance": {
+                        "text": "<7.3 km>",
+                        "value": 7321
+                      },
+                      "duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "transit_details": {
+                        "arrival_stop": {
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281"
+                        },
+                        "arrival_time": {
+                          "text": "12:45pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657712742
+                        },
+                        "departure_stop": {
+                          "location": {
+                            "lat": 53.3094124,
+                            "lng": -6.218878399999999
+                          },
+                          "name": "UCD Belfield"
+                        },
+                        "departure_time": {
+                          "text": "12:20pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657711205
+                        },
+                        "headsign": "Phoenix Pk",
+                        "line": {
+                          "name": "Phoenix Park Gate - University College Dublin",
+                          "short_name": "46A"
+                        },
+                        "num_stops": 17
+                      }
+                    }
+                  ]
+                }
+              ]
+            };
+            document.getElementById('samplePredictionRequestJSON').innerText
+              = JSON.stringify(samplePredictionRequestJSON, undefined, 2);
+          </script>
+        </div>
+      </div>
+    </div>
+    <br />
+    <div class="container">
+      <div class="row justify-content-center">
+        <h4>Prediction Request JSON Message - Python</h4>
+        <p>
+          Or perhaps as a developer you would like to see an example of how to
+          prepare a prediction request? The semantics will vary from language to
+          language, but we have prepared an example in Python to help get you
+          started below.
+        </p>
+        <div class="col-8 overflow-auto" style="height:400px">
+          <pre>
+            <code name="samplePredictionRequestPython" id="samplePredictionRequestPython" cols="100" rows="30">
+prediction_request = {}
+prediction_request["description"] = "Journeyti.me Prediction Request - Your Description"
+prediction_request["title"]       = "Journeyti.me Prediction Request - Your Title"
+prediction_request["routes"]      = []
+
+route          = {}
+route["steps"] = []
+
+step = {}
+step["distance"] = {}
+step["distance"]["text"]  = "6.0 km"
+step["distance"]["value"] = 5979
+step["duration"] = {}
+step["duration"]["text"]  = "22 mins"
+step["duration"]["value"] = 1295
+step["transit_details"] = {}
+step["transit_details"]["arrival_stop"] = {}
+step["transit_details"]["arrival_stop"]["location"] = {}
+step["transit_details"]["arrival_stop"]["location"]["lat"] = 53.347221
+step["transit_details"]["arrival_stop"]["location"]["lng"] = -6.25517
+step["transit_details"]["arrival_stop"]["name"] = "Tara Street"
+step["transit_details"]["arrival_time"] = {}
+step["transit_details"]["arrival_time"]["text"] = "4:38pm"
+step["transit_details"]["arrival_time"]["time_zone"] = "Europe/Dublin"
+step["transit_details"]["arrival_time"]["value"] = 1657899485
+step["transit_details"]["departure_stop"] = {}
+step["transit_details"]["departure_stop"]["location"] = {}
+step["transit_details"]["departure_stop"]["location"]["lat"] = 53.3094124
+step["transit_details"]["departure_stop"]["location"]["lng"] = -6.218878399999999
+step["transit_details"]["departure_stop"]["name"] = "UCD Belfield"
+step["transit_details"]["departure_time"] = {}
+step["transit_details"]["departure_time"]["text"] = "4:16pm"
+step["transit_details"]["departure_time"]["time_zone"] = "Europe/Dublin"
+step["transit_details"]["departure_time"]["value"] = 1657899843
+step["transit_details"]["headsign"] = "Maynooth"
+step["transit_details"]["line"] = {}
+step["transit_details"]["line"]["name"] = "University College Dublin - Kingsbury Estate"
+step["transit_details"]["line"]["short_name"] = "X25"
+step["transit_details"]["num_stops"] = 16
+step["travel_mode"] = "TRANSIT"
+route["steps"].append(step)
+            </code>
+          </pre>
+        </div>
+      </div>
+    </div>
+    <br />
+    <div class="container">
+      <div class="row justify-content-center">
+        <h4>Prediction Response JSON Message - Sample</h4>
+        <p>
+          After all that hard work - what format will the reponse take? Please
+          find a sample attached below.  You'll notice the message format is
+          the same as the request,
+        </p>
+        <div class="col-8 overflow-auto" style="height:400px">
+          <pre>
+            <code  name="samplePredictionResponse" id="samplePredictionResponse" cols="100" rows="30"></code>
+          </pre>
+          <script type="text/javascript">
+            var samplePredictionResponse =
+            {
+              "title": "Journeyti.me Prediction Response",
+              "description": "Journeyti.me Step-by-Step Prediction Response",
+              "version": "vn.n.n - the Journeyti.me API Spec. Version",
+              "routes": [
+                {
+                  "steps": [
+                    {
+                      "distance": {
+                        "text": "7.3 km",
+                        "value": 7321
+                      },
+                      "duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "transit_details": {
+                        "arrival_stop": {
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281"
+                        },
+                        "arrival_time": {
+                          "text": "12:45pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657712742
+                        },
+                        "departure_stop": {
+                          "location": {
+                            "lat": 53.3094124,
+                            "lng": -6.218878399999999
+                          },
+                          "name": "UCD Belfield"
+                        },
+                        "departure_time": {
+                          "text": "12:20pm",
+                          "time_zone": "Europe/Dublin",
+                          "value": 1657711205
+                        },
+                        "headsign": "Phoenix Pk",
+                        "line": {
+                          "name": "Phoenix Park Gate - University College Dublin",
+                          "short_name": "46A"
+                        },
+                        "num_stops": 17
+                      },
+                      "predicted_duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                      },
+                      "stop_sequence": [
+                        {
+                          "stop_id": 1234,
+                          "sequence_no": 1,
+                          "location": {
+                            "lat": 53.35135349999999,
+                            "lng": -6.2611282
+                          },
+                          "name": "O'Connell St Upper, stop 281",
+                          "dist_from_last_stop": 1234
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            };
+            document.getElementById('samplePredictionResponse').innerText
+              = JSON.stringify(samplePredictionResponse, undefined, 2);
+          </script>
+        </div>
+      </div>
+    </div>
+    <br />
+    <hr>
+    <h2>Suggested Extensions to the GTFS Specification (GTFS-P)</h2>
+    <!--
+            Original information on the various data sets taken from:
+            https://developers.google.com/transit/gtfs/reference#agencytxt
+        -->
+    <h3>Prediction Model</h3>
+    <p>
+      A predictive model used to provide enhanced journey time prediction accuracy
+      over the rigid timetables published per agency. Typically these models take
+      local environmental conditions (traffic patters, weather conditions etc.)
+      into account at the time of the planned journey.  As this is a <em>proposed</em>
+      entity sample downloads are not available.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Model_Id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>A unique identifier for this predictive model.</td>
+      </tr>
+      <tr>
+        <td>Model_Name</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The model name.</td>
+      </tr>
+      <tr>
+        <td>Model_url</td>
+        <td>carchar(128)</td>
+        <td>n/a</td>
+        <td>URL link to the predicitve models publishers website.</td>
+      </tr>
+      <tr>
+        <td>Model_timezone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The timezone the bus model operates in.</td>
+      </tr>
+      <tr>
+        <td>Model_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the model operates in.
+        </td>
+      </tr>
+      <tr>
+        <td>Model_phone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The predictive model developers phone number (where supplied).
+        </td>
+      </tr>
+      <tr>
+        <td>Developer_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the model developer operates in.
+        </td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3>Model-Route</h3>
+    <p>
+      A mapping table connecting the routes supported by a predictive model.
+      Typically models will apply to geographic areas. There may be multiple agencies
+      in this area. Not all routes operated by these agencies may be fully contained
+      in this area. Thus a mapping table is required to connect which routes can
+      be adequately estimated using a model.
+    </p>
+    <p>Simlilarly multiple models may cover routes by more than one agency. As
+      this is a <em>proposed</em> entity sample downloads are not available.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>ModelRegistration_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>A unique identifier for a predicitive model registration under the proposed GTFS-P</td>
+      </tr>
+      <tr>
+        <td>Route_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a route.</td>
+      </tr>
+      <tr>
+        <td>Model_Id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a predictive model.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h2>GTFS-R Supporting Data Specifications</h2>
+    <!--
+            Original information on the various data sets taken from:
+            https://developers.google.com/transit/gtfs/reference#agencytxt
+        -->
+    <h3><a href="javascript:void(0);" id='agency_json' onclick="setDownloadTargetValueAndOpenModal('/agency')">Agency</a></h3>
+    <p>
+      Transit agencies with service represented in this dataset.
+      Download the latest Agency dataset for Dublin as
+      <a href="javascript:void(0);" id='agency_dljson' onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='agency_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Agency_Id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>A unique identifier for this agency.</td>
+      </tr>
+      <tr>
+        <td>Agency_Name</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The agency name.</td>
+      </tr>
+      <tr>
+        <td>Agency_url</td>
+        <td>carchar(128)</td>
+        <td>n/a</td>
+        <td>URL link to the TFI website.</td>
+      </tr>
+      <tr>
+        <td>Agency_timezone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The timezone the bus agency operates in.</td>
+      </tr>
+      <tr>
+        <td>Agency_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the agency operates in.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_phone</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The agency phone number.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_lang</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>The language the agency operates in.
+        </td>
+      </tr>
+      <tr>
+        <td>Agency_col</td>
+        <td>varchar(64)</td>
+        <td>n/a</td>
+        <td>
+        </td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='calendar_json' onclick="setDownloadTargetValueAndOpenModal('/calendar')">Calendar</a></h3>
+    <p>
+      Service dates specified using a weekly schedule with start and end dates.
+      This file is required unless all dates of service are defined in calendar_dates.txt
+      Download the latest Calendar dataset for Dublin as
+      <a href="javascript:void(0);" id='calendar_dljson' onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='calendar_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/calendar?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Uniquely identifies a set of dates when service is available for one or more routes. </td>
+      </tr>
+      <tr>
+        <td>Monday</td>
+        <td>Int)</td>
+        <td>n/a</td>
+        <td>1 - Service is available for all Mondays in the date range.
+          0 - Service is not available for Mondays in the date range.</td>
+      </tr>
+      <tr>
+        <td>Tuesday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Tuesdays
+        </td>
+      </tr>
+      <tr>
+        <td>Wednesday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Wednesdays
+        </td>
+      </tr>
+      <tr>
+        <td>Thursday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Thursdays
+        </td>
+      </tr>
+      <tr>
+        <td>Friday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Fridays
+        </td>
+      </tr>
+      <tr>
+        <td>Saturday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Saturdays </td>
+      </tr>
+      <tr>
+        <td>Sunday</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Functions in the same way as monday except applies to Sundays</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='calendardates_json' onclick="setDownloadTargetValueAndOpenModal('/calendardates')">Calendar Dates</a>
+    </h3>
+    <p>
+      Exceptions for the services defined in the calendar.txt. If calendar.txt
+      is omitted, then calendar_dates.txt is required and must contain all dates
+      of service.
+      Download the latest Calendar Dates dataset for Dublin as
+      <a href="javascript:void(0);" id='calendardates_dljson' onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='calendardates_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/calendardates?dltype=csv')">.csv</a>
+      file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a set of dates when service is available for one or more routes. </td>
+      </tr>
+      <tr>
+        <td>Date</td>
+        <td>Datetime</td>
+        <td>n/a</td>
+        <td>Indicates whether service is available on the date specified in the date field.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='routes_json' onclick="setDownloadTargetValueAndOpenModal('/routes')">Routes</a></h3>
+    <p>
+      Transit routes. A route is a group of trips that are displayed to riders
+      as a single service.
+      Download the latest Routes dataset for Dublin as
+      <a href="javascript:void(0);" id='routes_dljson' onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='routes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/routes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Route_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a route.</td>
+      </tr>
+      <tr>
+        <td>Agency_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Agency for the specified route.</td>
+      </tr>
+      <tr>
+        <td>Route_short_name</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Short name of a route.</td>
+      </tr>
+      <tr>
+        <td>Route_long_name</td>
+        <td>varchar(125)</td>
+        <td>n/a</td>
+        <td>Full name of a route.</td>
+      </tr>
+      <tr>
+        <td>Route_type</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Indicates the type of transportation used on a route.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='shapes_json' onclick="setDownloadTargetValueAndOpenModal('/shapes')">Shapes</a></h3>
+    <p>
+      Rules for mapping vehicle travel paths, sometimes referred to as route
+      alignments.
+      Download the latest Shapes dataset for Dublin as
+      <a href="javascript:void(0);" id='shapes_dljson' onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='shapes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/shapes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Shape_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a shape.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_lat</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Latitude of a shape point.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_lon</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Longitude of a shape point.</td>
+      </tr>
+      <tr>
+        <td>Shape_pt_sequence</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Sequence in which the shape points connect to form the shape.</td>
+      </tr>
+      <tr>
+        <td>Shape_dist_traveled</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Actual distance traveled along the shape from the first shape point to the point specified in this record.
+        </td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='stops_json' onclick="setDownloadTargetValueAndOpenModal('/stops')">Stops</a></h3>
+    <p>
+      Stops where vehicles pick up or drop off riders. Also defines stations
+      and station entrances.
+      Download the latest Stops dataset for Dublin as
+      <a href="javascript:void(0);" id='stops_dljson' onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='stops_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/stops?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop, station, or station entrance..</td>
+      </tr>
+      <tr>
+        <td>Stop_name</td>
+        <td>varchar(64)</td>
+        <td>n/a</td>
+        <td>Name of the location.</td>
+      </tr>
+      <tr>
+        <td>Stop_lat</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Latitude of the location.</td>
+      </tr>
+      <tr>
+        <td>Stop_lon</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Longitude of the location.</td>
+      </tr>
+      <tr>
+        <td>Distance_from_cc</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Distance from City Center.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='stoptimes_json' onclick="setDownloadTargetValueAndOpenModal('/stoptimes')">Stop Times</a></h3>
+    <p>
+      Times that a vehicle arrives at and departs from stops for each trip.
+      Download the latest Stop Times dataset for Dublin as
+      <a href="javascript:void(0);" id='stoptimes_dljson' onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='stoptimes_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/stoptimes?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Trip_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a trip.</td>
+      </tr>
+      <tr>
+        <td>Arrival_time</td>
+        <td>Time</td>
+        <td>n/a</td>
+        <td>Arrival time at a specific stop for a specific trip on a route.</td>
+      </tr>
+      <tr>
+        <td>Departure_time</td>
+        <td>Time</td>
+        <td>n/a</td>
+        <td>Departure time from a specific stop for a specific trip on a route.</td>
+      </tr>
+      <tr>
+        <td>Stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies the serviced stop.</td>
+      </tr>
+      <tr>
+        <td>Stop_sequence</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Order of stops for a particular trip.</td>
+      </tr>
+      <tr>
+        <td>Stop_headsign</td>
+        <td>Varchar(64)</td>
+        <td>n/a</td>
+        <td>Text that appears on signage identifying the trip's destination to riders.</td>
+      </tr>
+      <tr>
+        <td>Pickup_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates pickup method.</td>
+      </tr>
+      <tr>
+        <td>Drop_off_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates drop off method.</td>
+      </tr>
+      <tr>
+        <td>Shape_dist_travled</td>
+        <td>Double</td>
+        <td>n/a</td>
+        <td>Actual distance traveled along the associated shape, from the first stop to the stop specified in this
+          record.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <h3><a href="javascript:void(0);" id='transfers_json' onclick="setDownloadTargetValueAndOpenModal('/transfers')">Transfers</a></h3>
+    <p>
+      Rules for making connections at transfer points between routes.
+      Download the latest Transfers dataset for Dublin as
+      <a href="javascript:void(0);" id='transfers_dljson' onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='transfers_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/transfers?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>From_stop_id</td>
+        <td>varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop or station where a connection between routes begins.</td>
+      </tr>
+      <tr>
+        <td>To_stop_id</td>
+        <td>Varchar(16)</td>
+        <td>n/a</td>
+        <td>Identifies a stop or station where a connection between routes ends.</td>
+      </tr>
+      <tr>
+        <td>Transfer_type</td>
+        <td>Smallint</td>
+        <td>n/a</td>
+        <td>Indicates the type of connection for the specified (from_stop_id, to_stop_id) pair.</td>
+      </tr>
+      <tr>
+        <td>Min_transfer_time</td>
+        <td>Int</td>
+        <td>n/a</td>
+        <td>Optional: Amount of time, in seconds, that must be available to permit a transfer between routes at the
+          specified stops.</td>
+      </tr>
+    </table>
+    <hr>
+    <h3><a href="javascript:void(0);" id='trips_json' onclick="setDownloadTargetValueAndOpenModal('/trips')">Trips</a></h3>
+    <p>
+      Trips for each route. A trip is a sequence of two or more stops that
+      occur during a specific time period.
+      Download the latest Trips dataset for Dublin as
+      <a href="javascript:void(0);" id='trips_dljson' onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=json')">.json</a>
+      or as a
+      <a href="javascript:void(0);" id='trips_dlcsv' onclick="setDownloadTargetValueAndOpenModal('/trips?dltype=csv')">.csv</a> file.
+    </p>
+    <table class="table table-hover">
+      <tr>
+        <th>Field Name</th>
+        <th>Type</th>
+        <th>Required</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>Route_id</td>
+        <td>varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a route.</td>
+      </tr>
+      <tr>
+        <td>Service_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a set of dates when service is available for one or more routes.</td>
+      </tr>
+      <tr>
+        <td>Trip_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a trip.</td>
+      </tr>
+      <tr>
+        <td>Shape_id</td>
+        <td>Varchar(32)</td>
+        <td>n/a</td>
+        <td>Identifies a shape.</td>
+      </tr>
+      <tr>
+        <td>Trip_headsign</td>
+        <td>Varchar(128)</td>
+        <td>n/a</td>
+        <td>Text that appears on signage identifying the trip's destination to riders.</td>
+      </tr>
+      <tr>
+        <td>Direction_id</td>
+        <td>Tinyint</td>
+        <td>n/a</td>
+        <td>Indicates the direction of travel for a trip.</td>
+      </tr>
+    </table>
+    <br />
+    <hr>
+    <p>
+      For more detailed information see the <a href="https://developers.google.com/transit/gtfs/reference">
+        Google Developers Static Transit</a> reference.
+    </p>
+  </div>
+</div>
+{% endblock %}

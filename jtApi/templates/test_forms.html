@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+
+{% block main %}
+<!-- The container for this row is in the base.html template -->
+<div class="row">
+    <div class="col p-4">
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script type="text/javascript">
+            $.ajax({
+                type: "POST",
+                //url: "http://localhost/get_journey_time.do",
+                url: "http://localhost/get_journey_time.do",
+                data: JSON.stringify(
+                    {
+                        "description": "Journeyti.me Step Journey Time Prediction Request",
+                        "title": "Journeyti.me Prediction Request",
+                        "routes": [
+                            {
+                                "steps": [
+                                    {
+                                        "distance": {
+                                            "text": "6.0 km",
+                                            "value": 5979
+                                        },
+                                        "duration": {
+                                            "text": "22 mins",
+                                            "value": 1295
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.347221,
+                                                    "lng": -6.25517
+                                                },
+                                                "name": "Tara Street"
+                                            },
+                                            "arrival_time": {
+                                                "text": "4:38pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899485
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.3094124,
+                                                    "lng": -6.218878399999999
+                                                },
+                                                "name": "UCD Belfield"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:16pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Maynooth",
+                                            "line": {
+                                                "name": "University College Dublin - Kingsbury Estate",
+                                                "short_name": "X25"
+                                            },
+                                            "num_stops": 16
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    },
+                                    {
+                                        "distance": {
+                                            "text": "12.5 km",
+                                            "value": 12458
+                                        },
+                                        "duration": {
+                                            "text": "40 mins",
+                                            "value": 2386
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.4406702,
+                                                    "lng": -6.1763775
+                                                },
+                                                "name": "Auburn House, stop 3579"
+                                            },
+                                            "arrival_time": {
+                                                "text": "5:29pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657902586
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.35076979999999,
+                                                    "lng": -6.253899199999999
+                                                },
+                                                "name": "Moland Street, stop 1184"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:50pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Portmarnock",
+                                            "line": {
+                                                "name": "Talbot Street (opp Bank of Ireland) - Coast Road",
+                                                "short_name": "42"
+                                            },
+                                            "num_stops": 35
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    }
+                                ]
+                            },
+                            {
+                                "steps": [
+                                    {
+                                        "distance": {
+                                            "text": "6.7 km",
+                                            "value": 6673
+                                        },
+                                        "duration": {
+                                            "text": "24 mins",
+                                            "value": 1413
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.3456456,
+                                                    "lng": -6.2593052
+                                                },
+                                                "name": "Westmoreland Street, stop 320"
+                                            },
+                                            "arrival_time": {
+                                                "text": "4:30pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899032
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.3094124,
+                                                    "lng": -6.218878399999999
+                                                },
+                                                "name": "UCD Belfield"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:06pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Phoenix Pk",
+                                            "line": {
+                                                "name": "Phoenix Park Gate - University College Dublin",
+                                                "short_name": "46A"
+                                            },
+                                            "num_stops": 16
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    },
+                                    {
+                                        "distance": {
+                                            "text": "0.5 km",
+                                            "value": 537
+                                        },
+                                        "duration": {
+                                            "text": "2 mins",
+                                            "value": 102
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.3505441,
+                                                    "lng": -6.2507091
+                                                },
+                                                "name": "Connolly"
+                                            },
+                                            "arrival_time": {
+                                                "text": "4:44pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899866
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.3482354,
+                                                    "lng": -6.2561569
+                                                },
+                                                "name": "Eden Quay, stop 299"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:42pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Clongriffin",
+                                            "line": {
+                                                "name": "Main Street - Ballycullen Road (Hunter's Avenue)",
+                                                "short_name": "15"
+                                            },
+                                            "num_stops": 1
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    },
+                                    {
+                                        "distance": {
+                                            "text": "12.0 km",
+                                            "value": 12001
+                                        },
+                                        "duration": {
+                                            "text": "37 mins",
+                                            "value": 2226
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.4406702,
+                                                    "lng": -6.1763775
+                                                },
+                                                "name": "Auburn House, stop 3579"
+                                            },
+                                            "arrival_time": {
+                                                "text": "5:29pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657902586
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.3505441,
+                                                    "lng": -6.2507091
+                                                },
+                                                "name": "Connolly"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:52pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Portmarnock",
+                                            "line": {
+                                                "name": "Talbot Street (opp Bank of Ireland) - Coast Road",
+                                                "short_name": "42"
+                                            },
+                                            "num_stops": 34
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    }
+                                ]
+                            },
+                            {
+                                "steps": [
+                                    {
+                                        "distance": {
+                                            "text": "29.0 km",
+                                            "value": 28968
+                                        },
+                                        "duration": {
+                                            "text": "1 hour 19 mins",
+                                            "value": 4737
+                                        },
+                                        "transit_details": {
+                                            "arrival_stop": {
+                                                "location": {
+                                                    "lat": 53.4442457,
+                                                    "lng": -6.152287299999999
+                                                },
+                                                "name": "The Hill Malahide, stop 3626"
+                                            },
+                                            "arrival_time": {
+                                                "text": "5:53pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657904037
+                                            },
+                                            "departure_stop": {
+                                                "location": {
+                                                    "lat": 53.3081813,
+                                                    "lng": -6.230057400000001
+                                                },
+                                                "name": "Ucd Sports Centre, stop 877"
+                                            },
+                                            "departure_time": {
+                                                "text": "4:35pm",
+                                                "time_zone": "Europe/Dublin",
+                                                "value": 1657899843
+                                            },
+                                            "headsign": "Coast Road",
+                                            "line": {
+                                                "name": "Wendell Avenue - University College of Dublin UCD",
+                                                "short_name": "142"
+                                            },
+                                            "num_stops": 41
+                                        },
+                                        "travel_mode": "TRANSIT"
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ),
+                contentType: "application/json",
+                success: function (result) {
+                    console.log(result);
+                },
+                error: function (result, status) {
+                    console.log(result);
+                }
+            });
+        </script>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        <!-- We only display the sidebar on XL screens (d-none by default...)-->
+        <form method="POST" action="/check_username_available.do">
+            <label for="uname">Username: </label>
+            <input type="text" id="uname" name="username"><br>
+            <input type="submit" value="Check">
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        <!-- We only display the sidebar on XL screens (d-none by default...)-->
+        <form method="POST" action="https://api.journeyti.me/register.do">
+            <label for="uname">Username: </label>
+            <input type="text" id="uname" name="username"><br>
+            <label for="pass">Password_hash (8 characters minimum):</label>
+            <input type="password" id="pass" name="password_hash" minlength="8" required><br>
+            <input type="submit" value="REgister">
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        <!-- We only display the sidebar on XL screens (d-none by default...)-->
+        <form method="POST" action="/login.do">
+            <label for="uname">Username: </label>
+            <input type="text" id="uname" name="username"><br>
+            <label for="pass">Password_hash (8 characters minimum):</label>
+            <input type="password" id="pass" name="password_hash" minlength="8" required><br>
+            <input type="submit" value="Login">
+        </form>
+    </div>
+</div>
+<div class="row">
+    <div class="col p-4">
+        {{ form.name }}
+        <form method="POST" action="{{ url_for('update_user') }}" enctype="multipart/form-data">
+            {{ form.csrf_token() }}
+            {% for field in form if field.widget.input_type != 'hidden' if field.type != 'SubmitField' %}
+            {{ field.label }}
+            {{ field }}
+            <span>
+                {% if field.errors %}
+                {% for error in field.errors %}
+                {{ error }}
+                {% endfor %}
+                {% endif %}
+            </span><br>
+            {% endfor %}
+            {{ form.submit}}
+        </form>
+    </div>
+</div>
+{% endblock %}

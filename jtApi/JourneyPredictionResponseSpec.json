@@ -1,0 +1,70 @@
+{
+    "title": "Journeyti.me Prediction Response",
+    "description": "Journeyti.me Step-by-Step Prediction Response",
+    "version": "vn.n.n - the Journeyti.me API Spec. Version",
+    "routes": [
+        {
+            "steps": [
+                {
+                    "distance": {
+                        "text": "7.3 km",
+                        "value": 7321
+                    },
+                    "duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                    },
+                    "predicted_duration": {
+                        "text": "26 mins",
+                        "value": 1537
+                    },
+                    "prediction_status": "Prediction Attempted",
+                    "stop_sequence": [
+                        {
+                            "stop_id": 1234,
+                            "sequence_no": 1,
+                            "location": {
+                                "lat": 53.35135349999999,
+                                "lng": -6.2611282
+                            },
+                            "name": "O'Connell St Upper, stop 281",
+                            "dist_from_last_stop": 1234
+                        }
+                    ],
+                    "transit_details": {
+                        "arrival_stop": {
+                            "location": {
+                                "lat": 53.35135349999999,
+                                "lng": -6.2611282
+                            },
+                            "name": "O'Connell St Upper, stop 281"
+                        },
+                        "arrival_time": {
+                            "text": "12:45pm",
+                            "time_zone": "Europe/Dublin",
+                            "value": 1657712742
+                        },
+                        "departure_stop": {
+                            "location": {
+                                "lat": 53.3094124,
+                                "lng": -6.218878399999999
+                            },
+                            "name": "UCD Belfield"
+                        },
+                        "departure_time": {
+                            "text": "12:20pm",
+                            "time_zone": "Europe/Dublin",
+                            "value": 1657711205
+                        },
+                        "headsign": "Phoenix Pk",
+                        "line": {
+                            "name": "Phoenix Park Gate - University College Dublin",
+                            "short_name": "46A"
+                        },
+                        "num_stops": 17
+                    }
+                }
+            ]
+        }
+    ]
+}
