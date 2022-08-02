@@ -1,5 +1,5 @@
 <template>
-<div class="userFormMainDiv">
+<div>
   <el-form ref="form" :model="form" >
     <el-form-item >
       <span slot="label">Where do you want to go?</span>
@@ -7,7 +7,7 @@
     </el-form-item>
     <div class="swap">
       <el-tooltip
-    content="Swap start point and destination"
+    content="Swap start and destination"
     raw-content>
       <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
       </el-tooltip>
@@ -78,14 +78,12 @@ export default {
           show : false,
           flag : 0,
         //   type: [],
-        
         //   resource: '',
         //   desc: ''
         }
       }
     },
     mounted(){
-      
       // const dir = new google.maps.DirectionsService();
       // const results = dir.route({
       //   origin: '54.1749986272442,-6.34014464532738',
@@ -143,13 +141,11 @@ export default {
         console.log(this.form.flag)
         this.$bus.$emit('GetRouteIndex',this.form.flag);
         console.log('++++++++++++++++++++++++++++++++++++');
-        
       },
       onSubmit() {
         // console.log('submit!');
         this.$bus.$emit('GutStartPlace',this.form.startPlaceLatLng);
         this.$bus.$emit('GutEndPlace',this.form.endPlaceLatLng);
-        
 
         this.form.show = !this.form.show;
 
@@ -230,7 +226,7 @@ export default {
               prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request";
               prediction_request["routes"] = routes_array;
               console.log("Completed Prediction Requeset Objeect: ", prediction_request);
-              //this.form.journeyFromGoogle.routes.push(routesInfo) 
+              //this.form.journeyFromGoogle.routes.push(routesInfo)
               this.form.toBackendInfo = prediction_request;
             } // End of Status OK
 
@@ -242,7 +238,6 @@ export default {
             console.log("---------------------------------")
             console.log(JSON.stringify(this.form.toBackendInfo))
             console.log("---------------------------------")
-            
             // this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
 
             this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
@@ -280,7 +275,6 @@ export default {
         this.form.startPlace = temp1;
         this.form.startPlaceLatLng = temp2;
       }
-      
     },
     watch:{
       flag(){
@@ -290,8 +284,8 @@ export default {
         // 先将toBackendInfo传入站到站展示组件（尝试总线是否可以联通）如果这个ok等axios好了之后再去连接data数据
         this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
       }
-      
-            
+
+
     }
 }
 </script>

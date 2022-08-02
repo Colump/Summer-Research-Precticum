@@ -3,7 +3,15 @@
       <!-- 24 Columns in Element Grid system -->
       <el-col :span="20">
         <div class="grid-content bg-purple">
+<<<<<<< HEAD
           <el-menu :default-active="activeIndex" mode='horizontal' :collapse-transition.='false' class="el-menu-demo"  @select="handleSelect" text-color="#fff" active-text-color="#fff" hover-text-color="#008CFF">
+=======
+          <el-menu :default-active="activeIndex" mode='horizontal'
+                  :collapse-transition.='false' class="el-menu-demo"
+                  @select="handleSelect" text-color="#fff"
+                  active-text-color="#fff" hover-text-color="#008CFF"
+                  background-color="#008cff" hover-bg-color="#0707b3">
+>>>>>>> 7f88209355142e3d1dd60e9c55c98df15845850a
             <el-menu-item index="1" id="mainnav-map">Map</el-menu-item>
             <el-menu-item index="2" id="mainnav-register" >Register</el-menu-item>
             <el-menu-item index="5" id="mainnav-log-in">Log In</el-menu-item>
@@ -91,7 +99,11 @@ export default {
       //     name:'AboutUs',
       //   })
       // }
+<<<<<<< HEAD
       
+=======
+
+>>>>>>> 7f88209355142e3d1dd60e9c55c98df15845850a
     },
     watch:{
       activeIndex(){
@@ -113,8 +125,12 @@ export default {
     padding: 4px;
 }
 .el-menu {
+<<<<<<< HEAD
   font-family: element-icons!important;
   background-color: rgb(0, 140, 255);
 
+=======
+  font-family: element-icons !important;
+>>>>>>> 7f88209355142e3d1dd60e9c55c98df15845850a
 }
 </style>
