@@ -851,7 +851,7 @@ def _predict_jt_end_to_end(journey_prediction):
         'month_sin':month_sin,'month_cos':month_cos,
         'temp':temperature}
         ]
-    input_to_pickle_data_frame = pd.DataFrame(dic_list)
+    input_to_pickle_data_frame = pd.DataFrame(dic_list).values
     # Pass the dataframe into model and predict time
     # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
     predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
