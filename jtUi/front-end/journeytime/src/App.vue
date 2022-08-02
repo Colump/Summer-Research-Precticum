@@ -6,7 +6,9 @@
     <el-container>
       <el-aside width="250px">
         <div class="iconOfWeb">
+          <a href="http://localhost:8080">
           <img src="./assets/blueTheme_jt_plan_your_journey.png" height="75px"/>
+          <a>
         </div>
         <div>
           <UserForms></UserForms>
