@@ -438,6 +438,8 @@ class StepStop:
 
 def get_available_end_to_end_models():
     """Return a list of all End-to-End model pickles currently on disk
+
+    All pickle names converted *to uppercase*
     """
     available_model_names = []
     end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
@@ -445,13 +447,15 @@ def get_available_end_to_end_models():
     # iterate over files in that directory
     files = Path(end_to_end_model_dir).glob('*.pickle')
     for file in files:
-        available_model_names.append(Path(file).stem)
+        available_model_names.append(Path(file).stem.upper())
 
     return available_model_names
 
 
 def get_valid_route_shortnames(database):
-    """Return a list of all valid route shortnamees
+    """Return a list of all valid route shortnames
+
+    All route names converted *in uppercase*
     """
     valid_route_shortnames = []
 
@@ -459,7 +463,7 @@ def get_valid_route_shortnames(database):
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
-        valid_route_shortnames = [row[0] for row in route_shortnames]
+        valid_route_shortnames = [row[0].upper() for row in route_shortnames]
         log.debug('\tFound %d route-shortnames', len(valid_route_shortnames))
 
     return valid_route_shortnames
@@ -836,9 +840,8 @@ def _predict_jt_end_to_end(journey_prediction):
     month_cos = np.cos(2 * np.pi * month/12.0)
 
     # load the prediction model
-    end_to_end_filepath=os.path.join(jt_utils_dir, 'pickles')
-    end_to_end_filepath=os.path.join(end_to_end_filepath, 'end_to_end' )
-    end_to_end_filepath=os.path.join(end_to_end_filepath, lineid+'.pickle' )
+    end_to_end_filepath= \
+        os.path.join(jt_utils_dir, *['pickles', 'end_to_end', lineid+'.pickle'])
     with open(end_to_end_filepath, 'rb') as file:
         model_for_line = pickle.load(file)
 
@@ -1019,15 +1022,18 @@ def main():
     """
 
     print('JT_Utils: Main Method')
-    pickle_path= os.path.join(jt_utils_dir, 'pickles')
-
-    stop_to_stop_filepath=os.path.join(pickle_path, 'stop_to_stop' )
-    stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' )
+    stop_to_stop_filepath= \
+        os.path.join(jt_utils_dir, *['pickles', 'stop_to_stop', 'rfstoptostop.pickle'])
     with open(stop_to_stop_filepath, 'rb') as file:
         # TODO:: Agree what action we should take if the pickle is invalid/not found.
         model_stop_to_stop = pickle.load(file)
 
-    with (open(os.path.join(pickle_path, 'JourneyPrediction-r15-s1.pickle'), "rb")) as jp_pickle:
+    with ( \
+            open( \
+                os.path.join(jt_utils_dir, *['pickles', 'JourneyPrediction-r15-s1.pickle']), \
+                "rb" \
+                ) \
+        ) as jp_pickle:
         journey_pred = pickle.load(jp_pickle)
         # # Call a function to get the predicted journey time for this step.
         journey_pred = predict_journey_time(journey_pred, model_stop_to_stop)
