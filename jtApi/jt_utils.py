@@ -440,6 +440,7 @@ def get_available_end_to_end_models():
     """Return a list of all End-to-End model pickles currently on disk
 
     All pickle names converted *to uppercase*
+    WARNING This could lead to duplicate entries
     """
     available_model_names = []
     end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
@@ -455,11 +456,14 @@ def get_available_end_to_end_models():
 def get_valid_route_shortnames(database):
     """Return a list of all valid route shortnames
 
-    All route names converted *in uppercase*
+    All route names converted *to uppercase*
+    Blank route shortnames are ignored
     """
     valid_route_shortnames = []
 
     route_shortname_query = database.session.query(Routes.route_short_name)
+    # Ignore blank shortnames (not supplied by all agencies for all routes)
+    route_shortname_query = route_shortname_query.filter(Routes.route_short_name != '')
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
@@ -519,7 +523,9 @@ def get_stops_by_route(database, route_name, route_shortname, \
         try:
             # Exact MATCH based ON NAME
             stop_query = database.session.query(Stop)
-            stop_query = stop_query.filter(Stop.stop_name == name)
+            #stop_query = stop_query.filter(Stop.stop_name == name)
+            # 'ilike' is case insensitive
+            stop_query = stop_query.filter(Stop.stop_name.ilike(f'%{name}%'))
             stop = stop_query.one()
         except NoResultFound:
             # log.warning('\tNo Stops found for stop name: ' + name)
@@ -737,20 +743,24 @@ def _search_for_routes(
     """
     # Look up routes for supplied shortname/name...
     routes_base_query = database.session.query(Routes.route_id)
-    routes_base_query = routes_base_query.filter(Routes.route_short_name == route_shortname)
+    #routes_base_query = routes_base_query.filter(Routes.route_short_name == route_shortname)
+    # 'ilike' is case insensitive
+    routes_base_query = routes_base_query.filter(Routes.route_short_name.ilike(f'%{route_shortname}%'))
     routes_base_query = routes_base_query.order_by(text('route_id asc'))
 
     route_ids_by_name = []
     poor_match = False
 
-    routes_full_match = routes_base_query.filter(Routes.route_long_name == route_name)
+    #routes_full_match = routes_base_query.filter(Routes.route_long_name == route_name)
+    log.debug('\tSearching for routes based on longname \"%s\" first', route_name)
+    routes_full_match = routes_base_query.filter(Routes.route_long_name.ilike(f'%{route_name}%'))
     if routes_full_match.count() > 0:
         # Great! This is the best solution - we found a full match - just grab
         # all these routes...
         for route in routes_full_match.all():
             route_ids_by_name.append(route.route_id)
 
-        log.debug('\tFound %d routes on exact match shortname \"%s\" / name \"%s\"', \
+        log.debug('\tFound %d routes on exact match shortname \"%s\" / long_name \"%s\"', \
             len(route_ids_by_name), route_shortname, route_name)
     else:
         # Awww... no exact match found.  What we do next is attempt to match on
