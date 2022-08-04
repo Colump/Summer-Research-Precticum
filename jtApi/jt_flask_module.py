@@ -42,7 +42,7 @@ CONST_DUBLIN_BUS_AGENCY_ID = 978
 
 # In a fully configured environment, a scheduled job updates this list each morning
 # at 03:30. It can also be updated manually by calling the URL: /update_model_list.do
-AVAILABLE_MODEL_ROUTE_SHORTNAMES = []
+AVAILABLE_END_TO_END_MODELS = []
 
 # There are bus operators in the Dublin Region not contained in the Transport For
 # Ireland GTFS data set (e.g. the Swords Express company that operates 9 bus routes
@@ -626,12 +626,12 @@ def update_model_list():
     # We're careful to keep our original list reference alive and just empty
     # the list, then repopulate it.  To avoid referencing an object which only
     # exists in the scope of this endpoint.
-    AVAILABLE_MODEL_ROUTE_SHORTNAMES.clear()
-    AVAILABLE_MODEL_ROUTE_SHORTNAMES.extend(get_available_end_to_end_models())
+    AVAILABLE_END_TO_END_MODELS.clear()
+    AVAILABLE_END_TO_END_MODELS.extend(get_available_end_to_end_models())
     log.debug("              Available predictive mode list: %s", \
-        AVAILABLE_MODEL_ROUTE_SHORTNAMES)
+        AVAILABLE_END_TO_END_MODELS)
 
-    return jsonify(AVAILABLE_MODEL_ROUTE_SHORTNAMES)
+    return jsonify(AVAILABLE_END_TO_END_MODELS)
 
 
 # Simple endpoint to load list of valid route names
@@ -759,8 +759,10 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     """
     step['prediction_status'] = 'Prediction Attempted'
 
+    # NOTE We convert the route_shortname to uppercase as the names listed in
+    #      the GTFS dataset are case-inconsisten with those returned by Google.
     route_shortname_pickle_exists = \
-                        route_shortname in AVAILABLE_MODEL_ROUTE_SHORTNAMES
+                        route_shortname.upper() in AVAILABLE_END_TO_END_MODELS
 
     # Dublin Bus times are 'timestamp' expressed in seconds elapsed since the Unix
     # epoch, 1970-01-01 00:00:00 UTC.  Using datetime to construct our date seems
