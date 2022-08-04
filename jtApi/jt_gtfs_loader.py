@@ -7,7 +7,9 @@
 # Standard Library Imports
 import csv
 from datetime import datetime
+import logging
 import os
+from os.path import exists
 import sys
 import traceback
 import zipfile
@@ -30,6 +32,7 @@ sys.path.insert(0, jt_gtfs_module_dir)
 from jt_utils import load_credentials
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
 
+log = logging.getLogger(__name__)  # Standard naming...
 
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
 # Dublin City Center...
@@ -39,20 +42,23 @@ CONST_DUBLIN_CC = (credentials['DUBLIN_CC']['lat'], credentials['DUBLIN_CC']['lo
 CONST_OBJ_PER_SESS_MAX = 50000
 
 
-def download_gtfs_schedule_data(import_dir):
+def download_gtfs_schedule_data(import_dir, gtfs_filename):
     """Download the latest version of the GTFS Schedule Data.
 
     """
-    print('\tRetrieving GTFS Schedule data from NTA.')
+    print('\t\tRetrieving GTFS Schedule data from NTA.')
     # NOTE: We must download the combined schedule file as some bus routes are
     #       operated by Dublin Bus, some by Go-Ahead Ireland and others by yet
     #       more operators.  To cover all of Dublin - we need it all...
-    gtfs_schedule_data_file = import_dir + "google_transit_combined.zip"
+    gtfs_schedule_data_file=os.path.join(import_dir, gtfs_filename)
 
-    # If a .zip from a previous download exists - we don't really care. It's all
-    # about having the most up to date data. Log a warning, but proceed...
+    # If any .zips from a previous download exist - we don't really care. It's
+    # all about having the most up to date data. Log a warning, but proceed...
     if os.path.exists(gtfs_schedule_data_file):
-        print('\tWARNING: Old Schedule Data file found - Deleting...')
+        print( \
+            '\t\tWARNING: Old version of schedule data file \"%s\" found. Deleting...', \
+            gtfs_filename \
+            )
         os.remove(gtfs_schedule_data_file)
 
     # Would it be better to use the python 'wget' module??
@@ -62,9 +68,10 @@ def download_gtfs_schedule_data(import_dir):
     #         )
     # Open file for binary write...
     # ... and write to it!
-    response = requests.get(credentials['nta-gtfs']['gtfs-schedule-data-url'])
+    url = credentials['nta-gtfs']["gtfs-schedule-data-base-url"] + gtfs_filename
+    response = requests.get(url)
     if response.status_code == 200:
-        print('\tSaving GTFS Schedule data to disk.')
+        print('\t\tSaving GTFS Schedule data to disk.')
         with open(gtfs_schedule_data_file, "wb") as gtfs_zip:
             gtfs_zip.write(response.content)
     else:
@@ -87,7 +94,7 @@ def extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitor_uri
         with ZipFile(gtfs_schedule_data_file, 'r') as gtfs_zip:
             # Extract all the contents of zip file in current directory
             gtfs_zip.extractall(path=import_dir)
-        print('\tGTFS Schedule Data Extract Complete - Removing .Zip Archive.')
+        print('\t\tGTFS Schedule Data Extract Complete - Removing .Zip Archive.')
         os.remove(gtfs_schedule_data_file)
     else:
         print('ERROR: Downloaded GTFS Schedule Data is not a valid .Zip file!')
@@ -104,35 +111,81 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
     """
 
     import_dir_enc = os.fsencode(import_dir)
-    for file in os.listdir(import_dir_enc):
-        # 'file' is a handle on the actual file...
-        filename = os.fsdecode(file)
 
-        if filename == ".gitignore":
-            # Expected extraneous file... ignore...
-            pass
-        else:
-            print('----------------------------------------')
-            print('Processing \"' + str(filename) + '\".' \
-                + ' Time is: ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+    current_agency = _check_agency_file_in_set(import_dir)
 
-            if filename.endswith(".txt"):
-                # Now... load all the files, by name...
-                # There may be a better abstraction for this but as we're only dealing
-                # with ten files we're taking the following expedient approach.
+    if current_agency:
+        for file in os.listdir(import_dir_enc):
+            # 'file' is a handle on the actual file...
+            filename = os.fsdecode(file)
+            path_this_item = os.path.join(import_dir, filename)
 
-                # Some of the files are large... 'stop_times.txt' is 220MB. We use a
-                # 'csv reader' as it is quite memory efficient. It is an iterator -
-                # so it processes the file line by line and does not load the whole
-                # file into memory (which would be bad).
-                with open(import_dir + filename, newline='', encoding='utf-8') as gtfs_csv:
-                    data = csv.reader(gtfs_csv, delimiter=",")
+            if os.path.isdir(path_this_item):
+                # skip directories
+                pass
+            elif filename == ".gitignore":
+                # Expected extraneous file... ignore...
+                pass
+            else:
+                print('----------------------------------------')
+                print('Processing \"' + str(filename) + '\".' \
+                    + ' Time is: ' + datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+
+                if filename.endswith(".txt"):
+                    # Now... load all the files, by name...
+                    # There may be a better abstraction for this but as we're only dealing
+                    # with ten files we're taking the following expedient approach.
+
+                    # Some of the files are large... 'stop_times.txt' is 220MB. We use a
+                    # 'csv reader' as it is quite memory efficient. It is an iterator -
+                    # so it processes the file line by line and does not load the whole
+                    # file into memory (which would be bad).
+                    with open(
+                        os.path.join(import_dir, filename),
+                        newline='', encoding='utf-8'
+                        ) as gtfs_csv:
+
+                        _import_file_to_db(session_maker, current_agency, filename, gtfs_csv)
+                else:
+                    print('WARNING: Unexpected file encountered -> ' + str(filename))
+                    print('         Ignoring...')
+
+                print('')
+
+
+def _check_agency_file_in_set(import_dir):
+    """Check an agency.txt file is in this set.
+
+    Return the agency_id if file present
+    Return None if not
+    """
+    agency_filepath = os.path.join(import_dir, 'agency.txt')
+    agency_id = None
+
+    if exists(agency_filepath):
+        try:
+            with open(agency_filepath, newline='', encoding='utf-8') as agency_file:
+                agency_reader = csv.reader(agency_file, delimiter=",")
+                # Skip over the first line (header row)
+                next(agency_reader)
+                first_data_row = next(agency_reader)
+                agency_id = first_data_row[0]
+        except StopIteration:
+            log.error('Not enough records in Agency File.')
+
+    return agency_id
+
+
+def _import_file_to_db(session_maker, current_agency, filename, gtfs_csv):
+    """Import individual GTFS Schedule Data files
+    """
+    data = csv.reader(gtfs_csv, delimiter=",")
                     # Skip over the first line (header row)
-                    next(data)
+    next(data)
 
                     # Instantiate a session *per file* so we can talk to the database!
-                    session = session_maker()
-                    objects_this_session = []  # We build a list of objects for bulk insert...
+    session = session_maker()
+    objects_this_session = []  # We build a list of objects for bulk insert...
 
                     # Process the files line-by-line...
                     # -> Some files are small (e.g. agency - 1 record). We process
@@ -143,39 +196,39 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                     # RISK!!!!  We truncate the table before re-populating...
                     #           What if population fails???
 
-                    if filename == "agency.txt":
-                        import_agency(data, session, objects_this_session)
+    if filename == "agency.txt":
+        import_agency(data, objects_this_session)
 
-                    elif filename == "calendar.txt":
-                        import_calendar(data, session, objects_this_session)
+    elif filename == "calendar.txt":
+        import_calendar(current_agency, data, objects_this_session)
 
-                    elif filename == "calendar_dates.txt":
-                        import_calendar_dates(data, session, objects_this_session)
+    elif filename == "calendar_dates.txt":
+        import_calendar_dates(current_agency, data, objects_this_session)
 
-                    elif filename == "routes.txt":
-                        import_routes(data, session, objects_this_session)
+    elif filename == "routes.txt":
+        import_routes(data, objects_this_session)
 
-                    elif filename == "shapes.txt":
-                        session, objects_this_session = \
-                            import_shapes(data, session, session_maker, objects_this_session)
+    elif filename == "shapes.txt":
+        session, objects_this_session = \
+            import_shapes(current_agency, data, session, session_maker, objects_this_session)
 
-                    elif filename == "stops.txt":
-                        import_stops(data, session, objects_this_session)
+    elif filename == "stops.txt":
+        import_stops(current_agency, data, objects_this_session)
 
-                    elif filename == "stop_times.txt":
-                        session, objects_this_session = \
-                            import_stop_times(data, session, session_maker, objects_this_session)
+    elif filename == "stop_times.txt":
+        session, objects_this_session = \
+            import_stop_times(current_agency, data, session, session_maker, objects_this_session)
 
-                    elif filename == "transfers.txt":
-                        import_transfers(data, session, objects_this_session)
+    elif filename == "transfers.txt":
+        import_transfers(current_agency, data, objects_this_session)
 
-                    elif filename == "trips.txt":
-                        session, objects_this_session = \
-                            import_trips(data, session, session_maker, objects_this_session)
+    elif filename == "trips.txt":
+        session, objects_this_session = \
+            import_trips(current_agency, data, session, session_maker, objects_this_session)
 
-                    else:
-                        print('WARNING: Unexpected .txt file encountered -> ' + str(filename))
-                        print('         Ignoring...')
+    else:
+        print('WARNING: Unexpected .txt file encountered -> ' + str(filename))
+        print('         Ignoring...')
 
                     # To see a list of updated objects we can use:
                     #   -> print('session.dirty -> ', session.dirty)
@@ -183,23 +236,16 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                     #   -> print('session.new -> ', session.new)
 
                     # Save outstanding insertions to the db...
-                    if len(objects_this_session) > 0:
-                        print('#', end='')
-                        session.bulk_save_objects(objects_this_session)
-                        session.commit()
-            else:
-                print('WARNING: Unexpected file encountered -> ' + str(filename))
-                print('         Ignoring...')
-
-            print('')
+    if len(objects_this_session) > 0:
+        print('#', end='')
+        session.bulk_save_objects(objects_this_session)
+        session.commit()
 
 
-def import_agency(data, session, objects_this_session):
+def import_agency(data, objects_this_session):
     """Import content from data into the Agency table
 
     """
-    truncate_table(session, Agency)
-
     print('          -> ', end='')
     for row in data:
         agency = Agency(agency_id=row[0],
@@ -213,79 +259,70 @@ def import_agency(data, session, objects_this_session):
         objects_this_session.append(agency)
 
 
-def import_calendar(data, session, objects_this_session):
+def import_calendar(current_agency, data, objects_this_session):
     """Import content from data into the Calendar table
 
     """
-    truncate_table(session, Calendar)
-
     print('          -> ', end='')
     for row in data:
-        calendar = Calendar(
-                                service_id=row[0],
-                                monday=row[1],
-                                tuesday=row[2],
-                                wednesday=row[3],
-                                thursday=row[4],
-                                friday=row[5],
-                                saturday=row[6],
-                                sunday=row[7],
-                                start_date=row[8],
-                                end_date=row[9]
-                            )
+        calendar = Calendar(agency_id=current_agency,
+            service_id=row[0],
+            monday=row[1],
+            tuesday=row[2],
+            wednesday=row[3],
+            thursday=row[4],
+            friday=row[5],
+            saturday=row[6],
+            sunday=row[7],
+            start_date=row[8],
+            end_date=row[9]
+        )
         objects_this_session.append(calendar)
 
 
-def import_calendar_dates(data, session, objects_this_session):
+def import_calendar_dates(current_agency, data, objects_this_session):
     """Import content from data into the CalendarDates table
 
     """
-    truncate_table(session, CalendarDates)
-
     print('          -> ', end='')
     for row in data:
-        calendar_date = CalendarDates(
-                                service_id=row[0],
-                                date=row[1],
-                                exception_type=row[2]
-                            )
+        calendar_date = CalendarDates(agency_id=current_agency,
+            service_id=row[0],
+            date=row[1],
+            exception_type=row[2]
+        )
         objects_this_session.append(calendar_date)
 
 
-def import_routes(data, session, objects_this_session):
+def import_routes(data, objects_this_session):
     """Import content from data into the Routes table
 
     """
-    truncate_table(session, Routes)
-
     print('          -> ', end='')
     for row in data:
-        route = Routes(
-                                route_id=row[0],
-                                agency_id=row[1],
-                                route_short_name=row[2],
-                                route_long_name=row[3],
-                                route_type=row[4]
-                            )
+        route = Routes(route_id=row[0],
+                        agency_id=row[1],
+                        route_short_name=row[2],
+                        route_long_name=row[3],
+                        route_type=row[4]
+                    )
         objects_this_session.append(route)
 
 
-def import_shapes(data, session, session_maker, objects_this_session):
+def import_shapes(current_agency, data, session, session_maker, objects_this_session):
     """Import content from data into the Shapes table
 
     """
-    truncate_table(session, Shapes)
-
     print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
     print('          -> ', end='')
     for row in data:
-        shape = Shapes(
-                                shape_id=row[0],
-                                shape_pt_lat=row[1],
-                                shape_pt_lon=row[2],
-                                shape_pt_sequence=row[3],
-                                shape_dist_traveled=row[4]
-                            )
+        shape = Shapes(agency_id=current_agency,
+            shape_id=row[0],
+            shape_pt_lat=row[1],
+            shape_pt_lon=row[2],
+            shape_pt_sequence=row[3],
+            shape_dist_traveled=row[4]
+        )
         objects_this_session.append(shape)
 
         if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
@@ -296,55 +333,53 @@ def import_shapes(data, session, session_maker, objects_this_session):
     return session,objects_this_session
 
 
-def import_stops(data, session, objects_this_session):
+def import_stops(current_agency, data, objects_this_session):
     """Import content from data into the Stop table
 
     """
-    truncate_table(session, Stop)
-
     print('          -> ', end='')
     for row in data:
-        stop = Stop(stop_id=row[0],
-                    stop_name=row[1],
-                    stop_lat=row[2],
-                    stop_lon=row[3],
-                    # (See custom 'Point' type in models.py for following...)
-                    # Note that spatial points are defined "lon-lat"
-                    stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
-                    # 'stop_position' is binary information.  If you want to
-                    # "see" it in a query the easiest way is to use one of
-                    # the built in functions to display it. E.g:
-                    #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position)
-                    #   FROM stops
-                    # Calculate distance to city center using haversine (in km) ...
-                    dist_from_cc = haversine(
-                        CONST_DUBLIN_CC,
-                        (float(row[2]), float(row[3]))
-                        )
-                    )
+        stop = Stop(agency_id=current_agency,
+            stop_id=row[0],
+            stop_name=row[1],
+            stop_lat=row[2],
+            stop_lon=row[3],
+            # (See custom 'Point' type in models.py for following...)
+            # Note that spatial points are defined "lon-lat"
+            stop_position = 'POINT(' + row[3] + ' ' + row[2] + ')',
+            # 'stop_position' is binary information.  If you want to
+            # "see" it in a query the easiest way is to use one of
+            # the built in functions to display it. E.g:
+            #   SELECT stop_lat,stop_lon, ST_ASTEXT(stop_position)
+            #   FROM stops
+            # Calculate distance to city center using haversine (in km) ...
+            dist_from_cc = haversine(
+                CONST_DUBLIN_CC,
+                (float(row[2]), float(row[3]))
+                )
+            )
         objects_this_session.append(stop)
 
 
-def import_stop_times(data, session, session_maker, objects_this_session):
+def import_stop_times(current_agency, data, session, session_maker, objects_this_session):
     """Import content from data into the StopTimes table
 
     Processed in batches of "CONST_OBJ_PER_SESS_MAX" records.
     """
-    truncate_table(session, StopTime)
-
     print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
     print('          -> ', end='')
     for row in data:
-        stop_time = StopTime(trip_id=row[0],
-                            arrival_time=row[1],
-                            departure_time=row[2],
-                            stop_id=row[3],
-                            stop_sequence=row[4],
-                            stop_headsign=row[5],
-                            pickup_type=row[6],
-                            drop_off_type=row[7],
-                            shape_dist_traveled=row[8]
-                            )
+        stop_time = StopTime(agency_id=current_agency,
+            trip_id=row[0],
+            arrival_time=row[1],
+            departure_time=row[2],
+            stop_id=row[3],
+            stop_sequence=row[4],
+            stop_headsign=row[5],
+            pickup_type=row[6],
+            drop_off_type=row[7],
+            shape_dist_traveled=row[8]
+            )
         objects_this_session.append(stop_time)
 
         if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
@@ -356,39 +391,37 @@ def import_stop_times(data, session, session_maker, objects_this_session):
     return session,objects_this_session
 
 
-def import_transfers(data, session, objects_this_session):
+def import_transfers(current_agency, data, objects_this_session):
     """Import content from data into the Transfers table
 
     """
-    truncate_table(session, Transfers)
-
     print('          -> ', end='')
     for row in data:
-        transfer = Transfers(from_stop_id=row[0],
-                            to_stop_id=row[1],
-                            transfer_type=row[2],
-                            min_transfer_time=row[3] if row[3] != '' else None
-                            )
+        transfer = Transfers(agency_id=current_agency,
+            from_stop_id=row[0],
+            to_stop_id=row[1],
+            transfer_type=row[2],
+            min_transfer_time=row[3] if row[3] != '' else None
+            )
         objects_this_session.append(transfer)
 
 
-def import_trips(data, session, session_maker, objects_this_session):
+def import_trips(current_agency, data, session, session_maker, objects_this_session):
     """Import content from data into the Trips table
 
     Processed in batches of "CONST_OBJ_PER_SESS_MAX" records.
     """
-    truncate_table(session, Trips)
-
     print('        Processing records in batches of', CONST_OBJ_PER_SESS_MAX)
     print('          -> ', end='')
     for row in data:
-        trip = Trips(route_id=row[0],
-                    service_id=row[1],
-                    trip_id=row[2],
-                    shape_id=row[3],
-                    trip_headsign=row[4],
-                    direction_id=row[5]
-                    )
+        trip = Trips(agency_id=current_agency,
+            route_id=row[0],
+            service_id=row[1],
+            trip_id=row[2],
+            shape_id=row[3],
+            trip_headsign=row[4],
+            direction_id=row[5]
+            )
         objects_this_session.append(trip)
 
         if len(objects_this_session) >= CONST_OBJ_PER_SESS_MAX:
@@ -418,14 +451,33 @@ def commit_batch_and_start_new_session(list_of_objects, session, session_maker):
     return session
 
 
-def truncate_table(session, model):
+def _truncate_tables(session_maker):
+    """Truncate (Delete All Rows From) the all GTFS Tables
+    """
+
+    session = session_maker()
+
+    _truncate_table(session, Agency)
+    _truncate_table(session, Calendar)
+    _truncate_table(session, CalendarDates)
+    _truncate_table(session, Routes)
+    _truncate_table(session, Shapes)
+    _truncate_table(session, Stop)
+    _truncate_table(session, StopTime)
+    _truncate_table(session, Transfers)
+    _truncate_table(session, Trips)
+
+    session.commit()
+
+
+def _truncate_table(session, model):
     """Truncate (Delete All Rows From) the Supplied Database Table
 
     Prints a nicely formattted message for the module logs
     """
-    print('        Truncating Table...')
+    print('        Truncating Table ' + model.__table__.name + '.')
     num_rows_deleted = session.query(model).delete()
-    print('        Resetting auto-increment id...' )
+    print('          -> Resetting auto-increment id...' )
     session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
     print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
 
@@ -470,7 +522,7 @@ def main():
     print('JT_GTFS_Loader: Start of iteration (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
 
     print('\tLoading credentials.')
-    import_dir  = jt_gtfs_module_dir + "/import/"
+    import_dir=os.path.join(jt_gtfs_module_dir, 'import' )
 
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)
@@ -481,12 +533,6 @@ def main():
     # Send a request to log the start of a run
     cronitor_uri = credentials['cronitor']['TelemetryURL']
     requests.get(cronitor_uri + "?state=run")
-
-    # Download the GTFS Schedule Data File (it comes down as a ".zip")
-    gtfs_schedule_data_file = download_gtfs_schedule_data(import_dir)
-
-    # Extract the contents of the GTFS Schedule Data .zip to the import directory...
-    extract_gtfs_data_from_zip(gtfs_schedule_data_file, import_dir, cronitor_uri)
 
     # The following functions require a db commection...
     connection = None
@@ -508,9 +554,30 @@ def main():
 
             session_maker = sessionmaker(bind=engine)
 
-            # With the CSV files (bizarrely, with a .txt extension) extracted to disk,
-            # we import the content to the db.
-            import_gtfs_txt_files_to_db(import_dir, session_maker)
+            # First we clear out the database - RISKY! Address?
+            _truncate_tables(session_maker)
+
+            # The links for each operators data originally came from:
+            #   -> https://www.transportforireland.ie/transitData/PT_Data.html
+            # We do NOT use the combined dataset as it contains obsolete agencies
+            # and omits some of the new ones from the Dublin region (e.g. Aircoach)
+            for agency_desc, filename \
+                in credentials['nta-gtfs']["gtfs-schedule-data-files"].items():
+
+                print("\n\tProcessing files for:", agency_desc)
+                # Download the GTFS Schedule Data File (it comes down as a ".zip")
+                gtfs_schedule_data_file = download_gtfs_schedule_data(import_dir, filename)
+
+                # Extract the contents of the GTFS Schedule Data .zip to the
+                # import directory...
+                extract_gtfs_data_from_zip(
+                    gtfs_schedule_data_file, import_dir, cronitor_uri
+                    )
+
+                # With the CSV files (bizarrely, with a .txt extension) extracted to disk,
+                # we import the content to the db.
+                import_gtfs_txt_files_to_db(import_dir, session_maker)
+
     except (SQLAlchemyError, DBAPIError):
         # if there is any problem, print the traceback
         print("ERROR Database Error")
@@ -524,10 +591,13 @@ def main():
         if connection is not None:
             connection.close()
 
-    print('\nUpdating Valid Route Name List in API Server.')
-    # Send a api.journeyti.me a request to update the 'valid route shortname' list
-    # now that we've loaded a fresh dataset.
-    requests.get(credentials['GTFS_LOADER']['JTAPI_SRVR'] + '/update_valid_route_shortnames.do')
+    try:
+        print('\nUpdating Valid Route Name List in API Server.')
+        # Send a api.journeyti.me a request to update the 'valid route shortname' list
+        # now that we've loaded a fresh dataset.
+        requests.get(credentials['GTFS_LOADER']['JTAPI_SRVR'] + '/update_valid_route_shortnames.do')
+    except ConnectionError:
+        print('\tConnection Refused updating route name list! Are you running in DEV??')
 
     print('\nRegistering completion with cronitor.')
     # Send a Cronitor request to signal our process has completed.

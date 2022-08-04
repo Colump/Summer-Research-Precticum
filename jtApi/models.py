@@ -41,7 +41,7 @@ class Agency(Base):
     agency_url = Column(String(45), nullable=False)
     agency_timezone = Column(String(32), nullable=False)
     agency_lang = Column(String(32), nullable=False)
-    agency_phone = Column(String(32), nullable=False) 
+    agency_phone = Column(String(32), nullable=False)
     agencycol = Column(String(45), nullable=True)
 
     def serialize(self):
@@ -62,6 +62,7 @@ class Agency(Base):
 class Calendar(Base):
     __tablename__ = 'calendar'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     service_id = Column(String(32), nullable=False)
     monday = Column(Integer, nullable=False)
     tuesday = Column(Integer,nullable=False)
@@ -70,7 +71,7 @@ class Calendar(Base):
     friday = Column(Integer,nullable=False)
     saturday = Column(Integer,nullable=False)
     sunday = Column(Integer,nullable=False)
-    start_date = Column(DateTime, nullable=False) 
+    start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
     __table_args__ = (Index('idx_calendar', 'service_id', 'start_date', 'end_date'), )  # <- A Tuple!
 
@@ -95,6 +96,7 @@ class Calendar(Base):
 class CalendarDates(Base):
     __tablename__ = 'calendar_dates'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     service_id = Column(String(32), nullable=False)
     date = Column(DateTime, nullable=False)
     exception_type = Column(Integer, nullable=True)
@@ -131,11 +133,12 @@ class Routes(Base):
         }
 
     def __repr__(self):
-        return '<Routes %r>' % (self.route_id, self.route_short_name, self.route_long_name, self.route_type)    
+        return '<Routes %r>' % (self.route_id, self.route_short_name, self.route_long_name, self.route_type)
 
 class Shapes(Base):
     __tablename__ = 'shapes'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     shape_id = Column(String(32), nullable=False)
     shape_pt_lat = Column(Float, nullable=False)
     shape_pt_lon = Column(Float, nullable=False)
@@ -153,7 +156,7 @@ class Shapes(Base):
         }
 
     def __repr__(self):
-        return '<Routes %r>' % (self.shape_id, self.shape_pt_lat, self.shape_pt_lon)    
+        return '<Routes %r>' % (self.shape_id, self.shape_pt_lat, self.shape_pt_lon)
 
 
 class Stop(Base):
@@ -165,6 +168,7 @@ class Stop(Base):
     # **kwargs and call the super constructor with those **kwargs to preserve this
     # behavior.
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     stop_id = Column(String(12), index=True, unique=False, nullable=False)
     stop_name = Column(String(64), unique=False, nullable=False)
     stop_lat = Column(Float, unique=False, nullable=False)
@@ -200,6 +204,7 @@ class Stop(Base):
 class StopTime(Base):
     __tablename__ = 'stop_times'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     trip_id = Column(String(32), nullable=False)
     arrival_time = Column(DateTime, nullable=False)
     departure_time = Column(DateTime, nullable=False)
@@ -236,6 +241,7 @@ class StopTime(Base):
 class Transfers(Base):
     __tablename__ = 'transfers'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     from_stop_id = Column(String(12), nullable=False)
     to_stop_id = Column(String(12), nullable=False)
     transfer_type = Column(SmallInteger, nullable=False)
@@ -256,6 +262,7 @@ class Transfers(Base):
 class Trips(Base):
     __tablename__ = 'trips'
     id = Column(Integer, primary_key=True, nullable=False, autoincrement=True)
+    agency_id = Column(String(32), nullable=False)
     route_id = Column(String(32), nullable=False)
     service_id = Column(String(32), nullable=False)
     trip_id = Column(String(32), nullable=False)
@@ -290,7 +297,7 @@ class JT_User(Base):
 
     def __repr__(self):
         return f'StopTime("{self.id}","{self.name}"'
-        
+
 # class weatherHistory(db.Model):
 #     __tablename__ = 'weatherHistory'
 #     weatherTime = db.Column(db.DateTime, primary_key=True)
