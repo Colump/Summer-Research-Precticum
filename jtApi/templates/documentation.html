@@ -709,7 +709,11 @@ route["steps"].append(step)
         -->
     <h3><a href="javascript:void(0);" id='agency_json' onclick="setDownloadTargetValueAndOpenModal('/agency')">Agency</a></h3>
     <p>
-      Transit agencies with service represented in this dataset.
+      Transit agencies with service represented in this dataset.  Note that the
+      files we make available for download are restricted to Dublin Bus (agency_id
+      '978').  The downloads are intended as samples to introduce the user to GTFS.
+      Dealing with duplicate calendar entries across agencies etc. is a topic
+      best addressed on a (use) case-by-case basis.
       Download the latest Agency dataset for Dublin as
       <a href="javascript:void(0);" id='agency_dljson' onclick="setDownloadTargetValueAndOpenModal('/agency?dltype=json')">.json</a>
       or as a

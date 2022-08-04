@@ -38,9 +38,12 @@ CONST_DLTYPE  = 'dltype'
 CONST_JSONFILE = 'json'
 CONST_CSVFILE  = 'csv'
 
+CONST_DUBLIN_BUS_AGENCY_ID = 978
+
 # In a fully configured environment, a scheduled job updates this list each morning
 # at 03:30. It can also be updated manually by calling the URL: /update_model_list.do
 AVAILABLE_MODEL_ROUTE_SHORTNAMES = []
+
 # There are bus operators in the Dublin Region not contained in the Transport For
 # Ireland GTFS data set (e.g. the Swords Express company that operates 9 bus routes
 # in the Dublin area).  We keep a list of 'valid' route shortnames in memory (updated
@@ -51,7 +54,7 @@ VALID_ROUTE_SHORTNAMES = []
 logging.basicConfig(
     format='%(levelname)s: %(message)s',
     encoding='utf-8',
-    level=os.environ.get("LOGLEVEL", "INFO")
+    level=os.environ.get("LOGLEVEL", "DEBUG")
     )
 log = logging.getLogger(__name__)  # Standard naming...
 
@@ -135,9 +138,8 @@ db = SQLAlchemy(jt_flask_app)
 #      (used in cases where our training data - from 2018 - did not contain
 #       information for lines that exist currently).
 # We keep the stop-to-stop model in memory - to improve performance.
-stop_to_stop_filepath=os.path.join(jt_flask_mod_dir, 'pickles')
-stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'stop_to_stop' )
-stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' )
+stop_to_stop_filepath= \
+    os.path.join(jt_flask_mod_dir, *['pickles', 'stop_to_stop', 'rfstoptostop.pickle'])
 with open(stop_to_stop_filepath, 'rb') as file:
     # TODO:: Agree what action we should take if the pickle is invalid/not found.
     CONST_MODEL_STOP_TO_STOP = pickle.load(file)
@@ -315,8 +317,12 @@ def _get_dataset_in_requested_format(file_request, model, query):
 def get_agency(agency_name):
     """api.journeyti.me - Agency file download links"""
     agency_query = db.session.query(Agency)
+    # Our db has data for many agencies - we only present data for Dublin Bus in sample files.
+    agency_query = \
+        agency_query.filter(Agency.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
+    # Following logic left in place (for agency file) in case needed in future
     if agency_name is not None:
         # Simplest use case - user requires information on single agency
         # No option to download this as a file (currently) - just return requested
@@ -339,6 +345,9 @@ def get_agency(agency_name):
 def get_calendar(service_id):
     """api.journeyti.me - Calendar file download links"""
     calendar_query = db.session.query(Calendar)
+    # Our db has data for many agencies - we only present data for Dublin Bus in sample files.
+    calendar_query = \
+        calendar_query.filter(Calendar.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if service_id is not None:
@@ -363,6 +372,8 @@ def get_calendar(service_id):
 def get_calendar_dates(date):
     """api.journeyti.me - CalendarDates file download links"""
     calendardates_query = db.session.query(CalendarDates)
+    calendardates_query = \
+        calendardates_query.filter(CalendarDates.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if date is not None:
@@ -385,6 +396,8 @@ def get_calendar_dates(date):
 def get_routes(route_id):
     """api.journeyti.me - Route file download links"""
     route_query = db.session.query(Routes)
+    route_query = \
+        route_query.filter(Routes.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if route_id is not None:
@@ -408,6 +421,8 @@ def get_routes(route_id):
 def get_shape(shape_id):
     """api.journeyti.me - Shapes file download links"""
     shape_query = db.session.query(Shapes)
+    shape_query = \
+        shape_query.filter(Shapes.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if shape_id is not None:
@@ -442,6 +457,8 @@ def get_stops(stop_id):
     # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
 
     stop_query = db.session.query(Stop)
+    stop_query = \
+        stop_query.filter(Stop.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if stop_id is not None:
@@ -466,6 +483,8 @@ def get_stops(stop_id):
 def get_stop_times(trip_id):
     """api.journeyti.me - Stoptimes file download links"""
     stoptime_query = db.session.query(StopTime)
+    stoptime_query = \
+        stoptime_query.filter(StopTime.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if trip_id is not None:
@@ -489,6 +508,8 @@ def get_stop_times(trip_id):
 def get_transfers(from_stop_id):
     """api.journeyti.me - Transfers file download links"""
     transfer_query = db.session.query(Transfers)
+    transfer_query = \
+        transfer_query.filter(Transfers.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if from_stop_id is not None:
@@ -514,6 +535,8 @@ def get_transfers(from_stop_id):
 def get_trips(trip_id):
     """api.journeyti.me - Trips file download links"""
     trips_query = db.session.query(Trips)
+    trips_query = \
+        trips_query.filter(Trips.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if trip_id is not None:
