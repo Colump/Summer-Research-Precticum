@@ -464,6 +464,8 @@ def get_valid_route_shortnames(database):
     route_shortname_query = database.session.query(Routes.route_short_name)
     # Ignore blank shortnames (not supplied by all agencies for all routes)
     route_shortname_query = route_shortname_query.filter(Routes.route_short_name != '')
+    # Return only unique values (we know there are multipe 'routes' per short_name
+    route_shortname_query = route_shortname_query.distinct()
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
