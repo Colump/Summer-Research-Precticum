@@ -366,9 +366,9 @@ def test_restful_services(**kwargs):
         valid = False
 
     if valid:
-        print('\tModel Update Request Tests Passed.')
+        print('\tUsername Availability Request Tests Passed.')
     else:
-        print('\tModel Update Request Tests FAILED!')
+        print('\tUsername Availability Request Tests FAILED!')
     print('\t-')
 
     # "/get_profile_picture.do", methods=['GET'])
