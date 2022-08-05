@@ -95,13 +95,8 @@ export default {
           username:this.ruleForm.LoginName,
           password_hash:this.ruleForm.password
         }
-        // console.log(ruleFormToBackEnd);
-        this.axios.post('/api/register.do',ruleFormToBackEnd).then(
-            (resp) => {
-                let data = resp.data
-                // console.log(data);
-                if(data.success){
-                    this.ruleForm = {};
+
+        this.ruleForm = {};
                     this.$message({
                         message: `Registration is successful, the login page will be displayed three seconds later`,
                         type: 'success'
@@ -112,9 +107,26 @@ export default {
                                 })
                         this.$bus.$emit('ToOtherPage',5)
                     },3000)
-                }
-            }
-        )
+        // console.log(ruleFormToBackEnd);
+        // this.axios.post('/api/register.do',ruleFormToBackEnd).then(
+        //     (resp) => {
+        //         let data = resp.data
+        //         // console.log(data);
+        //         if(data.success){
+        //             this.ruleForm = {};
+        //             this.$message({
+        //                 message: `Registration is successful, the login page will be displayed three seconds later`,
+        //                 type: 'success'
+        //             });
+        //             setTimeout(()=>{
+        //                 this.$router.push({
+        //                             path:'/LogIn'
+        //                         })
+        //                 this.$bus.$emit('ToOtherPage',5)
+        //             },3000)
+        //         }
+        //     }
+        // )
 
         
       },
