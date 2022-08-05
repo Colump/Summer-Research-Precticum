@@ -88,7 +88,7 @@ if credentials['SELENIUM_TESTING']['JTUI_PORT']:
 CONST_SML_FILENAMES = ['agency', 'calendar', 'calendardates', 'routes', 'stops', 'transfers']
 CONST_LRG_FILENAMES = ['shapes', 'stoptimes', 'trips']
 
-CONST_DOWNLOAD_DIR = 'testing_downloads'
+CONST_DOWNLOAD_DIR = 'downloads'
 
 TEST_MODE      = 'test_mode'
 TEST_MODE_FULL = 'Full'
@@ -638,7 +638,7 @@ def empty_download_dir():
     This means all files in the download directory at the end of a test run are
     releated to this test run. Makes checking files etc. easier.
     """
-    test_jt_dl_dir = os.path.join(test_jt_parent_dir, CONST_DOWNLOAD_DIR)
+    test_jt_dl_dir = os.path.join(test_jt_module_dir, CONST_DOWNLOAD_DIR)
     print('Clearing down files in', test_jt_dl_dir)
     file_extensions = ['*.csv.gz', '*.json']
     files_removed = 0
@@ -1015,7 +1015,7 @@ def main(**kwargs):
     print('')
 
     try:
-        test_jt_dl_dir = os.path.join(test_jt_parent_dir, CONST_DOWNLOAD_DIR)
+        test_jt_dl_dir = os.path.join(test_jt_module_dir, CONST_DOWNLOAD_DIR)
         test_using_chrome(test_jt_dl_dir, **kwargs)
 
         #test_using_firefox(test_jt_temp_dir, **kwargs)
