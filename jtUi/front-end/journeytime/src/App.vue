@@ -6,7 +6,9 @@
     <el-container>
       <el-aside width="250px">
         <div class="iconOfWeb">
+          <a href="http://localhost:8080">
           <img src="./assets/blueTheme_jt_plan_your_journey.png" height="75px"/>
+          <a>
         </div>
         <div>
           <UserForms></UserForms>
@@ -83,13 +85,14 @@ export default {
     left: 0;
     bottom: 0;
     width: 100%;
-    background-color: rgb(0, 140, 255);
-    color: white;
+    background-color: white;
+    color: black;
     text-align: center;
     font-family: element-icons;
     display: flex;
     justify-content: center;
     line-height: 1px;
+    height: 30px;
    }
    
 element.style {

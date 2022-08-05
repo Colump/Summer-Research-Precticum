@@ -438,6 +438,9 @@ class StepStop:
 
 def get_available_end_to_end_models():
     """Return a list of all End-to-End model pickles currently on disk
+
+    All pickle names converted *to uppercase*
+    WARNING This could lead to duplicate entries
     """
     available_model_names = []
     end_to_end_model_dir = jt_utils_dir + '/pickles/end_to_end'
@@ -445,21 +448,28 @@ def get_available_end_to_end_models():
     # iterate over files in that directory
     files = Path(end_to_end_model_dir).glob('*.pickle')
     for file in files:
-        available_model_names.append(Path(file).stem)
+        available_model_names.append(Path(file).stem.upper())
 
     return available_model_names
 
 
 def get_valid_route_shortnames(database):
-    """Return a list of all valid route shortnamees
+    """Return a list of all valid route shortnames
+
+    All route names converted *to uppercase*
+    Blank route shortnames are ignored
     """
     valid_route_shortnames = []
 
     route_shortname_query = database.session.query(Routes.route_short_name)
+    # Ignore blank shortnames (not supplied by all agencies for all routes)
+    route_shortname_query = route_shortname_query.filter(Routes.route_short_name != '')
+    # Return only unique values (we know there are multipe 'routes' per short_name
+    route_shortname_query = route_shortname_query.distinct()
     route_shortname_query = route_shortname_query.order_by(asc(Routes.route_short_name))
     route_shortnames = route_shortname_query.all()
     if len(route_shortnames) > 0:
-        valid_route_shortnames = [row[0] for row in route_shortnames]
+        valid_route_shortnames = [row[0].upper() for row in route_shortnames]
         log.debug('\tFound %d route-shortnames', len(valid_route_shortnames))
 
     return valid_route_shortnames
@@ -515,7 +525,9 @@ def get_stops_by_route(database, route_name, route_shortname, \
         try:
             # Exact MATCH based ON NAME
             stop_query = database.session.query(Stop)
-            stop_query = stop_query.filter(Stop.stop_name == name)
+            #stop_query = stop_query.filter(Stop.stop_name == name)
+            # 'ilike' is case insensitive
+            stop_query = stop_query.filter(Stop.stop_name.ilike(f'%{name}%'))
             stop = stop_query.one()
         except NoResultFound:
             # log.warning('\tNo Stops found for stop name: ' + name)
@@ -733,20 +745,24 @@ def _search_for_routes(
     """
     # Look up routes for supplied shortname/name...
     routes_base_query = database.session.query(Routes.route_id)
-    routes_base_query = routes_base_query.filter(Routes.route_short_name == route_shortname)
+    #routes_base_query = routes_base_query.filter(Routes.route_short_name == route_shortname)
+    # 'ilike' is case insensitive
+    routes_base_query = routes_base_query.filter(Routes.route_short_name.ilike(f'%{route_shortname}%'))
     routes_base_query = routes_base_query.order_by(text('route_id asc'))
 
     route_ids_by_name = []
     poor_match = False
 
-    routes_full_match = routes_base_query.filter(Routes.route_long_name == route_name)
+    #routes_full_match = routes_base_query.filter(Routes.route_long_name == route_name)
+    log.debug('\tSearching for routes based on longname \"%s\" first', route_name)
+    routes_full_match = routes_base_query.filter(Routes.route_long_name.ilike(f'%{route_name}%'))
     if routes_full_match.count() > 0:
         # Great! This is the best solution - we found a full match - just grab
         # all these routes...
         for route in routes_full_match.all():
             route_ids_by_name.append(route.route_id)
 
-        log.debug('\tFound %d routes on exact match shortname \"%s\" / name \"%s\"', \
+        log.debug('\tFound %d routes on exact match shortname \"%s\" / long_name \"%s\"', \
             len(route_ids_by_name), route_shortname, route_name)
     else:
         # Awww... no exact match found.  What we do next is attempt to match on
@@ -836,9 +852,8 @@ def _predict_jt_end_to_end(journey_prediction):
     month_cos = np.cos(2 * np.pi * month/12.0)
 
     # load the prediction model
-    end_to_end_filepath=os.path.join(jt_utils_dir, 'pickles')
-    end_to_end_filepath=os.path.join(end_to_end_filepath, 'end_to_end' )
-    end_to_end_filepath=os.path.join(end_to_end_filepath, lineid+'.pickle' )
+    end_to_end_filepath= \
+        os.path.join(jt_utils_dir, *['pickles', 'end_to_end', lineid+'.pickle'])
     with open(end_to_end_filepath, 'rb') as file:
         model_for_line = pickle.load(file)
 
@@ -851,7 +866,7 @@ def _predict_jt_end_to_end(journey_prediction):
         'month_sin':month_sin,'month_cos':month_cos,
         'temp':temperature}
         ]
-    input_to_pickle_data_frame = pd.DataFrame(dic_list)
+    input_to_pickle_data_frame = pd.DataFrame(dic_list).values
     # Pass the dataframe into model and predict time
     # !!! Model returns a NumPy NDArray - not a number! Grab the number from the array...
     predict_result=model_for_line.predict(input_to_pickle_data_frame)[0]
@@ -1019,15 +1034,18 @@ def main():
     """
 
     print('JT_Utils: Main Method')
-    pickle_path= os.path.join(jt_utils_dir, 'pickles')
-
-    stop_to_stop_filepath=os.path.join(pickle_path, 'stop_to_stop' )
-    stop_to_stop_filepath=os.path.join(stop_to_stop_filepath, 'rfstoptostop.pickle' )
+    stop_to_stop_filepath= \
+        os.path.join(jt_utils_dir, *['pickles', 'stop_to_stop', 'rfstoptostop.pickle'])
     with open(stop_to_stop_filepath, 'rb') as file:
         # TODO:: Agree what action we should take if the pickle is invalid/not found.
         model_stop_to_stop = pickle.load(file)
 
-    with (open(os.path.join(pickle_path, 'JourneyPrediction-r15-s1.pickle'), "rb")) as jp_pickle:
+    with ( \
+            open( \
+                os.path.join(jt_utils_dir, *['pickles', 'JourneyPrediction-r15-s1.pickle']), \
+                "rb" \
+                ) \
+        ) as jp_pickle:
         journey_pred = pickle.load(jp_pickle)
         # # Call a function to get the predicted journey time for this step.
         journey_pred = predict_journey_time(journey_pred, model_stop_to_stop)
