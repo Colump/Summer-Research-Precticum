@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""jt_testing; Selenium Testing module for Journeyti.me Application
+"""test_jt_selenium; Selenium Testing module for Journeyti.me Application
 
 This module requires the installation of selenium libraries:
   -> pip install selenium
@@ -68,8 +68,9 @@ from webdriver_manager.microsoft import IEDriverManager
 # installed (e.g. if called as an installed endpoint) - we always add the
 # module directory to the python path. Endpoints can be called from any
 # 'working directory' - but modules can only be imported from the python path.
-jt_testing_module_dir = os.path.dirname(__file__)
-sys.path.insert(0, jt_testing_module_dir)
+test_jt_module_dir = os.path.dirname(__file__)
+test_jt_parent_dir = os.path.dirname(test_jt_module_dir)
+sys.path.insert(0, test_jt_parent_dir)
 from jt_utils import load_credentials
 from models import JT_User
 
@@ -87,7 +88,7 @@ if credentials['SELENIUM_TESTING']['JTUI_PORT']:
 CONST_SML_FILENAMES = ['agency', 'calendar', 'calendardates', 'routes', 'stops', 'transfers']
 CONST_LRG_FILENAMES = ['shapes', 'stoptimes', 'trips']
 
-CONST_DOWNLOAD_DIR = 'testing_downloads'
+CONST_DOWNLOAD_DIR = 'downloads'
 
 TEST_MODE      = 'test_mode'
 TEST_MODE_FULL = 'Full'
@@ -132,7 +133,7 @@ def test_static_pages(driver):
 
     We don't expect these to ever break - but we test them nonetheless
     """
-    print('JT_Testing: Validating Static pages')
+    print('Test_JT: Validating Static pages')
     home_url = TEST_JTAPI_URL + '/index.html'
     driver.get(home_url)
     try:
@@ -365,9 +366,9 @@ def test_restful_services(**kwargs):
         valid = False
 
     if valid:
-        print('\tModel Update Request Tests Passed.')
+        print('\tUsername Availability Request Tests Passed.')
     else:
-        print('\tModel Update Request Tests FAILED!')
+        print('\tUsername Availability Request Tests FAILED!')
     print('\t-')
 
     # "/get_profile_picture.do", methods=['GET'])
@@ -453,7 +454,7 @@ def test_register(driver):
 
     We don't expect these to ever break - but we test them nonetheless
     """
-    print('JT_Testing: Validating jtUi Register page')
+    print('Test_JT: Validating jtUi Register page')
 
     # Set a default wait of 10 seconds... this means we wait a 'maximum' of
     # ten seconds before throwing an exception...
@@ -523,7 +524,7 @@ def test_register(driver):
 def test_login(driver):
     """Test the login endpoint
     """
-    print('JT_Testing: Validating jtUi Login page')
+    print('Test_JT: Validating jtUi Login page')
 
     # Set a default wait of 10 seconds... this means we wait a 'maximum' of
     # ten seconds before throwing an exception...
@@ -563,7 +564,7 @@ def test_login(driver):
 def test_update_user(driver):
     """Test the 'update user' endpoint
     """
-    print('JT_Testing: Validating jtUi Update User page')
+    print('Test_JT: Validating jtUi Update User page')
 
     # # Set a default wait of 10 seconds... this means we wait a 'maximum' of
     # # ten seconds before throwing an exception...
@@ -637,13 +638,13 @@ def empty_download_dir():
     This means all files in the download directory at the end of a test run are
     releated to this test run. Makes checking files etc. easier.
     """
-    jt_testing_dl_dir = os.path.join(jt_testing_module_dir, CONST_DOWNLOAD_DIR)
-    print('Clearing down files in', jt_testing_dl_dir)
+    test_jt_dl_dir = os.path.join(test_jt_module_dir, CONST_DOWNLOAD_DIR)
+    print('Clearing down files in', test_jt_dl_dir)
     file_extensions = ['*.csv.gz', '*.json']
     files_removed = 0
     for extension in file_extensions:
         # Get a list of all the file paths that ends with .txt from in specified directory
-        file_list = glob.glob(os.path.join(jt_testing_dl_dir, extension))
+        file_list = glob.glob(os.path.join(test_jt_dl_dir, extension))
         # Iterate over the list of filepaths & remove each file.
         for file_path in file_list:
             try:
@@ -1006,7 +1007,7 @@ def main(**kwargs):
     """
     start_time = datetime.now()
 
-    print('JT_Testing: Start of test set (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
+    print('Test_JT: Start of test set (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
     print('            Use \'test_mode=Full\' to conduct a more time-consuming, fuller test.')
     if TEST_MODE in kwargs:
         if kwargs[TEST_MODE] == TEST_MODE_FULL:
@@ -1014,10 +1015,10 @@ def main(**kwargs):
     print('')
 
     try:
-        jt_testing_dl_dir = os.path.join(jt_testing_module_dir, CONST_DOWNLOAD_DIR)
-        test_using_chrome(jt_testing_dl_dir, **kwargs)
+        test_jt_dl_dir = os.path.join(test_jt_module_dir, CONST_DOWNLOAD_DIR)
+        test_using_chrome(test_jt_dl_dir, **kwargs)
 
-        #test_using_firefox(jt_testing_temp_dir, **kwargs)
+        #test_using_firefox(test_jt_temp_dir, **kwargs)
     except Exception as e:
         # if there is any problem, print the traceback
         print(traceback.format_exc())

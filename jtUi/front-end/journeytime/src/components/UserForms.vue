@@ -240,7 +240,7 @@ export default {
             console.log("---------------------------------")
             // this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
 
-            this.axios.post('/api/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
+            this.axios.post('https://api.journeyti.me/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
             { headers: {'Content-Type': 'application/json',}}).then(
                 (resp) => {
                   let data = resp.data

@@ -28,7 +28,7 @@
           <!-- 在这里展示我们的四个页面 -->
           <router-view></router-view>
         </el-main>
-        <el-footer>
+        <el-footer high="30px">
         <!-- <p> Legal Stuff </p>
         <p> Privacy Policy </p>
         <p> Security </p>-->
@@ -80,9 +80,7 @@ export default {
     text-align: center;
     line-height: 60px;
   }
-   .el-footer{
- /* background-color: #B3C0D1; */
-    line-height: 60px;
+.el-footer{
     position: fixed;
     left: 0;
     bottom: 0;
@@ -96,12 +94,16 @@ export default {
     line-height: 1px;
     height: 30px;
    }
+   
+element.style {
+    height: 35px;
+}
   
   .el-aside {
     /* background-color: #D3DCE6; */
     color: #333;
     text-align: center;
-    line-height: 200px;
+    line-height: 20px;
     margin-left: 10px;
   }
   
