@@ -8,7 +8,9 @@
 import csv
 from datetime import datetime
 import logging
+import logging
 import os
+from os.path import exists
 from os.path import exists
 import sys
 import traceback
@@ -32,6 +34,7 @@ sys.path.insert(0, jt_gtfs_module_dir)
 from jt_utils import load_credentials
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
 
+log = logging.getLogger(__name__)  # Standard naming...
 log = logging.getLogger(__name__)  # Standard naming...
 
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
@@ -479,7 +482,7 @@ def _truncate_table(session, model):
     """
     print('        Truncating Table ' + model.__table__.name + '.')
     num_rows_deleted = session.query(model).delete()
-    print('          -> Resetting auto-increment id...' )
+    print('          ->   -> Resetting auto-increment id...' )
     session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
     print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
 
