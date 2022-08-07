@@ -1,0 +1,14 @@
+1. Do 'coverage run' first to run the unit tests
+   and collect the data for determining the code coverage.
+2. Use ‘coverage report’ (or 'coverage html') command next to show
+   a basic text output of the code coverage.
+
+coverage run --include=jt_utils.py tests/test_jt_utils.py
+coverage report jt_utils.py
+coverage html jt_utils.py
+
+# Having trouble with wildcards... hmmm....
+coverage run --include=[jt_utils.py,jt_flask_module.py,jt_gtfs_loader.py] tests/test*.py
+coverage report jt_*.py
+coverage html jt_*.py
+

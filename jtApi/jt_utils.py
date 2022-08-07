@@ -12,6 +12,7 @@ import os
 import sys
 import struct
 import time
+import unittest
 import zlib
 
 # Related Third Party Imports
@@ -479,7 +480,7 @@ def get_stops_by_route(database, route_name, route_shortname, \
     stop_headsign, jrny_time, \
     departure_stop_name, departure_stop_lat, departure_stop_lon, \
     arrival_stop_name, arrival_stop_lat, arrival_stop_lon):
-    """Returns an ordered list of stops for a selected LineId
+    """Returns an ordered list of stops for a selected section of route Id'd by LineId
 
     Each route_shortname can (potentially) represent a collection of routes
     We identify the 'most likely route' based on a chosen datetime, starting
