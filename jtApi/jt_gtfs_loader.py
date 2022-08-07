@@ -48,7 +48,7 @@ def download_gtfs_schedule_data(import_dir):
     # NOTE: We must download the combined schedule file as some bus routes are
     #       operated by Dublin Bus, some by Go-Ahead Ireland and others by yet
     #       more operators.  To cover all of Dublin - we need it all...
-    gtfs_schedule_data_file = import_dir + "google_transit_combined.zip"
+    gtfs_schedule_data_file = os.path.join(import_dir, 'google_transit_combined.zip')
 
     # If a .zip from a previous download exists - we don't really care. It's all
     # about having the most up to date data. Log a warning, but proceed...
@@ -126,7 +126,11 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                 # 'csv reader' as it is quite memory efficient. It is an iterator -
                 # so it processes the file line by line and does not load the whole
                 # file into memory (which would be bad).
-                with open(import_dir + filename, newline='', encoding='utf-8') as gtfs_csv:
+                with open(
+                        os.path.join(import_dir, filename), \
+                        newline='', \
+                        encoding='utf-8' \
+                    ) as gtfs_csv:
                     data = csv.reader(gtfs_csv, delimiter=",")
                     # Skip over the first line (header row)
                     next(data)
@@ -470,7 +474,7 @@ def main():
 
     print('JT_GTFS_Loader: Start of iteration (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
 
-    import_dir  = jt_gtfs_module_dir + "/import/"
+    import_dir = os.path.join(jt_gtfs_module_dir, 'import')
 
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)
