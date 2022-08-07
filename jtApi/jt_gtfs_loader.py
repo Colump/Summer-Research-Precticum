@@ -7,7 +7,9 @@
 # Standard Library Imports
 import csv
 from datetime import datetime
+import logging
 import os
+from os.path import exists
 import sys
 import traceback
 import zipfile
@@ -30,6 +32,7 @@ sys.path.insert(0, jt_gtfs_module_dir)
 from jt_utils import load_credentials
 from models import Agency, Calendar, CalendarDates, Routes, Shapes, StopTime, Stop, Transfers, Trips
 
+log = logging.getLogger(__name__)  # Standard naming...
 
 # Each point is represented by a tuple, (lat, lon). Define a fixed point for
 # Dublin City Center...
@@ -108,8 +111,12 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
     for file in os.listdir(import_dir_enc):
         # 'file' is a handle on the actual file...
         filename = os.fsdecode(file)
+        path_this_item = os.path.join(import_dir, filename)
 
-        if filename == ".gitignore":
+        if os.path.isdir(path_this_item):
+                # skip directories
+                pass
+        elif filename == ".gitignore":
             # Expected extraneous file... ignore...
             pass
         else:
@@ -423,14 +430,33 @@ def commit_batch_and_start_new_session(list_of_objects, session, session_maker):
     return session
 
 
-def truncate_table(session, model):
+def _truncate_tables(session_maker):
+    """Truncate (Delete All Rows From) the all GTFS Tables
+    """
+
+    session = session_maker()
+
+    _truncate_table(session, Agency)
+    _truncate_table(session, Calendar)
+    _truncate_table(session, CalendarDates)
+    _truncate_table(session, Routes)
+    _truncate_table(session, Shapes)
+    _truncate_table(session, Stop)
+    _truncate_table(session, StopTime)
+    _truncate_table(session, Transfers)
+    _truncate_table(session, Trips)
+
+    session.commit()
+
+
+def _truncate_table(session, model):
     """Truncate (Delete All Rows From) the Supplied Database Table
 
     Prints a nicely formattted message for the module logs
     """
-    print('        Truncating Table...')
+    print('        Truncating Table ' + model.__table__.name + '.')
     num_rows_deleted = session.query(model).delete()
-    print('        Resetting auto-increment id...' )
+    print('          -> Resetting auto-increment id...' )
     session.execute('ALTER TABLE ' + model.__table__.name + ' AUTO_INCREMENT = 1')
     print('          -> Truncate Complete. ' + str(num_rows_deleted) + ' Rows Deleted.')
 
