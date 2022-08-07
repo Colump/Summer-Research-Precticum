@@ -28,9 +28,7 @@ import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.common.by import By
-from selenium.webdriver.edge.service import Service as EdgeService
 from selenium.webdriver.firefox.service import Service as FirefoxService
-from selenium.webdriver.ie.service import Service as IEService
 from selenium.webdriver.support import expected_conditions as EC
 # Expected Conditions
 # There are some common conditions that are frequently of use when automating web
@@ -60,8 +58,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 from webdriver_manager.chrome import ChromeDriverManager
 from webdriver_manager.firefox import GeckoDriverManager
-from webdriver_manager.microsoft import EdgeChromiumDriverManager
-from webdriver_manager.microsoft import IEDriverManager
 
 # Local Application Imports
 # To make sure we can import modules from the folder where jt_gtfs_loader is
@@ -249,8 +245,8 @@ def test_file_download_links(driver, **kwargs):
 
             print('\tDLCSV link for ' + filename + ' is valid!')
 
-        except Exception as e:
-            print("Well... dang...", e.__class__, "occurred.")
+        except Exception as err:
+            print("Well... dang...", err.__class__, "occurred.")
             print(traceback.format_exc())
 
     time.sleep(4)  # We do a hard wait here to let ?most' file downloads finish...
@@ -1019,7 +1015,7 @@ def main(**kwargs):
         test_using_chrome(test_jt_dl_dir, **kwargs)
 
         #test_using_firefox(test_jt_temp_dir, **kwargs)
-    except Exception as e:
+    except Exception:
         # if there is any problem, print the traceback
         print(traceback.format_exc())
 

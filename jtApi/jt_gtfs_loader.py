@@ -522,7 +522,7 @@ def main():
 
     print('JT_GTFS_Loader: Start of iteration (' + start_time.strftime('%Y-%m-%d %H:%M:%S') + ')')
 
-    import_dir  = jt_gtfs_module_dir + "/import/"
+    import_dir = os.path.join(jt_gtfs_module_dir, 'import')
 
     print('\tRegistering start with cronitor.')
     # The DudeWMB Data Loader uses the 'Cronitor' web service (https://cronitor.io/)

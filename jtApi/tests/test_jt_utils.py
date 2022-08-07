@@ -27,7 +27,7 @@ from jt_utils \
             get_available_end_to_end_models, get_valid_route_shortnames, \
             get_stops_by_route, weather_information, \
             predict_journey_time
-from models import Agency, Trips
+from models import Trips
 
 print('Test_JT_Utils: Loading credentials.')
 credentials = load_credentials()
