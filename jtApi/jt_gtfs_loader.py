@@ -142,9 +142,10 @@ def import_gtfs_txt_files_to_db(import_dir, session_maker):
                     # so it processes the file line by line and does not load the whole
                     # file into memory (which would be bad).
                     with open(
-                        os.path.join(import_dir, filename),
-                        newline='', encoding='utf-8'
-                        ) as gtfs_csv:
+                        os.path.join(import_dir, filename), \
+                        newline='', \
+                        encoding='utf-8' \
+                    ) as gtfs_csv:
 
                         _import_file_to_db(session_maker, current_agency, filename, gtfs_csv)
                 else:
