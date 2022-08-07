@@ -19,7 +19,7 @@ from flask import Flask, jsonify, make_response, request, render_template
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
-from sqlalchemy.exc import SQLAlchemyError, DBAPIError
+from sqlalchemy.exc import DBAPIError, NoResultFound, SQLAlchemyError
 
 # Local Application Imports
 from forms import CheckUsernameAvailableForm, LoginForm, RegisterForm, UpdateUserForm
@@ -54,7 +54,7 @@ VALID_ROUTE_SHORTNAMES = []
 logging.basicConfig(
     format='%(levelname)s: %(message)s',
     encoding='utf-8',
-    level=os.environ.get("LOGLEVEL", "DEBUG")
+    level=os.environ.get("LOGLEVEL", "INFO")
     )
 log = logging.getLogger(__name__)  # Standard naming...
 
@@ -73,63 +73,101 @@ log.info("jt_flask_app: Application Start-up.")
 log.info("              Module Directory is -> %s", jt_flask_mod_dir)
 log.info("              Parent Dir. is -> %s", jt_flask_mod_parent_dir)
 
-# Create our flask app.
-# Static files are server from the 'static' directory
-jt_flask_app = Flask(__name__, static_url_path='')
+# Don't pass in the app object - we will bind SQLAlchemy object to the app in one
+# of the 'create_nnn_app()' functions below...
+db = SQLAlchemy()
 
-# In Flask, regardless of how you load your config, there is a 'config' object
-# available which holds the loaded configuration values: The 'config' attribute
-# of the Flask object
-# The config is actually a subclass of a dictionary and can be modified just like
-# any dictionary.  E.g. to update multiple keys at once you can use the dict.update()
-# method:
-#     jt_flask_app.config.update(
-#         TESTING=True,
-#         SECRET_KEY='192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf'
-#     )
-#
-# NOTE: Configuration Keys *** MUST BE ALL IN CAPITALS ***
-#       (Ask me how I know...)
-#
-# This first line loads config from a Python object:
-#jt_flask_app.config.from_object('config')
-# This next one loads up our good old json object!!!
-jt_flask_app.config.from_file(os.path.join(jt_flask_mod_parent_dir, 'journeytime.json'), json.load)
-# Following line disables some older stuff we don't use that is deprecated (and
-# suppresses a warning about using it). Please just leave it hard-coded here.
-jt_flask_app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+def create_test_app():
+    """Create a flask app for Testing
+    """
+    # Create our flask app.
+    # Static files are server from the 'static' directory
+    app = Flask(__name__, static_url_path='')
+    # In Flask, regardless of how you load your config, there is a 'config' object
+    # available which holds the loaded configuration values: The 'config' attribute
+    # of the Flask object
+    # The config is actually a subclass of a dictionary and can be modified just
+    # like any dictionary. E.g. to update multiple keys at once you can use the
+    # dict.update() method:
+    #     jt_flask_app.config.update(
+    #         TESTING=True,
+    #         SECRET_KEY='192b9bdd22ab9ed4d12e236c78afcb9a393ec15f71bbf5dc987d54727823bcbf'
+    #     )
+    #
+    # NOTE: Configuration Keys *** MUST BE ALL IN CAPITALS ***
+    #       (Ask me how I know...)
+    #
+    # This first line loads config from a Python object:
+    #jt_flask_app.config.from_object('config')
+    # This next one loads up our good old json object!!!
+    app.config.from_file(
+            os.path.join(jt_flask_mod_parent_dir, 'journeytime.json'), json.load
+        )
+    # Following line disables some older stuff we don't use that is deprecated (and
+    # suppresses a warning about using it). Please just leave it hard-coded here.
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # As recommended here:
+    #     https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#installation
+    # ... we used the "flask_sqlachemy" extension for Flask that adds support for
+    # SQLAlchemy to our application. It simplifies using SQLAlchemy with Flask by
+    # providing useful defaults and extra helpers that make it easier to accomplish
+    # common tasks.
+    #
+    # Road to Enlightenment:
+    # Some of the things you need to know for Flask-SQLAlchemy compared to plain SQLAlchemy are:
+    # SQLAlchemy gives you access to the following things:
+    #   -> all the functions and classes from sqlalchemy and sqlalchemy.orm
+    #   -> *** a preconfigured scoped session called session ***
+    #   -> the metadata
+    #   -> the engine
+    #   -> a SQLAlchemy.create_all() and SQLAlchemy.drop_all() methods to create
+    #      and drop tables according to the models.
+    #   -> a Model baseclass that is a configured declarative base.
+    # The Model declarative base class behaves like a regular Python class but has
+    # a query attribute attached that can be used to query the model. (Model and
+    # BaseQuery). We have to commit the session, but we don’t have to remove it
+    # at the end of the request, Flask-SQLAlchemy does that for us.
+     # NOTE the '_testing' extension for the testing db.
+    app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
+                + app.config['DB_USER'] + ":" + app.config['DB_PASS'] \
+                + "@" \
+                + app.config['DB_SRVR'] + ":" + app.config['DB_PORT']\
+                + "/" + app.config['DB_NAME'] + "_testing?charset=utf8mb4"
+    app.config['TESTING'] = True
+    # Dynamically bind SQLAlchemy to application
+    db.init_app(app)
+    app.app_context().push()  # Bind SQLAlchemy object dynamically to the app
+    return app
 
-# As recommended here:
-#     https://flask-sqlalchemy.palletsprojects.com/en/2.x/quickstart/#installation
-# ... we used the "flask_sqlachemy" extension for Flask that adds support for
-# SQLAlchemy to our application. It simplifies using SQLAlchemy with Flask by
-# providing useful defaults and extra helpers that make it easier to accomplish
-# common tasks.
-#
-# Road to Enlightenment:
-# Some of the things you need to know for Flask-SQLAlchemy compared to plain SQLAlchemy are:
-# SQLAlchemy gives you access to the following things:
-#   -> all the functions and classes from sqlalchemy and sqlalchemy.orm
-#   -> *** a preconfigured scoped session called session ***
-#   -> the metadata
-#   -> the engine
-#   -> a SQLAlchemy.create_all() and SQLAlchemy.drop_all() methods to create
-#      and drop tables according to the models.
-#   -> a Model baseclass that is a configured declarative base.
-# The Model declarative base class behaves like a regular Python class but has a
-# query attribute attached that can be used to query the model. (Model and BaseQuery)
-# We have to commit the session, but we don’t have to remove it at the end of the
-# request, Flask-SQLAlchemy does that for us.
-jt_flask_app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
-            + jt_flask_app.config['DB_USER'] + ":" + jt_flask_app.config['DB_PASS'] \
-            + "@" \
-            + jt_flask_app.config['DB_SRVR'] + ":" + jt_flask_app.config['DB_PORT']\
-            + "/" + jt_flask_app.config['DB_NAME'] + "?charset=utf8mb4"
+# you can create another app context here, say for production
+def create_production_app():
+    """Create a flask app for Development/Deployment
+    """
+    # Create our flask app.
+    # Static files are server from the 'static' directory
+    app = Flask(__name__, static_url_path='')
+    app.config.from_file(
+            os.path.join(jt_flask_mod_parent_dir, 'journeytime.json'), json.load
+        )
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Development db - no '_testing' extension to the db name.
+    app.config['SQLALCHEMY_DATABASE_URI'] = "mysql+mysqlconnector://" \
+                + app.config['DB_USER'] + ":" + app.config['DB_PASS'] \
+                + "@" \
+                + app.config['DB_SRVR'] + ":" + app.config['DB_PORT']\
+                + "/" + app.config['DB_NAME'] + "?charset=utf8mb4"
+    app.config['TESTING'] = False
+    # Dynamically bind SQLAlchemy to application
+    db.init_app(app)
+    app.app_context().push()  # Bind SQLAlchemy object dynamically to the app
+    return app
+
+jt_flask_app = create_production_app()
+
+db = SQLAlchemy(jt_flask_app)
 
 # 'csrf' gives us a mechanism for controlling csrf behaviour on forms (enabled by default)
 csrf = CSRFProtect(jt_flask_app)
-
-db = SQLAlchemy(jt_flask_app)
 
 # Load the 'stop-to-stop' prediction model
 # The journeyti.me application uses two classes of predictive model:
@@ -145,9 +183,9 @@ with open(stop_to_stop_filepath, 'rb') as file:
     CONST_MODEL_STOP_TO_STOP = pickle.load(file)
 log.debug("              Stop-to-stop model has been loaded in memory.")
 
-##########################################################################################
+################################################################################
 #  GROUP 1: BASIC HTML PAGES
-##########################################################################################
+################################################################################
 
 # @app.route('/user/<id>')
 # def get_user(id):
@@ -345,9 +383,9 @@ def get_agency(agency_name):
 def get_calendar(service_id):
     """api.journeyti.me - Calendar file download links"""
     calendar_query = db.session.query(Calendar)
-    # Our db has data for many agencies - we only present data for Dublin Bus in sample files.
-    calendar_query = \
-        calendar_query.filter(Calendar.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # # Our db has data for many agencies - we only present data for Dublin Bus in sample files.
+    # calendar_query = \
+    #     calendar_query.filter(Calendar.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if service_id is not None:
@@ -372,8 +410,8 @@ def get_calendar(service_id):
 def get_calendar_dates(date):
     """api.journeyti.me - CalendarDates file download links"""
     calendardates_query = db.session.query(CalendarDates)
-    calendardates_query = \
-        calendardates_query.filter(CalendarDates.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # calendardates_query = \
+    #     calendardates_query.filter(CalendarDates.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if date is not None:
@@ -421,8 +459,8 @@ def get_routes(route_id):
 def get_shape(shape_id):
     """api.journeyti.me - Shapes file download links"""
     shape_query = db.session.query(Shapes)
-    shape_query = \
-        shape_query.filter(Shapes.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # shape_query = \
+    #     shape_query.filter(Shapes.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if shape_id is not None:
@@ -457,8 +495,8 @@ def get_stops(stop_id):
     # Each has its own strengths.http://docs.sqlalchemy.org/en/rel_0_7&#8230;
 
     stop_query = db.session.query(Stop)
-    stop_query = \
-        stop_query.filter(Stop.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # stop_query = \
+    #     stop_query.filter(Stop.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if stop_id is not None:
@@ -483,8 +521,8 @@ def get_stops(stop_id):
 def get_stop_times(trip_id):
     """api.journeyti.me - Stoptimes file download links"""
     stoptime_query = db.session.query(StopTime)
-    stoptime_query = \
-        stoptime_query.filter(StopTime.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # stoptime_query = \
+    #     stoptime_query.filter(StopTime.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if trip_id is not None:
@@ -508,8 +546,8 @@ def get_stop_times(trip_id):
 def get_transfers(from_stop_id):
     """api.journeyti.me - Transfers file download links"""
     transfer_query = db.session.query(Transfers)
-    transfer_query = \
-        transfer_query.filter(Transfers.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # transfer_query = \
+    #     transfer_query.filter(Transfers.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if from_stop_id is not None:
@@ -535,8 +573,8 @@ def get_transfers(from_stop_id):
 def get_trips(trip_id):
     """api.journeyti.me - Trips file download links"""
     trips_query = db.session.query(Trips)
-    trips_query = \
-        trips_query.filter(Trips.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
+    # trips_query = \
+    #     trips_query.filter(Trips.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
 
     response = None
     if trip_id is not None:
@@ -775,8 +813,8 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     step_stops = _get_stops_for_this_step(step, route_name, route_shortname)
     if len(step_stops) == 0:
         log.warning(
-            'No Route Breakdown (stop by stop) found for %s', \
-            route_shortname)
+            'No Route Breakdown (stop by stop) found for %s (step %d)', \
+            route_shortname, step_idx)
 
     # Bundle everything we need to make a prediction into a convenient object.
     # We can then pass this object to the prediction routine
@@ -1092,9 +1130,13 @@ def get_profile_picture():
         try:
             user = db.session.query(JT_User).filter_by(username=gpp_username).one()
             user_loaded = True
+        except NoResultFound:
+            print(f'No user record found for user \'{gpp_username}\'.')
+            print('No Profile Picture can be returned.')
         except (SQLAlchemyError, DBAPIError):
             print("ERROR Database Error")
             print(traceback.format_exc())
+
 
     response = None
     if user_loaded and user.profile_picture:
