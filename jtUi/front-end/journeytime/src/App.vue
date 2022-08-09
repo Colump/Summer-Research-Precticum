@@ -6,18 +6,18 @@
     <el-container>
       <el-aside width="250px">
         <div class="iconOfWeb">
-          <a href="http://localhost:8080">
-          <img src="./assets/blueTheme_jt_plan_your_journey.png" height="75px"/>
-          <a>
+          <a href="https://journeyti.me">
+            <img src="./assets/blueTheme_jt_plan_your_journey.png" height="75px"/>
+          </a>
         </div>
         <div>
           <UserForms></UserForms>
           <ShowRouteButtom></ShowRouteButtom>
           <!-- <showMultpleRouteVue></showMultpleRouteVue> -->
         </div>
-        
+
         <!-- <StopsData></StopsData> -->
-        
+
       </el-aside>
       <el-container>
         <el-header>
@@ -28,16 +28,15 @@
           <!-- 在这里展示我们的四个页面 -->
           <router-view></router-view>
         </el-main>
-        <el-footer high="30px">
-        <!-- <p> Legal Stuff </p>
-        <p> Privacy Policy </p>
-        <p> Security </p>-->
-       <p>Copyright @ 2022 Raduno Technologies</p>
-
-          </el-footer>
+        <el-footer height="30px">
+          <!-- <p> Legal Stuff </p>
+          <p> Privacy Policy </p>
+          <p> Security </p>-->
+          <p>Copyright @ 2022 Raduno Technologies</p>
+        </el-footer>
       </el-container>
     </el-container>
-   
+
   </div>
 </template>
 
@@ -67,7 +66,7 @@ export default {
     // showMultpleRouteVue
   },
   methods:{
-    
+
   }
 
 }
@@ -92,13 +91,12 @@ export default {
     display: flex;
     justify-content: center;
     line-height: 1px;
-    height: 30px;
-   }
-   
+}
+
 element.style {
     height: 35px;
 }
-  
+
   .el-aside {
     /* background-color: #D3DCE6; */
     color: #333;
@@ -106,27 +104,27 @@ element.style {
     line-height: 20px;
     margin-left: 10px;
   }
-  
+
   .el-main {
     /* background-color: #E9EEF3; */
     color: #333;
     text-align: center;
     line-height: 20px;
   }
-  
+
   body > .el-container {
     margin-bottom: 40px;
   }
-  
+
   .el-container:nth-child(5) .el-aside,
   .el-container:nth-child(6) .el-aside {
     line-height: 260px;
   }
-  
+
   .el-container:nth-child(7) .el-aside {
     line-height: 320px;
   }
-  
+
   element.style {
     width: 200px;
     padding-top: 50px;
@@ -136,6 +134,6 @@ element.style {
     margin-top: 10px;
     height: 80px;
     line-height: 100px;
-    
+
   }
 </style>
