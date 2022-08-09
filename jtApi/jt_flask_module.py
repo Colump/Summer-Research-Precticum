@@ -175,13 +175,26 @@ csrf = CSRFProtect(jt_flask_app)
 #   -> A generic model that predicts times based on distance from the city center
 #      (used in cases where our training data - from 2018 - did not contain
 #       information for lines that exist currently).
-# We keep the stop-to-stop model in memory - to improve performance.
+# We keep the stop-to-stop model in memory - to improve performance. There is one
+# model per month. We only overwrite the model in memory as required (i.e. when
+# a prediction request for a different month comes in)
+# WARNING - LAST MINUTE CHANGE TO MULTIPLE MODELS MIGHT INTRODUCE CONCURRENCY ISSUES ** TEST **
+# currentMonth = datetime.now().strftime("%B")
+# currentMonthPickleName = currentMonth + '.pickle'
+currentMonth = 'February'
+currentMonthPickleName = 'February.pickle'
 stop_to_stop_filepath= \
-    os.path.join(jt_flask_mod_dir, *['pickles', 'stop_to_stop', 'rfstoptostop.pickle'])
+    os.path.join(jt_flask_mod_dir, *['pickles', 'stop_to_stop', currentMonthPickleName])
+
+CONST_MODEL_STOP_TO_STOP_MONTH = currentMonth
+CONST_MODEL_STOP_TO_STOP       = None
 with open(stop_to_stop_filepath, 'rb') as file:
     # TODO:: Agree what action we should take if the pickle is invalid/not found.
-    CONST_MODEL_STOP_TO_STOP = pickle.load(file)
-log.debug("              Stop-to-stop model has been loaded in memory.")
+    CONST_MODEL_STOP_TO_STOP       = pickle.load(file)
+    log.info(
+            f'              Stop-to-stop model \"{currentMonthPickleName}\"' \
+            + ' has been loaded in memory.'
+        )
 
 ################################################################################
 #  GROUP 1: BASIC HTML PAGES
@@ -285,6 +298,8 @@ def _get_dataset_in_requested_format(file_request, model, query):
 
     Looks at the request args for argument 'dltype' to determine format
     """
+    global CONST_DLTYPE, CONST_JSONFILE, CONST_CSVFILE
+
     args = file_request.args
     download_type = args.get(CONST_DLTYPE)  # will be blank sometimes...
 
@@ -354,6 +369,8 @@ def _get_dataset_in_requested_format(file_request, model, query):
 @jt_flask_app.route("/agency/<agency_name>")
 def get_agency(agency_name):
     """api.journeyti.me - Agency file download links"""
+    global CONST_DUBLIN_BUS_AGENCY_ID
+
     agency_query = db.session.query(Agency)
     # Our db has data for many agencies - we only present data for Dublin Bus in sample files.
     agency_query = \
@@ -433,6 +450,8 @@ def get_calendar_dates(date):
 @jt_flask_app.route("/routes/<route_id>")
 def get_routes(route_id):
     """api.journeyti.me - Route file download links"""
+    global CONST_DUBLIN_BUS_AGENCY_ID
+
     route_query = db.session.query(Routes)
     route_query = \
         route_query.filter(Routes.agency_id == CONST_DUBLIN_BUS_AGENCY_ID)
@@ -661,6 +680,8 @@ def update_model_list():
 
     A cron job calls this URL hourly, so changes to the model set are automatically detected.
     """
+    global AVAILABLE_END_TO_END_MODELS
+
     # We're careful to keep our original list reference alive and just empty
     # the list, then repopulate it.  To avoid referencing an object which only
     # exists in the scope of this endpoint.
@@ -683,6 +704,8 @@ def update_valid_route_shortnames():
     This endpoint is called after each load of GTFS data, to ensure we always
     know which route shortnames the application can attempt prediction for.
     """
+    global VALID_ROUTE_SHORTNAMES
+
     # We're careful to keep our original list reference alive and just empty
     # the list, then repopulate it.  To avoid referencing an object which only
     # exists in the scope of this endpoint.
@@ -710,7 +733,6 @@ def get_journey_time():
         # in JourneyPredictionRequestSpec.json.  We can conveniently get the JSON
         # POST'ed to the server (as a python dictionary) using:
         prediction_request_json = request.json
-        print("get_journey_time.do: request.json type is -> ", type(request.json))
 
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
@@ -754,6 +776,8 @@ def _attempt_predict_this_step(step_idx, step):
     If route data is stored in the database we go ahead and make a prediction
     If we don't have information for this route, return a 'no prediction' message
     """
+    global VALID_ROUTE_SHORTNAMES
+
     planned_time_s  = step['duration']['value']
     # Extend the json to contain stop-by-stop route information...
     # NOTE The mappings between Googles supplied data and the GTFSR fields are
@@ -795,6 +819,9 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     Look up the stop sequence for this route from the GTFS data
     Perform a prediction once we have the stop information to hand.
     """
+    global AVAILABLE_END_TO_END_MODELS, \
+        CONST_MODEL_STOP_TO_STOP_MONTH, CONST_MODEL_STOP_TO_STOP
+
     step['prediction_status'] = 'Prediction Attempted'
 
     # NOTE We convert the route_shortname to uppercase as the names listed in
@@ -821,6 +848,27 @@ def _predict_this_step(step_idx, step, planned_time_s, route_name, route_shortna
     journey_pred = JourneyPrediction( \
                         route_shortname, route_shortname_pickle_exists, \
                         planned_time_s, planned_departure_datetime, step_stops)
+
+    # We want to get a prediction for 'planned_departure_datetime'.  And that
+    # prediction ?might? involve a stop-to-stop model if no route-shortname pickle
+    # exists. So if the stop-to-stop model is required, we make sure the correct
+    # model is loaded...
+    if not journey_pred.route_shortname_pickle_exists:
+        # Stop-to-stop model required.
+        departureMonth = planned_departure_datetime.strftime("%B")
+        if not departureMonth == CONST_MODEL_STOP_TO_STOP_MONTH:
+            # Incorrect model currently loaded
+            departureMonthPickleName = departureMonth + '.pickle'
+            stop_to_stop_filepath= \
+                os.path.join(jt_flask_mod_dir, *['pickles', 'stop_to_stop', departureMonthPickleName])
+            with open(stop_to_stop_filepath, 'rb') as file:
+                # TODO:: Agree what action we should take if the pickle is invalid/not found.
+                CONST_MODEL_STOP_TO_STOP_MONTH = departureMonth
+                CONST_MODEL_STOP_TO_STOP       = pickle.load(file)
+            log.info(
+                    f'              Stop-to-stop model \"{departureMonthPickleName}\"' \
+                    + ' has been loaded in memory.'
+                )
 
     # # Pickle the JourneyPrediction object - handy for testing!!
     # with open(
