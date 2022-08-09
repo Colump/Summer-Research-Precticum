@@ -1,51 +1,51 @@
 <template>
-<div>
-  <el-form ref="form" :model="form" >
-    <el-form-item >
-      <span slot="label">Where do you want to go?</span>
-      <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete"></el-input>
-    </el-form-item>
-    <div class="swap">
-      <el-tooltip
-    content="Swap start and destination"
-    raw-content>
-      <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
-      </el-tooltip>
+  <div id="userFormWrapper">
+    <el-form ref="form" :model="form" >
+      <el-form-item >
+        <span slot="label">Where do you want to go?</span>
+        <!-- Notes on v-model (a combo of v-bind:value and v-on:input):
+          https://v2.vuejs.org/v2/guide/components.html#Using-v-model-on-Components
+        -->
+        <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete"></el-input>
+      </el-form-item>
+      <div class="swap">
+        <el-tooltip content="Swap start and destination" raw-content>
+          <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
+        </el-tooltip>
+      </div>
+      <el-form-item >
+        <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-col :span="13">
+          <el-date-picker v-model="form.date1" type="date" placeholder="Date" style="width: 100%;"></el-date-picker>
+        </el-col>
+        <el-col class="line" :span="1">-</el-col>
+        <el-col :span="10">
+          <el-time-picker v-model="form.date2" placeholder="Time" style="width: 100%;"></el-time-picker>
+        </el-col>
+      </el-form-item>
+      <el-form-item>
+        <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
+        <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
+        <el-button type="success" round icon="el-icon-check"  @click="onSubmit">Go!</el-button>
+      </el-form-item>
+    </el-form>
+    <div class="showUserChoiseRoute">
+      <ul v-if="form.show">
+                  <!-- 注意每个key要唯一 -->
+              <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
+                <div class="RouteInfo">
+                  Take the "{{item.legs[0].steps[1].transit.line.short_name}}" bus
+                  <!-- {{}} -->
+                  {{hellofunction(form.backEndRespond.routes[index].steps)}}
+                  <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
+                </div>
+                <!-- <el-divider></el-divider> -->
+              </li>
+      </ul>
     </div>
-    <el-form-item >
-      <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2"></el-input>
-    </el-form-item>
-    <el-form-item>
-      <el-col :span="10">
-        <el-date-picker type="date" placeholder="Date" v-model="form.date1" style="width: 100%;"></el-date-picker>
-      </el-col>
-      <el-col class="line" :span="1">-</el-col>
-      <el-col :span="13">
-        <el-time-picker placeholder="Time" v-model="form.date2" style="width: 100%;"></el-time-picker>
-      </el-col>
-    </el-form-item>
-    <el-form-item>
-      <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
-      <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
-      <el-button type="success" icon="el-icon-check" round @click="onSubmit">Go!</el-button>
-    </el-form-item>
-  </el-form>
-  <div class="showUserChoiseRoute">
-    <ul v-if="form.show">
-                <!-- 注意每个key要唯一 -->
-            <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
-              <div class="RouteInfo">
-                Take the "{{item.legs[0].steps[1].transit.line.short_name}}" bus
-                <!-- {{}} -->
-                {{hellofunction(form.backEndRespond.routes[index].steps)}}
-                <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
-              </div>
-              <!-- <el-divider></el-divider> -->
-            </li>
-    </ul>
   </div>
-</div>
-
 </template>
 
 <script>
@@ -84,6 +84,19 @@ export default {
       }
     },
     mounted(){
+      // The mounted hook is called when this component is loaded into the DOM
+
+      const autoCompleteOptions =
+        {
+          bounds:new google.maps.LatLngBounds(
+            new google.maps.LatLng(50.999929,-10.854492),
+            new google.maps.LatLng(55.354135,-5.339355)
+          ),
+          componetRestrictions: { country: "ie" },
+          //fields: ["address_components", "geometry", "icon", "name"], ?? Use?
+          strictBounds: true,
+          types: []  // All types (not restricted)
+        }
       // const dir = new google.maps.DirectionsService();
       // const results = dir.route({
       //   origin: '54.1749986272442,-6.34014464532738',
@@ -93,32 +106,18 @@ export default {
       // console.log(results)
       const originAuto = new google.maps.places.Autocomplete(
         document.getElementById("autoComplete"),
-        // document.getElementById("autoComplete2"),
-        {
-          bounds:new google.maps.LatLngBounds(
-            new google.maps.LatLng(53.3498,-6.2603)
-          ),
-          componetRestrictions:{ country:"IE"}
-        }
+        autoCompleteOptions
       );
       originAuto.addListener("place_changed",()=>{
         this.form.startPlace = originAuto.getPlace().formatted_address
         this.form.startPlaceLatLng=originAuto.getPlace().geometry.location.lat()+','+originAuto.getPlace().geometry.location.lng();
-        
         // console.log(this.form.startPlace);
       });
-      const desAuto =new google.maps.places.Autocomplete( 
-        // document.getElementById("autoComplete"),
+      const desAuto = new google.maps.places.Autocomplete(
         document.getElementById("autoComplete2"),
-        {
-          bounds:new google.maps.LatLngBounds(
-            new google.maps.LatLng(53.3498,-6.2603)
-          ),
-          componetRestrictions:{ country:"IE"}
-        }
+        autoCompleteOptions
       );
       desAuto.addListener("place_changed",()=>{
-        // console.log(desAuto.getPlace());
         this.form.endPlace=desAuto.getPlace().formatted_address;
         this.form.endPlaceLatLng = desAuto.getPlace().geometry.location.lat()+','+originAuto.getPlace().geometry.location.lng()
         // console.log(desAuto.getPlace());
@@ -251,16 +250,13 @@ export default {
                   console.log("---------------------------------****")
               }
             )
-            
+
           }
         )
-          
         // this.journeyFromGoogle.push();
-        
         // this.$bus.$emit('GetAlljourney',response.routes);
         // console.log(len);
-        
-    },
+      },
       clearAll(){
         this.form.endPlace ="",
         this.form.endPlaceLatLng ="",
@@ -318,12 +314,9 @@ export default {
   display: inline;
 }
 .swap{
-    display: inline-block;
-    height: 7px;
-    width: 6px;
-    position: absolute;
-    left: 259px;
-    top: 79px;
+  position: relative;
+  top: -11px;  /* Cheat - move swap button up into margin above */
+  float: right;
 }
 label{
   font-family: element-icons;

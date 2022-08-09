@@ -12,19 +12,18 @@ import VueAxios from 'vue-axios'
 import locale from '../node_modules/element-ui/lib/locale/lang/en'
 
 
-
 Vue.use(VueAxios, axios)
-
 Vue.use(ElementUI, { locale });
-
 // use router
 Vue.use(VueRouter);
-Vue.use(VueGoogleMaps, {
-    load: {
-        key: 'AIzaSyCHrX0Xl5WfOznFH1esYeEUEGFNr0VnL1w',
-        libraries: 'places'
+Vue.use(
+    VueGoogleMaps, {
+        load: {
+            key: 'AIzaSyCHrX0Xl5WfOznFH1esYeEUEGFNr0VnL1w',
+            libraries: 'places'
+        }
     }
-})
+)
 
 Vue.config.productionTip = false
 

@@ -20,7 +20,8 @@
         <div class="grid-content bg-purple">
            <el-button circle @click="SignUp">
               <!-- <el-avatar v-bind:src="getAvatarUrl()" v-bind:alt="userName">{{userName}}</el-avatar>-->
-              <el-avatar :src="getAvatarUrl.icon" v-bind:alt="userName">{{userName}}</el-avatar>
+              <!-- <el-avatar :src="getAvatarUrl.icon" v-bind:alt="userName">{{userName}}</el-avatar> -->
+              <el-avatar v-bind:alt="userName">{{userName}}</el-avatar>
            </el-button>
         </div>
       </el-col>
