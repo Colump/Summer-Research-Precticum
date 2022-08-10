@@ -1,48 +1,48 @@
 <template>
-  <div id="userFormWrapper">
-    <el-form ref="form" :model="form" >
+  <div id="userFormWrapper" v-loading="loading" element-loading-spinner="el-icon-loading">
+    <el-form ref="form" :model="form">
       <el-form-item >
         <span slot="label">Where do you want to go?</span>
         <!-- Notes on v-model (a combo of v-bind:value and v-on:input):
           https://v2.vuejs.org/v2/guide/components.html#Using-v-model-on-Components
         -->
-        <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete"></el-input>
+        <el-input v-model="form.startPlace" placeholder="Enter starting point" id="autoComplete" tabindex="1"></el-input>
       </el-form-item>
       <div class="swap">
         <el-tooltip content="Swap start and destination" raw-content>
-          <el-button icon="el-icon-sort" circle @click="swapEndStart"></el-button>
+          <el-button icon="el-icon-sort" circle @click="swapEndStart" tabindex="7"></el-button>
         </el-tooltip>
       </div>
       <el-form-item >
-        <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2"></el-input>
+        <el-input v-model="form.endPlace" placeholder="Enter destination" id="autoComplete2" tabindex="2"></el-input>
       </el-form-item>
       <el-form-item>
         <el-col :span="13">
-          <el-date-picker v-model="form.date1" type="date" placeholder="Date" style="width: 100%;"></el-date-picker>
+          <el-date-picker v-model="form.date1" type="date" placeholder="Date" style="width: 100%;" tabindex="3"></el-date-picker>
         </el-col>
         <el-col class="line" :span="1">-</el-col>
         <el-col :span="10">
-          <el-time-picker v-model="form.date2" placeholder="Time" style="width: 100%;"></el-time-picker>
+          <el-time-picker v-model="form.date2" placeholder="Time" style="width: 100%;" tabindex="4"></el-time-picker>
         </el-col>
       </el-form-item>
       <el-form-item>
         <!-- <el-button type="primary" @click="onSubmit">Go</el-button> -->
-        <el-button type="warning" round icon="el-icon-s-open" @click="clearAll">Clear</el-button>
-        <el-button type="success" round icon="el-icon-check"  @click="onSubmit">Go!</el-button>
+        <el-button type="warning" round icon="el-icon-s-open" @click="clearAll" tabindex="6">Clear</el-button>
+        <el-button type="success" round icon="el-icon-check"  @click="userClickedGo" tabindex="5">Go!</el-button>
       </el-form-item>
     </el-form>
     <div class="showUserChoiseRoute">
-      <ul v-if="form.show">
-                  <!-- 注意每个key要唯一 -->
-              <li class="RouteShow" v-for="(item,index) in form.journeyFromGoogle" :key = "index">
-                <div class="RouteInfo">
-                  Take the "{{item.legs[0].steps[1].transit.line.short_name}}" bus
-                  <!-- {{}} -->
-                  {{hellofunction(form.backEndRespond.routes[index].steps)}}
-                  <el-button icon="el-icon-search"  circle @click="showInMap(index,item)"></el-button>
-                </div>
-                <!-- <el-divider></el-divider> -->
-              </li>
+      <ul v-if="form.showRouteChoices">
+        <!-- 注意每个key要唯一 -->
+        <li class="RouteShow" v-for="(route,index) in form.journeyFromGoogle" :key = "index">
+          <div class="RouteInfo">
+            Take the "{{route.legs[0].steps[1].transit.line.short_name}}" bus
+            <!-- {{}} -->
+            {{ getStepTimesAsString(form.backEndRespond.routes[index].steps) }}
+            <el-button icon="el-icon-search" circle @click="showInMap(index,route)"></el-button>
+          </div>
+          <!-- <el-divider></el-divider> -->
+        </li>
       </ul>
     </div>
   </div>
@@ -75,12 +75,13 @@ export default {
           backEndRespond:{
 
           },
-          show : false,
-          flag : 0,
+          showRouteChoices : false,
+          flag : 0
         //   type: [],
         //   resource: '',
         //   desc: ''
-        }
+        },
+        loading: false  // reactive display control variable
       }
     },
     mounted(){
@@ -127,11 +128,21 @@ export default {
 
     },
     methods: {
-      hellofunction(arr){
+      /**
+       * Loop over array of steps:
+       *  -> grab duration text from each one
+       *  -> concatenate into long string.
+       */
+      getStepTimesAsString(arr){
         let info = ""
-        arr.forEach(function(step){
-         info += step.duration.text
-        })
+        // 22/08/10 TK; Add null check to avoid console errors...
+        if (typeof arr !== 'undefined') {
+          arr.forEach(
+            function(step) {
+              info += step.duration.text
+            }
+          )
+        }
         return info;
       },
       showInMap(index,item){
@@ -141,12 +152,24 @@ export default {
         this.$bus.$emit('GetRouteIndex',this.form.flag);
         console.log('++++++++++++++++++++++++++++++++++++');
       },
-      onSubmit() {
+      toggleLoadingSpinner() {
+        if (this.loading == true) {
+          this.loading = false;  // Hide the loading spinner
+        }
+        else {
+          this.loading = true;  // Show the loading spinner
+        }
+      },
+      async userClickedGo() {
+        this.toggleLoadingSpinner();
+        await this.getDirectionsAndPredictions();
+        this.toggleLoadingSpinner();
+        this.form.showRouteChoices = true;
+      },
+      async getDirectionsAndPredictions() {
         // console.log('submit!');
         this.$bus.$emit('GutStartPlace',this.form.startPlaceLatLng);
         this.$bus.$emit('GutEndPlace',this.form.endPlaceLatLng);
-
-        this.form.show = !this.form.show;
 
 //      在这里当点击go的时候我们需要获得directionService的数据
         const directionsService = new google.maps.DirectionsService();
@@ -166,10 +189,9 @@ export default {
             if(status === "OK") {
               directionsRenderer.setDirections(response);
               console.log("这是go下面的数据");
-              console.log("These are the response routes:", response.routes);
+              console.log("Google Directions Response status is OK, response.routes:", response.routes);
 
               console.log("Building json package for transmit to prediction server");
-
               const routes_array = [];
               response.routes.forEach(
                 function(route, route_index) {
@@ -183,6 +205,7 @@ export default {
                   // Loop over all the legs (there should only ever be one...)
                   route.legs.forEach(
                     function(leg, leg_index) {
+
                       console.log("\t\tProcessing leg:", leg_index);
 
                       // Loop over all the steps for this leg...
@@ -201,7 +224,7 @@ export default {
                               transit_details:''
                             };
                             stepForBackEnd.distance = step.distance;  // this is a dictionary
-                            stepForBackEnd.duration =  step.duration;  // this is a dictionary
+                            stepForBackEnd.duration = step.duration;  // this is a dictionary
                             stepForBackEnd.transit_details = step.transit;  // this is a dictionary
                             steps_for_this_route.push(stepForBackEnd);
                           }
@@ -224,44 +247,47 @@ export default {
               prediction_request["title"] = "Journeyti.me Prediction Request";
               prediction_request["description"] = "Journeyti.me Step Journey Time Prediction Request";
               prediction_request["routes"] = routes_array;
-              console.log("Completed Prediction Requeset Objeect: ", prediction_request);
+              console.log("Completed Prediction Requeset Object: ", prediction_request);
               //this.form.journeyFromGoogle.routes.push(routesInfo)
               this.form.toBackendInfo = prediction_request;
             } // End of Status OK
 
             // this.journeyFromGoogle.push();
             this.form.journeyFromGoogle = response.routes;
-            console.log("=============================+++++");
-            console.log(this.form.journeyFromGoogle);
-            console.log("=============================++++");
-            console.log("---------------------------------")
-            console.log(JSON.stringify(this.form.toBackendInfo))
-            console.log("---------------------------------")
+            // Sanity checks (verify variables correctly assigned)...
+            //console.log(this.form.journeyFromGoogle);
+            //console.log(JSON.stringify(this.form.toBackendInfo))
+
             // this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
 
-            this.axios.post('https://api.journeyti.me/get_journey_time.do',JSON.stringify(this.form.toBackendInfo),
-            { headers: {'Content-Type': 'application/json',}}).then(
+            this.axios.post(
+                'https://api.journeyti.me/get_journey_time.do',
+                JSON.stringify(this.form.toBackendInfo),
+                { headers: {'Content-Type': 'application/json',}}
+              ).then (
                 (resp) => {
                   let data = resp.data
-                  console.log("---------------------------------****")
-                  console.log(data)
+                  console.log('Raw data received from back-end:', data)
                   this.form.backEndRespond = data;
                   this.$bus.$emit('stopBystopInfo',this.form.backEndRespond);
-                  console.log("---------------------------------****")
-              }
-            )
+                }
+              )
 
           }
-        )
+        )  // end of "directionsService.route()"
         // this.journeyFromGoogle.push();
         // this.$bus.$emit('GetAlljourney',response.routes);
         // console.log(len);
       },
       clearAll(){
-        this.form.endPlace ="",
-        this.form.endPlaceLatLng ="",
-        this.form.startPlace="",
-        this.form.startPlaceLatLng =""
+        this.form.endPlace       = "";
+        this.form.endPlaceLatLng = "";
+        //
+        this.form.startPlace       = "";
+        this.form.startPlaceLatLng = "";
+        //
+        this.form.backEndRespond   = null
+        this.form.showRouteChoices = false;
       },
       swapEndStart(){
         const temp1 = this.form.endPlace;
@@ -287,6 +313,8 @@ export default {
 </script>
 
 <style>
+@import url("//unpkg.com/element-ui@2.15.8/lib/theme-chalk/index.css");
+
 .userFormMainDiv{
   width: 100%;
   height: 500px;
