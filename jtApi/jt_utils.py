@@ -991,7 +991,7 @@ def _predict_jt_stop_to_stop(journey_prediction, model_stop_to_stop):
                 total_time=predict_result+total_time
 
         # At the end set the total predicted journey time on the journey_prediction object
-        log.debug(total_time)
+        log.debug('Total predicted time for this journey is: %d', total_time)
         journey_prediction.predicted_duration_s = total_time
     else:
         # There will be cases where we fail to identify a list of stops for a route
