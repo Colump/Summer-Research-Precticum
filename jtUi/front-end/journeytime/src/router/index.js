@@ -3,7 +3,6 @@
 import VueRouter from 'vue-router'
 
 
-
 // 引入MyGoogleMap组件和AboutUs组件
 // import MyGoogleMap and AboutUs component
 import AboutUs from '../components/AboutUs'
@@ -11,6 +10,8 @@ import MyGoogleMap from '../components/MyGoogleMap'
 import Register from '../components/Register'
 import MyAPI from '../components/MyAPI'
 import LogIn from '../components/LogIn'
+// 22/08/09 TK; Add UserProfile support...
+import UserProfile from '../components/UserProfile'
 // import showMultpleRoute from '../components/showMultpleRoute'
 // 创建一个路由器，其中要些很多的配置对象
 // create a router
@@ -43,6 +44,11 @@ const myrouter = new VueRouter({
             path: '/LogIn',
             name: 'LogIn',
             component: LogIn
+        },
+        {
+            path: '/UserProfile',
+            name: 'UserProfile',
+            component: UserProfile
         }
 
     ]

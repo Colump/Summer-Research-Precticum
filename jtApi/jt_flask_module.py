@@ -16,6 +16,7 @@ import traceback
 # in a Response object with the application/json mimetype.
 from flask import Flask, jsonify, make_response, request, render_template
 #from flask import flash
+from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
@@ -163,6 +164,7 @@ def create_production_app():
     return app
 
 jt_flask_app = create_production_app()
+CORS(jt_flask_app)  # Allow all CORS requests (Flask only used in Dev anyway)
 
 db = SQLAlchemy(jt_flask_app)
 
@@ -193,7 +195,6 @@ def _load_stop_to_stop_model_for_month(month_name):
     return model
 
 jt_flask_app.config['MODEL_STOP_TO_STOP_MONTH'] = datetime.now().strftime("%B")
-jt_flask_app.config['MODEL_STOP_TO_STOP_MONTH'] = 'February'
 jt_flask_app.config['MODEL_STOP_TO_STOP']       = \
     _load_stop_to_stop_model_for_month(
             jt_flask_app.config['MODEL_STOP_TO_STOP_MONTH']
@@ -710,8 +711,9 @@ def update_valid_route_shortnames():
     VALID_ROUTE_SHORTNAMES.clear()
     VALID_ROUTE_SHORTNAMES.extend(get_valid_route_shortnames(db))
 
-    log.debug("              Valid route shortnames are: %s", \
-        VALID_ROUTE_SHORTNAMES)
+    # Following generates large output.
+    # log.debug("              Valid route shortnames are: %s", \
+    #     VALID_ROUTE_SHORTNAMES)
 
     return jsonify(VALID_ROUTE_SHORTNAMES)
 
@@ -735,12 +737,12 @@ def get_journey_time():
         # The incoming json should contain one (or more) routes.  Each route will
         # be made up of steps, where each step is a seperate bus journey for that
         # route.
-        log.debug('looping over routes')
+        log.debug('\n## Begin Prediction: looping over routes:\n')
         for route_idx, route in enumerate(prediction_request_json['routes']):
              # def JourneyPrediction():
             no_of_steps_this_route = len(route['steps'])
             log.debug(
-                '\tProcessing route %d, no_of_steps_this_route -> %d'
+                '\n\tProcessing route %d, no_of_steps_this_route -> %d\n'
                 , route_idx, no_of_steps_this_route
                 )
 

@@ -28,7 +28,8 @@
                                 "lng": -6.2611282
                             },
                             "name": "O'Connell St Upper, stop 281",
-                            "dist_from_last_stop": 1234
+                            "dist_from_last_stop": 1234,
+                            "predicted_time_from_first_stop_s"
                         }
                     ],
                     "transit_details": {

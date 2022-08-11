@@ -260,8 +260,10 @@ export default {
 
             // this.$bus.$emit('stopBystopInfo',this.form.toBackendInfo);
 
+            var predictionServer = 'https://api.journeyti.me/'
+            //var predictionServer = 'http://localhost/'
             this.axios.post(
-                'https://api.journeyti.me/get_journey_time.do',
+                predictionServer + 'get_journey_time.do',
                 JSON.stringify(this.form.toBackendInfo),
                 { headers: {'Content-Type': 'application/json',}}
               ).then (

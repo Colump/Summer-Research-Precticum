@@ -894,8 +894,9 @@ def _predict_jt_end_to_end(journey_prediction):
 
         cumulative_time = 0
         for index,stepstop in enumerate(list_of_stops_for_journey):
-            stepstop_current = stepstop
-            if index != 0:
+            if index == 0:
+                stepstop_current = stepstop
+            else:  # index != 0
                 stepstop_prev = stepstop_current
                 stepstop_current  = stepstop
 

@@ -15,9 +15,7 @@
           <ShowRouteButtom></ShowRouteButtom>
           <!-- <showMultpleRouteVue></showMultpleRouteVue> -->
         </div>
-
         <!-- <StopsData></StopsData> -->
-
       </el-aside>
       <el-container>
         <el-header>
@@ -41,62 +39,62 @@
 </template>
 
 <script>
-// import Header from './components/header'
-// import Header from './components/header.vue'
-import MainNav from './components/MainNav'
-import AsideShowRoute from './components/AsideShowRoute'
-import ShowRouteButtom from './components/ShowRouteButtom.vue'
-import MyGoogleMap from './components/MyGoogleMap.vue'
-// import showMultpleRoute from './components/showMultpleRoute.vue'
+  // import Header from './components/header'
+  // import Header from './components/header.vue'
+  import MainNav from './components/MainNav'
+  import AsideShowRoute from './components/AsideShowRoute'
+  import ShowRouteButtom from './components/ShowRouteButtom.vue'
+  import MyGoogleMap from './components/MyGoogleMap.vue'
+  // import showMultpleRoute from './components/showMultpleRoute.vue'
 
-// 测试axios获取数据组件：test axios compoent
-import StopsData from './components/StopsData.vue'
-// 测试地址匹配框
-import UserForms from './components/UserForms.vue'
+  // 测试axios获取数据组件：test axios compoent
+  import StopsData from './components/StopsData.vue'
+  // 测试地址匹配框
+  import UserForms from './components/UserForms.vue'
+  import UserProfile from './components/UserProfile.vue'
 
-export default {
-  name: 'App',
-  components: {
-    MainNav,
-    AsideShowRoute,
-    ShowRouteButtom,
-    MyGoogleMap,
-    UserForms,
-    StopsData,
-    // showMultpleRouteVue
-  },
-  methods:{
+  export default {
+    name: 'App',
+    components: {
+      MainNav,
+      AsideShowRoute,
+      ShowRouteButtom,
+      MyGoogleMap,
+      UserForms,
+      StopsData,
+      UserProfile
+      // showMultpleRouteVue
+    },
+    methods:{
+
+    }
 
   }
-
-}
 </script>
 
 <style>
-.el-header {
-    /* background-color: #B3C0D1; */
-    color: #333;
-    text-align: center;
-    line-height: 60px;
+  .el-header {
+      /* background-color: #B3C0D1; */
+      color: #333;
+      text-align: center;
+      line-height: 60px;
+    }
+  .el-footer{
+      position: fixed;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      background-color: white;
+      color: black;
+      text-align: center;
+      font-family: element-icons;
+      display: flex;
+      justify-content: center;
+      line-height: 1px;
   }
-.el-footer{
-    position: fixed;
-    left: 0;
-    bottom: 0;
-    width: 100%;
-    background-color: white;
-    color: black;
-    text-align: center;
-    font-family: element-icons;
-    display: flex;
-    justify-content: center;
-    line-height: 1px;
-}
-
-element.style {
-    height: 35px;
-}
-
+  element.style {
+      height: 35px;
+  }
   .el-aside {
     /* background-color: #D3DCE6; */
     color: #333;
