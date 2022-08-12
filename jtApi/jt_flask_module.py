@@ -790,14 +790,17 @@ def _attempt_predict_this_step(step_idx, step):
     # Extend the json to contain stop-by-stop route information...
     # NOTE The mappings between Googles supplied data and the GTFSR fields are
     #      *inferred* - I could not find documentation guaranteeing the mappings.
-    route_name = step['transit_details']['line']['name']
+    route_name = ''
+    if 'name' in step['transit_details']['line'].keys():
+        route_name = step['transit_details']['line']['name']
+
     route_shortname = ''
     if 'short_name' in step['transit_details']['line'].keys():
         # Dublin Bus use route shortname to list the line id's...
         route_shortname = step['transit_details']['line']['short_name']
     else:
         # Other operators like Aircoach seem to use the name...
-        route_shortname = step['transit_details']['line']['name']
+        route_shortname = route_name
 
     # Our best guess for line-id is now route-shortname. BUT there  are some
     # routes in Dublin not covered by agencies in the  transportforireland

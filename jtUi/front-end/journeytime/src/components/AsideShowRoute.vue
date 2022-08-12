@@ -83,7 +83,7 @@ export default {
             busJourney.label += step.transit_details.line.name;
           }
           // Get the departure time in 's since the epoch'
-          let departureTime = new Date(step.transit_details.departure_time.value);
+          let departureTimeFirstStop = new Date(step.transit_details.departure_time.value);
           busJourney.children = [];
           for (let index in step.stop_sequence.stops) {
             let busStop = step.stop_sequence.stops[index];
@@ -91,10 +91,9 @@ export default {
             busJourneyStop.content = busStop.name;
             busJourneyStop.icon = "el-icon-location-information"
             busJourneyStop.colour = "#409EFF";
-            busJourneyStop.timestamp = departureTime.toLocaleString();
-            // Increment the departure time so it tracks along with each stop...
+            let departureTime = new Date(departureTimeFirstStop.getTime());
             departureTime.setSeconds(departureTime.getSeconds() + busStop.predicted_time_from_first_stop_s);
-
+            busJourneyStop.timestamp = departureTime.toLocaleString();
             busJourney.children.push(busJourneyStop)
           }
           listOfBusJourniesForRoute.push(busJourney)
