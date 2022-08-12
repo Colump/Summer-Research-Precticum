@@ -72,9 +72,10 @@ API server that provides the prediction service will not use our predictive mode
 Linux server for scheduled task support
 
 - Detailed instructions on the process are available [here](Installing_jtApi-VM_Environment_&_Configuration.rtf)
+as a .rtf file (download to view)
 
 2. The application requires a complete and properly formatted 'journeytime.json' file to control
-server behaviour.  A sample configuration file is available [here](journeytime_config.md)
+server behaviour.  A sample configuration file is available [here](README_journeytime_config)
 
 ### Frontend
 ???
