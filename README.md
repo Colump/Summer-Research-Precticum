@@ -75,7 +75,7 @@ Linux server for scheduled task support
 as a .rtf file (download to view)
 
 2. The application requires a complete and properly formatted 'journeytime.json' file to control
-server behaviour.  A sample configuration file is available [here](README_journeytime_config)
+server behaviour.  A sample configuration file is available [here](README_journeytime_config.md)
 
 ### Frontend
 ???
