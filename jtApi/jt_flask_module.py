@@ -138,6 +138,9 @@ def create_test_app():
     # Dynamically bind SQLAlchemy to application
     db.init_app(app)
     app.app_context().push()  # Bind SQLAlchemy object dynamically to the app
+
+    CORS(jt_flask_app)  # Allow all CORS requests (Flask only used in Dev anyway)
+
     return app
 
 # you can create another app context here, say for production
@@ -161,10 +164,17 @@ def create_production_app():
     # Dynamically bind SQLAlchemy to application
     db.init_app(app)
     app.app_context().push()  # Bind SQLAlchemy object dynamically to the app
+
+    # In the live server environment, CORS policy is handled by Apache. We *DO
+    # NOT WANT* to allow Flask to modify CORS headers in this situation. If on
+    # the other hand our app config specifically tells us to disable CORS in
+    # Flask, then we use the 'flask_cors' module to modify the headers.
+    if app.config['CORS_PROTECTION'] == "DISABLED":
+        CORS(app)  # Allow all CORS requests
+
     return app
 
 jt_flask_app = create_production_app()
-CORS(jt_flask_app)  # Allow all CORS requests (Flask only used in Dev anyway)
 
 db = SQLAlchemy(jt_flask_app)
 

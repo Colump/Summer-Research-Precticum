@@ -132,7 +132,8 @@ export default {
 .busJourneyChildren {
   padding-left: 10px;
 }
-.busJourneyChild {
+/* Combined selector required to override default .el-timeline-item styles */
+.el-timeline-item.busJourneyChild {
   text-align: left;
   padding-bottom: 6px;
 }
