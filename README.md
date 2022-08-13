@@ -1,5 +1,6 @@
 # COMP47360_Group3_Raduno - Journey Prediction For Bus Services In Dublin
 
+## Project Description
 This project is twofold:
 - a bus journey prediction RESTful api for developers to access a prediction service allowing easy
 prediction service integration into new web applications
@@ -78,7 +79,12 @@ as a .rtf file (download to view)
 server behaviour.  A sample configuration file is available [here](README_journeytime_config.md)
 
 ### Frontend
-???
+
+As previously mentioned, we used the Vue.js framework for our front-end development. This was a framework that none of our team members had any previous experiece with so it presented a challenge to learn how to implement this framework. We chose this framework because not only were we eager to learn how to use a new framework, but after researching many otehr options, we felt it the most suitable for our development needs. The design pattern of Vue.js is structured to sperate program logic from user interface controls, whcih in turn means the view layer and the data layer are also sperate. 
+
+## Future Work
+In the future, we hope that our RESTful API can meet the GTFS specifications so prediction services will be included in the future.
+
 ## Running the Flask app locally
 
 To run the api.JourneyTi.me app locally you need to connect to the development MySQL database. It is
