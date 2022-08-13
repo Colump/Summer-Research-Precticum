@@ -31,17 +31,22 @@ export default {
     },
     created() {
       this.$bus.$on('stopBystopInfo',(data)=>{
-        console.log("信息传递组件方法启动")
+        console.log("信息传递组件方法启动 ShowRouteButton.created() stopBystopInfo even detected on bus.")
         this.displayInfo = data
       })
-
-      this.$bus.$on('GetRouteIndex',(data)=>{
+      this.$bus.$on('GoogleMaps_IndexOfRouteToDisplay',(data)=>{
+        console.log('ShowRouteButton.created() GoogleMaps_IndexOfRouteToDisplay detected on bus:', data)
         this.routeIndex = data
       })
     },
     watch:{
       routeIndex(){
-        this.$bus.$emit('Index',this.form.flag);
+        /* 22/08/13 TK; Replaced following - how did this ever work? */
+        //this.$bus.$emit('Index', this.form.flag);
+        console.log(
+          'ShowRouteButton.routeIndex() Generating AsideShowRoute_IndexOfRouteToDisplay event on bus:',
+          this.routeIndex)
+        this.$bus.$emit('AsideShowRoute_IndexOfRouteToDisplay', this.routeIndex);
       }
     }
 

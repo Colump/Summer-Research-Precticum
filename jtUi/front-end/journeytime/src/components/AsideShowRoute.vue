@@ -72,7 +72,11 @@ export default {
   ],
   computed: {
     listOfBusJourniesForRoute() {
+      let debug_logging = false;
       let listOfBusJourniesForRoute = [];  // We will process raw data for display
+
+      (debug_logging) && console.log('AsideShowRoute.computed.listOfBJFRoute: displayInfo', this.displayInfo)
+      (debug_logging) && console.log('AsideShowRoute.computed.listOfBJFRoute: routeIndex', this.routeIndex)
       this.displayInfo.routes[this.routeIndex].steps.forEach(step => {
           let busJourney = {}
           busJourney.label = 'Details for Route: '
@@ -82,18 +86,36 @@ export default {
           else {
             busJourney.label += step.transit_details.line.name;
           }
+          (debug_logging) && console.log('AsideShowRoute.computed.listOfBJFRoute: busJourney.label',  busJourney.label)
           // Get the departure time in 's since the epoch'
           let departureTimeFirstStop = new Date(step.transit_details.departure_time.value);
           busJourney.children = [];
-          for (let index in step.stop_sequence.stops) {
-            let busStop = step.stop_sequence.stops[index];
+          // Protect against empty list... probably just paranoid but...
+          if (step.prediction_status == 'Prediction Attempted - Stop-by-Stop information not available.') {
             let busJourneyStop = {};
-            busJourneyStop.content = busStop.name;
-            busJourneyStop.icon = "el-icon-location-information"
-            busJourneyStop.colour = "#409EFF";
-            let departureTime = new Date(departureTimeFirstStop.getTime());
-            departureTime.setSeconds(departureTime.getSeconds() + busStop.predicted_time_from_first_stop_s);
-            busJourneyStop.timestamp = departureTime.toLocaleString();
+            busJourneyStop.content = 'Sorry! We couldn\'t look up the stops for this route'
+            busJourneyStop.timestamp = new Date().toLocaleString();
+            busJourney.children.push(busJourneyStop)
+          }
+          else if (step.stop_sequence != null && 'stops' in step.stop_sequence) {
+            if (step.stop_sequence.stops != null && step.stop_sequence.stops.length > 0) {
+              for (let index in step.stop_sequence.stops) {
+                let busStop = step.stop_sequence.stops[index];
+                let busJourneyStop = {};
+                busJourneyStop.content = busStop.name;
+                busJourneyStop.icon = "el-icon-location-information"
+                busJourneyStop.colour = "#409EFF";
+                let departureTime = new Date(departureTimeFirstStop.getTime());
+                departureTime.setSeconds(departureTime.getSeconds() + busStop.predicted_time_from_first_stop_s);
+                busJourneyStop.timestamp = departureTime.toLocaleString();
+                busJourney.children.push(busJourneyStop)
+              }
+            }
+          }
+          else {
+            let busJourneyStop = {};
+            busJourneyStop.content = 'Hmmm... something went wrong. Please try again later.'
+            busJourneyStop.timestamp = new Date().toLocaleString();
             busJourney.children.push(busJourneyStop)
           }
           listOfBusJourniesForRoute.push(busJourney)
@@ -103,21 +125,20 @@ export default {
       return listOfBusJourniesForRoute
     }
   },
-  mounted(){
-    this.$bus.$on('stopBystopInfo',(data)=>{
-      this.activities = data
-      console.log("stop by stop model ======")
-      console.log(data)
-    })
-
-      this.$bus.$on('Index',(data)=>{
+  created() {
+    this.$bus.$on('AsideShowRoute_IndexOfRouteToDisplay',(data)=>{
       this.Index = data
     })
   },
-  created() {
-    this.$bus.$on('Index',(data)=>{
-      this.Index = data
+  mounted(){
+    this.$bus.$on('stopBystopInfo',(data)=>{
+      console.log("AsideShowRoute: stopBystopInfo event detected, grabbing activities: ", data)
+      this.activities = data
     })
+    // No Need for the following - Index already watched (see created() method)
+    // this.$bus.$on('Index',(data)=>{
+    //   this.Index = data
+    // })
   }
 }
 </script>

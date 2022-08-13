@@ -20,62 +20,66 @@
 
 <script>
 export default {
-    name:'LogIn',
-    data() {
-      return {
-        loginform: {
-          loginName: '',
-          password: '',
-        }
-      }
-    },
-    methods: {
-      login() {
-
-        // 测试代码
-        this.loginForm = {};
-        this.$bus.$emit('ToOtherPage',1)
-        this.$message({
-            message: 'LogIn successful',
-            type: 'success'
-            });
-                    this.$router.push({
-                        path:'/Map'
-                    })
-                    
-                    // 传递用户名
-                    this.$bus.$emit('UserName',this.loginform.loginName)
-
-
-
-          // 测试结束就删掉
-
-
-        // this.axios.post('后端路径',this.loginform).then(
-        //     (resp) => {
-        //         let data = resp.data
-        //         if(data.success){
-        //             this.loginForm = {};
-        //             this.$message({
-        //             message: '成功登录',
-        //             type: 'success'
-        //             });
-        //             this.$router.push({
-        //                 path:'/Map'
-        //             })
-        //             this.$bus.$emit('ToOtherPage',1)
-        //         }
-        //     }
-        // )
-        
-      },
-      toRegister(){
-        this.$router.push({
-            path:'/Register'
-        })
-        this.$bus.$emit('ToOtherPage',2)
+  name:'LogIn',
+  data() {
+    return {
+      loginform: {
+        loginName: '',
+        password: '',
       }
     }
+  },
+  mounted(){
+    // If route choices happen to be displayed... hide them.
+    this.$bus.$emit('UserFormShowRouteChoices', false)
+  },
+  methods: {
+    login() {
+
+      // 测试代码
+      this.loginForm = {};
+      this.$bus.$emit('ToOtherPage',1)
+      this.$message({
+          message: 'LogIn successful',
+          type: 'success'
+          });
+                  this.$router.push({
+                      path:'/Map'
+                  })
+
+                  // 传递用户名
+                  this.$bus.$emit('UserName',this.loginform.loginName)
+
+
+
+        // 测试结束就删掉
+
+
+      // this.axios.post('后端路径',this.loginform).then(
+      //     (resp) => {
+      //         let data = resp.data
+      //         if(data.success){
+      //             this.loginForm = {};
+      //             this.$message({
+      //             message: '成功登录',
+      //             type: 'success'
+      //             });
+      //             this.$router.push({
+      //                 path:'/Map'
+      //             })
+      //             this.$bus.$emit('ToOtherPage',1)
+      //         }
+      //     }
+      // )
+
+    },
+    toRegister(){
+      this.$router.push({
+          path:'/Register'
+      })
+      this.$bus.$emit('ToOtherPage',2)
+    }
+  }
 }
 </script>
 
@@ -83,8 +87,8 @@ export default {
 #poster{
     /* background-position: center; */
     height: 100%;
-    width: 100%; 
-    background-size: cover; 
+    width: 100%;
+    background-size: cover;
     position: fixed;
     font-family: element-icons;
 

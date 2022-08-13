@@ -51,7 +51,7 @@
   import StopsData from './components/StopsData.vue'
   // 测试地址匹配框
   import UserForms from './components/UserForms.vue'
-  import UserProfile from './components/UserProfile.vue'
+  //import UserProfile from './components/UserProfile.vue'
 
   export default {
     name: 'App',
@@ -61,8 +61,8 @@
       ShowRouteButtom,
       MyGoogleMap,
       UserForms,
-      StopsData,
-      UserProfile
+      StopsData
+      // UserProfile
       // showMultpleRouteVue
     },
     methods:{

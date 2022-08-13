@@ -40,6 +40,16 @@
 </div>
 </template>
 
+<script>
+export default {
+  Name:'AboutUs',
+  mounted(){
+    // If route choices happen to be displayed... hide them.
+    this.$bus.$emit('UserFormShowRouteChoices', false)
+  }
+}
+</script>
+
 <style>
 h1{
   font-size: 40px;
